@@ -5,7 +5,25 @@ Next.js 15 + Tailwind jackpot/casino platform, built against Figma. Static expor
 ## Skills are in this repo — use them, don't improvise
 
 Project skills live in `.claude/skills/` and are committed, so every clone has them.
-Plugins are declared in `.claude/settings.json` and resolve from the marketplaces in `~/.claude/plugins`.
+
+Plugins need two things in `.claude/settings.json`, and both are committed: `extraKnownMarketplaces`
+says where each catalogue lives, `enabledPlugins` says which plugin to turn on. `claude-plugins-official`
+is absent from the first block on purpose — Claude Code registers it for every user by itself.
+
+**A clone is not finished until you run the installs.** Since Claude Code v2.1.195, `enabledPlugins`
+alone does not fetch anything; a plugin from a GitHub marketplace stays dormant until somebody runs
+`claude plugin install <name>@<marketplace> --scope project` in that checkout. Install records are
+keyed on the absolute project path, so a second worktree needs its own run even though it shares
+`.git`. This repo shipped for weeks with `ui-ux-pro-max`, `ponytail` and `caveman` enabled and none of
+them loaded, which made every rule in this section unenforceable. Verify with `claude plugin list`,
+not by reading this file.
+
+```
+claude plugin install superpowers@claude-plugins-official --scope project
+claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill  --scope project
+claude plugin install ponytail@ponytail                  --scope project
+claude plugin install caveman@caveman                    --scope project
+```
 
 The rules below are not suggestions. Invoke the named skill before doing the work, not after.
 
@@ -41,25 +59,48 @@ to be fixed again once someone actually pressed the buttons.
 
 ### Always, when writing code
 
+- `superpowers:brainstorming` before designing anything non-trivial — settle the shape before
+  writing the first line.
+- `superpowers:writing-plans` when the work spans more than one file or one sitting.
 - `ponytail` — simplest thing that works. YAGNI, stdlib first, no unrequested abstractions.
-- `react-patterns` / `react-performance` for component work, `react-testing` for tests.
+- `react-patterns` / `react-performance` for component work, `react-testing` for tests, with
+  `superpowers:test-driven-development` for the RED-GREEN-REFACTOR order.
 - `no-ai-slop` and `taste` before shipping copy or visual design.
+
+### Always, when reporting work back
+
+| Trigger | Skill |
+| --- | --- |
+| A plan, comparison, table, diff, report, or review that reads better as a page than as prose | `lavish` — invokes `npx -y lavish-axi`, nothing to install globally |
 
 ### Bug fixes
 
+`superpowers:systematic-debugging` whenever the cause is not already known — do not start
+patching before it is.
+
 Understand why the bug exists and where it came from, then grep for every other place the
 same pattern appears. The same bug has been fixed repeatedly in different files here — fix
-the class, not the instance.
+the class, not the instance. This paragraph is the house rule and it wins over
+`systematic-debugging` on any conflict, the same way `explica` wins over `caveman` below.
+
+Two superpowers skills overlap with skills this repo already has, and the repo's own win:
+`superpowers:verification-before-completion` does not replace `verification-loop`, and
+`superpowers:using-git-worktrees` does not override the checkout rules in the next section.
 
 ## Where commands run
 
-One checkout, `D:\tw-platform`, and that is deliberate.
+Run everything in `D:\tw-platform`. It is the only checkout with `node_modules`.
 
 The predecessor repo was checked out twice, and it cost a whole afternoon. Only one copy had
 `node_modules`, and in the other `npx tsc --noEmit` did not fail — it downloaded an unrelated
 `tsc@2.0.4` from npm, printed "This is not the tsc command you are looking for", and **exited
-0**. A typecheck that never ran was indistinguishable from one that passed. Keep it to one
-checkout; if a second one ever becomes necessary, install dependencies in both.
+0**. A typecheck that never ran was indistinguishable from one that passed.
+
+There is now a second working tree, `C:\Users\grosu.b\orca\workspaces\tw-platform\main`, created by
+the orca tooling and sharing this repo's `.git`. It has no `node_modules`, so the `tsc@2.0.4` trap is
+live there: `npx tsc --noEmit`, `npm test` and `npm run build:check` will appear to pass without
+running. Do not run checks from it. `git worktree list` shows every tree if you are unsure which one
+you are in.
 
 Before any push, check whether the remote has moved: `git fetch` then
 `git log --oneline HEAD..origin/main`. If that prints anything, merge it in first. Never

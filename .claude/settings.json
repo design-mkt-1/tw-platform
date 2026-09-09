@@ -1,7 +1,28 @@
 {
+  "extraKnownMarketplaces": {
+    "ui-ux-pro-max-skill": {
+      "source": {
+        "source": "github",
+        "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/dietrichgebert/ponytail.git"
+      }
+    },
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    }
+  },
   "enabledPlugins": {
     "ui-ux-pro-max@ui-ux-pro-max-skill": true,
     "ponytail@ponytail": true,
-    "caveman@caveman": true
+    "caveman@caveman": true,
+    "superpowers@claude-plugins-official": true
   }
 }
