@@ -1,0 +1,39 @@
+<svg width="39" height="39" viewBox="0 0 39 39" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="1">
+<g id="desktop-main">
+<g id="Footer">
+<mask id="path-3-inside-1_0_1" fill="white">
+<path d="M-856.147 -464.576H583.853V264.424H-856.147V-464.576Z"/>
+</mask>
+<path d="M-856.147 -464.576H583.853V264.424H-856.147V-464.576Z" fill="#070F1D"/>
+<path d="M-856.147 -464.576V-463.576H583.853V-464.576V-465.576H-856.147V-464.576Z" fill="#282936" mask="url(#path-3-inside-1_0_1)"/>
+<g id="Frame 2135557740">
+<g id="Container">
+<g id="Link">
+<g id="Container_2">
+<g id="Border">
+<rect x="-0.147302" y="-0.147058" width="39.142" height="39.142" rx="19.571" stroke="#19191D" stroke-width="1.38801"/>
+<g id="en" clip-path="url(#clip0_0_1)">
+<g id="image" clip-path="url(#clip1_0_1)">
+<path id="Vector" d="M48.5618 -0.000244141H-9.71387V19.425H48.5618V-0.000244141Z" fill="white"/>
+<path id="Vector_2" d="M48.5618 19.4253H-9.71387V38.8505H48.5618V19.4253Z" fill="#D52B1E"/>
+<path id="Vector_3" d="M48.5618 12.9534H-9.71387V25.9031H48.5618V12.9534Z" fill="#0039A6"/>
+</g>
+</g>
+</g>
+</g>
+</g>
+</g>
+</g>
+</g>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_1">
+<rect width="38.8505" height="38.8505" fill="white"/>
+</clipPath>
+<clipPath id="clip1_0_1">
+<rect width="38.8505" height="38.8505" fill="white"/>
+</clipPath>
+</defs>
+</svg>

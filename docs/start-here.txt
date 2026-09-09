@@ -1,0 +1,192 @@
+JACKPOT — HOW TO START THE NEXT SESSION
+=======================================
+
+Project: a demo of the Jackpot casino platform, built from Figma file
+2MyylxdZblfGnf05nQacUz. Next.js 15 + TypeScript + Tailwind v3, no backend.
+
+
+LINKS
+-----
+
+Demo                       https://design-mkt-1.github.io/tw-platform/
+Screen registry            https://design-mkt-1.github.io/tw-platform/dev/screens/
+Design vs implementation   https://design-mkt-1.github.io/tw-platform/review/
+Repo                       https://github.com/design-mkt-1/tw-platform
+
+The site is public but carries noindex and a robots.txt disallow: it is an
+unpublished client design with other companies' marks in it (Pragmatic Play,
+Visa, Mastercard). The link can be shared, but it must not turn up in Google.
+
+
+WHAT YOU NEED ON A NEW MACHINE
+------------------------------
+
+- Node 24
+- Git
+- Google Chrome
+
+Chrome is required, not optional. The capture scripts drive the browser already
+installed on the machine (channel: 'chrome'), not one downloaded by Playwright —
+that download fails in this environment. So `npx playwright install` is NOT
+needed, only Chrome.
+
+
+GETTING STARTED
+---------------
+
+    git clone https://github.com/design-mkt-1/tw-platform.git
+    cd tw-platform
+    npm ci
+    npm run dev
+
+Then open http://localhost:3000
+
+Tested: a clean clone plus npm ci plus a full build all pass. 172 files.
+
+
+THE FIRST PROMPT FOR CLAUDE
+---------------------------
+
+Open Claude Code in the tw-platform folder and give it this:
+
+    Read README.md, docs/next-session.md and docs/build-plan.md.
+    Then read docs/audit-session-8.md — it is the ranked list of everything
+    found by pressing every control on the deployed build, and nothing on it
+    has been fixed yet. Start from the owner's picks in Rank 1.
+    Verify before you assume.
+
+
+WHAT DOES NOT TRAVEL WITH THE REPO
+----------------------------------
+
+This is the part you cannot infer from the code.
+
+Your working rules are LOCAL configuration, not repo configuration. The two
+rules that show up on every message — "do not assume, verify" and "explain, do
+not just report" — come from:
+
+    <your home>/.claude/settings.json     (the "hooks" section)
+    <your home>/.claude/CLAUDE.md
+
+The same goes for caveman mode and the installed skills.
+
+On another machine, without them, Claude will produce dry reports and fill gaps
+with plausible guesses instead of asking — exactly the behaviour those rules
+block. If you want the same working style, copy those two files across.
+
+What does travel with the repo: the project's own .claude/settings.json, which
+enables only the ui-ux-pro-max plugin.
+
+UNKNOWN: I do not know whether the Figma MCP connection works automatically on
+another machine. It is tied to the claude.ai account, so probably yes, but there
+is no way to check from here. Quick test in the first session: ask it to run
+get_metadata on file 2MyylxdZblfGnf05nQacUz. If it answers with the "Platform"
+page, you are fine. If not, the Figma connector needs reconnecting.
+
+
+THE TRAP THAT COSTS YOU AN HOUR IF YOU DO NOT KNOW IT
+-----------------------------------------------------
+
+Do NOT run `npm run build` while `next dev` is running.
+
+Both own the same .next directory. When they tread on each other they corrupt
+it, and EVERY route starts returning 500 with:
+
+    ENOENT: no such file or directory, open
+    .next\static\development\_buildManifest.js.tmp.<random characters>
+
+The code is perfectly valid. It looks like an application bug and it is not.
+This happened exactly that way once, in an earlier session.
+
+That is what this exists for:
+
+    npm run build:check
+
+which sends the build to .next-build and cannot touch the running server.
+
+The same thing happens after you edit next.config.ts while dev is running: Next
+restarts itself when the config changes and treads on itself. After any change
+there, stop and restart the server by hand.
+
+
+USEFUL COMMANDS
+---------------
+
+    npm run dev              review server on :3000
+    npm test                 vitest, 58 tests; also runs in CI, before the build
+    npm run build:check      production build, safe while dev is running
+    npx tsc --noEmit
+    npx eslint src --max-warnings=0
+
+    node scripts/shot.mjs <url> <out.png> <width> <height> viewport '<selector|offset>'
+    node scripts/review.mjs <dir>          all 15 states, in both motion modes
+    node scripts/a11y.mjs <dir> [url]      axe-core over 9 states; exits 1 on serious violations
+    node scripts/clean-svg.mjs public/images --dry
+    node scripts/to-webp.mjs public/images --dry   re-encode any new PNG export
+
+
+DEEP LINKS FOR ONE PARTICULAR STATE
+-----------------------------------
+
+Append these to the demo's address:
+
+    ?auth=prelogin   or  ?auth=vip     the header and menu in that state
+    ?panel=balance                     the balance panel, Figma node 1:4116
+    ?panel=personalInfo                the account menu, node 1:4153
+    ?panel=jackpotMenu                 the mobile menu, nodes 1:8751 / 13:2307 / 13:2519
+    ?q=swe                             the search suggestions state, node 1:4479
+
+They exist because a state you cannot link to cannot be reviewed. A capture
+called "the Balance panel" was, until these were built, only a capture of the
+default page.
+
+
+WHAT IS LEFT TO DO
+------------------
+
+Detailed in docs/next-session.md, sections 6, 7 and 8, and in
+docs/audit-session-8.md, which is the newest and the longest list.
+
+What is genuinely open right now:
+
+1. The countdown period. PERIOD_MS in src/lib/format.ts rolls an expired
+   deadline forward in 7-day steps, so the hours field has three digits (149h)
+   where the design draws two (08h). A 24-hour period is a one-constant change.
+   Your call — with the editorial cost that the copy beside the clock reads
+   "Weekly tournament" and a 24-hour timer contradicts it.
+2. Between 768 and 1279 px the header nav is a narrow scrolling strip. At 768 it
+   is a 33px window onto 569px of links — the header renders "CAS", clipped
+   mid-word. Nothing overflows. Figma has no frame for this range, so widening
+   it means designing it.
+3. Game cards stay <article> with no link, by your decision of 2026-08-08: a
+   link to nowhere is worse than no link. It resolves itself when game pages
+   arrive.
+4. The deliberate differences, to re-confirm before sign-off: providers shown as
+   initials, cards with a gradient fallback, GBP as the currency, the mobile
+   hero showing a single offer.
+5. Everything in docs/audit-session-8.md. The short version: of 49 controls on
+   the desktop homepage, 8 do what they say.
+
+Two items that used to be on this list are closed and are recorded here so
+nobody re-opens them:
+
+  - The ten icons carrying the whole Figma artboard were cleaned in dd2886e.
+    Six SVGs still carry a smaller one — see audit-session-8.md §3.5 — and that
+    is a different, invisible case.
+  - Clicking a sheet's backdrop now returns focus to its trigger. Re-verified
+    on 2026-09-09 with real mouse presses, which is the only way to test it:
+    a scripted element.click() does not move focus and makes a working
+    restoration look broken.
+
+
+DOCUMENTS IN THE REPO
+---------------------
+
+README.md                  what the project is, how to run it
+docs/next-session.md       what is left to do
+docs/audit-session-8.md    everything found by pressing every control, ranked
+docs/build-plan.md         why the architecture looks like this, and the traps
+                           already hit
+docs/tokens.md             READ BEFORE TOUCHING A COLOUR. The Figma file has no
+                           variables, so this document is the only bridge
+                           between the design and the code

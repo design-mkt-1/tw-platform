@@ -1,0 +1,95 @@
+name: Deploy review build to GitHub Pages
+
+# The demo has no server, so the whole app prerenders to static files and Pages hosts them.
+# GITHUB_PAGES=true is what switches next.config.ts into export mode and applies the /tw-platform
+# base path; without it the build stays the ordinary one used for local checks.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. Queued rather than cancelled: a half-finished deploy would leave the
+# client looking at a broken page.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx tsc --noEmit
+      - run: npx eslint src --max-warnings=0
+
+      # A wrong asset path or a broken filter is a valid TypeScript program, so the two checks
+      # above cannot see it. These can, and they run before the build for the same reason the
+      # others do: a red check must not reach the link the client is looking at.
+      - run: npm test
+
+      - run: npm run build
+        env:
+          GITHUB_PAGES: 'true'
+
+      # axe-core over the nine states, run against the artifact that is about to be deployed rather
+      # than against a dev server, so the check sees the same base path and the same bundles the
+      # client will. basePath puts every asset under /tw-platform/, so the export has to be served
+      # from a directory of that name for the page to load its own CSS; a copy is cheaper than
+      # teaching http.server a prefix. python3 and Google Chrome are both preinstalled on
+      # ubuntu-latest, and scripts/a11y.mjs asks playwright for `channel: 'chrome'`, so this adds no
+      # dependency. The script exits 1 when a critical or serious violation exists, which fails the
+      # job before the deploy step runs.
+      - name: Accessibility check
+        run: |
+          mkdir -p a11y-site
+          cp -r out a11y-site/tw-platform
+          python3 -m http.server 4173 -d a11y-site &
+          for i in $(seq 30); do
+            if curl -sf http://localhost:4173/tw-platform/ > /dev/null; then break; fi
+            sleep 1
+          done
+          # Repeated deliberately: a11y.mjs records a page it could not reach as a state with zero
+          # violations, so a server that never came up would pass the job silently. This line fails
+          # it instead.
+          curl -sf http://localhost:4173/tw-platform/ > /dev/null
+          node scripts/a11y.mjs a11y-out http://localhost:4173/tw-platform
+
+      # Uploaded whether or not the check passed: when it fails, the report is the only way to see
+      # which state and which rule failed.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: a11y
+          path: a11y-out/a11y.json
+
+      # Pages serves the directory as-is; .nojekyll stops it from hiding files whose names start
+      # with an underscore, which is most of Next's output.
+      - run: touch out/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

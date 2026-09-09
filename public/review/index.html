@@ -1,0 +1,2342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jackpot — design vs implementation</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  /* ---- layout safety ---- */
+  *, *::before, *::after { box-sizing: border-box; }
+  :where(.grid, .flex) > * { min-width: 0; }
+  :where(p, h1, h2, h3, h4, li, dd, td, th, .badge) { overflow-wrap: anywhere; }
+  :where(img, svg) { max-width: 100%; height: auto; }
+
+  /* ---- tokens read off UI Kit — Desktop (Figma 1:5199) ---- */
+  :root {
+    --bg-page:        #11111A;
+    --bg-card:        #151624;
+    --bg-subtle:      rgba(255,255,255,0.02);
+    --bg-elevated:    rgba(255,255,255,0.06);
+    --overlay:        rgba(0,0,0,0.2);
+
+    --text-primary:   #FFFFFF;
+    --text-secondary: rgba(255,255,255,0.70);
+    --text-tertiary:  rgba(255,255,255,0.60);
+    --text-muted:     #839CBF;
+    --text-nav:       #9E9FAB;
+    --text-label:     #B2B8C2;
+    --text-footer:    #DAD7E0;
+
+    --blue:           #007AFF;
+    --blue-tint:      rgba(0,122,255,0.13);
+    --amber:          #F59E0B;
+    --gold:           #D4A352;
+    --green:          #34C759;
+
+    --gold-light:     #F0C775;
+    --gold-dark:      #C6903D;
+    --orange-start:   #F8B900;
+    --orange-end:     #E67508;
+
+    --border-card:    rgba(255,255,255,0.04);
+    --divider:        rgba(255,255,255,0.07);
+    --border-med:     rgba(255,255,255,0.08);
+    --border-strong:  rgba(255,255,255,0.10);
+    --separator:      #282936;
+
+    --r: 12px;
+    --font: Inter, "Segoe UI", -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    --mono: "JetBrains Mono", "Cascadia Mono", Consolas, "SF Mono", monospace;
+  }
+
+  html { background: var(--bg-page); color-scheme: dark; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1100px 420px at 50% -140px, rgba(0,122,255,0.16), transparent 70%),
+      var(--bg-page);
+    color: var(--text-secondary);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 22px 96px; }
+
+  /* ---- typography ---- */
+  h1, h2, h3, h4 { color: var(--text-primary); line-height: 1.22; margin: 0; font-weight: 700; }
+  h1 { font-size: clamp(30px, 4.6vw, 46px); letter-spacing: -0.02em; }
+  h2 { font-size: clamp(21px, 2.7vw, 27px); letter-spacing: -0.01em; }
+  h3 { font-size: 17px; }
+  h4 { font-size: 14px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono { font-family: var(--mono); font-size: 0.88em; }
+  code {
+    background: var(--bg-elevated); border: 1px solid var(--border-card);
+    padding: 1px 6px; border-radius: 6px; color: var(--text-footer);
+  }
+  strong { color: var(--text-primary); font-weight: 600; }
+  .lead { font-size: 17px; color: var(--text-secondary); }
+  .muted { color: var(--text-muted); }
+  .small { font-size: 13px; }
+
+  /* ---- section rhythm ---- */
+  section { margin-top: 58px; scroll-margin-top: 24px; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+  .sec-num {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 1px;
+    color: var(--gold); border: 1px solid var(--gold-dark);
+    padding: 2px 9px; border-radius: 99px; flex: none;
+  }
+  .sec-sub { color: var(--text-muted); margin: 0 0 26px; max-width: 74ch; }
+  .rule { height: 1px; background: var(--divider); border: 0; margin: 0 0 26px; }
+
+  /* ---- cards ---- */
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border-med);
+    border-radius: var(--r); padding: 20px 22px;
+  }
+  .card.tight { padding: 16px 18px; }
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11.5px; font-weight: 600; letter-spacing: 0.4px;
+    padding: 3px 10px; border-radius: 99px; border: 1px solid var(--border-strong);
+    color: var(--text-label); background: var(--bg-elevated); text-transform: uppercase;
+  }
+  .badge.ok    { color: var(--green); border-color: rgba(52,199,89,.4);  background: rgba(52,199,89,.10); }
+  .badge.warn  { color: var(--amber); border-color: rgba(245,158,11,.4); background: rgba(245,158,11,.10); }
+  .badge.info  { color: var(--blue);  border-color: rgba(0,122,255,.45); background: var(--blue-tint); }
+  .badge.gold  { color: var(--gold);  border-color: rgba(212,163,82,.45);background: rgba(212,163,82,.10); }
+
+  /* ---- hero ---- */
+  .hero {
+    border: 1px solid var(--border-strong); border-radius: 20px; padding: 34px 30px;
+    background:
+      linear-gradient(180deg, rgba(0,122,255,0.10), transparent 62%),
+      var(--bg-card);
+    position: relative; overflow: hidden;
+  }
+  .hero::after {
+    content: ""; position: absolute; left: 6%; right: 6%; bottom: -1px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--blue), transparent); opacity: .75;
+  }
+  .kicker {
+    font-size: 11.5px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--gold); font-weight: 700; margin-bottom: 12px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+
+  /* ---- swatches ---- */
+  .sw-group + .sw-group { margin-top: 22px; }
+  .sw-title {
+    font-size: 11.5px; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--text-muted); font-weight: 700; margin-bottom: 10px;
+  }
+  .sw-row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); }
+  .sw { }
+  .sw i {
+    display: block; height: 62px; border-radius: 10px;
+    border: 1px solid var(--border-strong);
+    background-image:
+      linear-gradient(45deg, rgba(255,255,255,.05) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.05) 75%),
+      linear-gradient(45deg, rgba(255,255,255,.05) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.05) 75%);
+    background-size: 12px 12px; background-position: 0 0, 6px 6px;
+  }
+  .sw b { display: block; font-size: 12.5px; color: var(--text-primary); font-weight: 500; margin-top: 8px; }
+  .sw span { display: block; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+
+  /* ---- tables ---- */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--border-med); border-radius: var(--r); background: var(--bg-card); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 620px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--divider); vertical-align: top; }
+  th {
+    color: var(--text-muted); font-size: 11px; letter-spacing: 1px;
+    text-transform: uppercase; font-weight: 700; background: var(--bg-subtle);
+    position: sticky; top: 0;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: var(--bg-subtle); }
+  td.mono, th.mono { font-family: var(--mono); font-size: 12px; }
+  .own { color: var(--text-footer); }
+
+  /* ---- evidence list ---- */
+  .ev { display: grid; gap: 12px; }
+  .ev-item {
+    display: grid; grid-template-columns: 26px 1fr; gap: 12px;
+    padding: 14px 16px; border: 1px solid var(--border-med);
+    border-radius: 10px; background: var(--bg-card);
+  }
+  .ev-item .dot {
+    width: 10px; height: 10px; border-radius: 99px; margin-top: 7px;
+    background: var(--green); box-shadow: 0 0 0 4px rgba(52,199,89,.14);
+  }
+  .ev-item.q .dot { background: var(--amber); box-shadow: 0 0 0 4px rgba(245,158,11,.14); }
+  .ev-item h4 { margin-bottom: 3px; }
+  .ev-item p { margin: 0; font-size: 13.5px; }
+
+  /* ---- shots ---- */
+  figure { margin: 0; }
+  figure img { display: block; width: 100%; border-radius: 10px; border: 1px solid var(--border-strong); }
+  figcaption { font-size: 12.5px; color: var(--text-muted); margin-top: 9px; }
+
+  /* ---- before / after ---- */
+  .ba { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .ba .card { border-top: 3px solid var(--separator); }
+  .ba .after { border-top-color: var(--green); }
+  .ba .before { border-top-color: var(--amber); }
+  pre {
+    margin: 12px 0 0; padding: 13px 15px; overflow-x: auto;
+    background: #0C0D16; border: 1px solid var(--border-med);
+    border-radius: 10px; font-family: var(--mono); font-size: 12.2px;
+    line-height: 1.6; color: var(--text-label);
+  }
+  pre .c { color: var(--text-muted); }
+  pre .k { color: var(--blue); }
+  pre .s { color: var(--gold-light); }
+
+  /* ---- steps ---- */
+  ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  ol.steps li {
+    counter-increment: s; position: relative; padding: 13px 16px 13px 50px;
+    border: 1px solid var(--border-med); border-radius: 10px; background: var(--bg-card); font-size: 14px;
+  }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: 15px; top: 12px;
+    width: 22px; height: 22px; border-radius: 99px; display: grid; place-items: center;
+    background: var(--blue-tint); border: 1px solid rgba(0,122,255,.5);
+    color: var(--blue); font-size: 11.5px; font-weight: 700; font-family: var(--mono);
+  }
+
+  /* ---- forms ---- */
+  form.q { background: var(--bg-card); border: 1px solid var(--border-med); border-radius: var(--r); padding: 20px 22px; }
+  form.q + form.q { margin-top: 16px; }
+  form.q h3 { margin-bottom: 4px; }
+  .opts { display: grid; gap: 9px; margin: 15px 0 16px; }
+  .opt {
+    display: grid; grid-template-columns: 20px 1fr; gap: 11px; align-items: start;
+    padding: 12px 14px; border: 1px solid var(--border-med); border-radius: 10px;
+    background: var(--bg-subtle); cursor: pointer;
+  }
+  .opt:hover { border-color: var(--border-strong); background: var(--bg-elevated); }
+  .opt input { margin: 4px 0 0; accent-color: var(--blue); width: 15px; height: 15px; }
+  .opt b { display: block; color: var(--text-primary); font-size: 14px; font-weight: 600; }
+  .opt em { font-style: normal; font-size: 13px; color: var(--text-muted); }
+  .opt .rec { color: var(--green); font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
+  button {
+    font: inherit; font-weight: 600; font-size: 14px; cursor: pointer;
+    background: var(--blue); color: #fff; border: 0;
+    padding: 10px 20px; border-radius: 99px;
+  }
+  button:hover { filter: brightness(1.12); }
+  button.ghost { background: transparent; border: 1px solid var(--border-strong); color: var(--text-label); }
+  .sent { font-size: 13px; color: var(--green); margin-left: 12px; }
+
+  .cta {
+    margin-top: 58px; padding: 26px 24px; border-radius: 16px; text-align: center;
+    border: 1px solid var(--border-strong);
+    background: linear-gradient(180deg, rgba(0,122,255,.10), transparent), var(--bg-card);
+  }
+
+  .fig { margin: 6px 0 0; }
+  .fig svg { display: block; width: 100%; height: auto; }
+  .fig-cap { font-size: 12.5px; color: var(--text-muted); margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ======================= HERO ======================= -->
+  <header class="hero">
+    <div class="kicker">Comparison report · design vs implementation</div>
+    <h1>Casino platform demo <span style="color:var(--gold)">Jackpot</span></h1>
+    <p class="lead" style="max-width:72ch;margin-top:14px">
+      The app is built and published. This document shows what we started from, what got decided
+      along the way, and how the result looks next to the design, section by section.
+    </p>
+    <p class="small muted" style="max-width:72ch;margin-top:12px">
+      Sections <strong>01–12</strong> are the history: what was measured in the Figma file before any
+      code was written, what decisions were taken, and what came out of the checks that ran before the
+      build. Every question raised there has already been answered; they are kept as a written trail.
+      <strong>Section 13</strong> is the comparison itself: twenty-six Figma / implementation
+      comparisons, plus an accessibility sheet. <strong>Section 14</strong> is what came out of looking
+      at the site in Chrome on 9 September: five defects found and fixed, with the after screenshot
+      next to the Figma node.
+    </p>
+    <div class="chips">
+      <a class="badge ok" href="../" style="text-decoration:none">Open the demo →</a>
+      <a class="badge info" href="../dev/screens/" style="text-decoration:none">Screen list →</a>
+      <span class="badge">Next.js 15 · Tailwind v3.4</span>
+      <span class="badge gold">15 desktop sections</span>
+      <span class="badge gold">mobile + 3 menus</span>
+    </div>
+  </header>
+
+  <!-- ======================= 1. GOAL ======================= -->
+  <section id="obiectiv">
+    <div class="sec-head"><span class="sec-num">01</span><h2>The goal and where things stand</h2></div>
+    <p class="sec-sub">
+      What we want, what exists, what we deliver. No assumptions — the state of the repo was read straight off the disk.
+    </p>
+    <div class="grid g3">
+      <div class="card">
+        <span class="badge warn">Where it stands now</span>
+        <h3 style="margin:12px 0 8px">Empty directory</h3>
+        <p class="small muted" style="margin:0">
+          <code>D:\jp-platform</code> contains only <code>.git</code> (zero commits) and
+          <code>.claude\settings.json</code>. There is no code to reuse and none to migrate.
+          Everything that follows gets written from scratch.
+        </p>
+      </div>
+      <div class="card">
+        <span class="badge info">Source of truth</span>
+        <h3 style="margin:12px 0 8px">The Figma file</h3>
+        <p class="small muted" style="margin:0">
+          A single page, <em>Platform</em>. Section 1 holds the desktop and its states,
+          section 2 holds mobile. Plus two UI Kits, Desktop and Mobile,
+          which document colors, typography and button states.
+        </p>
+      </div>
+      <div class="card">
+        <span class="badge ok">The deliverable</span>
+        <h3 style="margin:12px 0 8px">An app you can run</h3>
+        <p class="small muted" style="margin:0">
+          <code>npm run dev</code> starts the whole platform: desktop, mobile,
+          working search, switching between prelogin / postlogin / VIP, the Balance
+          and Personal information panels. Local mock data, no backend.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 2. WHAT WE CHECKED ======================= -->
+  <section id="verificat">
+    <div class="sec-head"><span class="sec-num">02</span><h2>What we actually checked</h2></div>
+    <p class="sec-sub">
+      A green dot means measured: we ran the query and read the result.
+      An amber dot means we still don't know, and we're not guessing.
+    </p>
+    <div class="ev">
+
+      <div class="ev-item">
+        <span class="dot"></span>
+        <div>
+          <h4>Figma has no design tokens</h4>
+          <p class="muted">
+            Querying the variables on <code>desktop-main</code> returns a single value,
+            <code>BG/Quaternary: #0D1420</code>. On <code>UI Kit — Desktop</code> it returns nothing.
+            All the colors are fills hardcoded into layers. In plain terms: if the designer changes
+            the card background tomorrow, the change doesn't propagate anywhere on its own — it has to be read again.
+          </p>
+        </div>
+      </div>
+
+      <div class="ev-item">
+        <span class="dot"></span>
+        <div>
+          <h4>The UI Kit, on the other hand, is written like documentation</h4>
+          <p class="muted">
+            The <em>Colors</em> frame has five groups, and every swatch already carries a semantic name:
+            <em>Page Background</em>, <em>Card Background</em>, <em>Blue Primary</em>, <em>Gold Nav Active</em>.
+            Those names become the Tailwind token names directly, so the mapping isn't something we invented,
+            it's transcription. The full palette is below, in section 03.
+          </p>
+        </div>
+      </div>
+
+      <div class="ev-item">
+        <span class="dot"></span>
+        <div>
+          <h4>The fonts are all open-source</h4>
+          <p class="muted">
+            Inter, Roboto Flex, Bricolage Grotesque. All three are Google Fonts,
+            so they load through <code>next/font/google</code> with no license to buy and no files to host.
+          </p>
+        </div>
+      </div>
+
+      <div class="ev-item">
+        <span class="dot"></span>
+        <div>
+          <h4>The two "mob main" screens are not a duplicate</h4>
+          <p class="muted">
+            We compared the two subtrees line by line. Out of 894 lines of structure, exactly one thing
+            differs: the header. <code>1:6978</code> has <em>Header (Pre-login)</em> with two <em>Sign In</em> buttons,
+            while <code>1:5720</code> has <em>Header (POST-login)</em> with the green balance button and a plus.
+            The rest is identical. So mobile doesn't have two pages, it has one page with two headers — exactly like desktop,
+            and the mobile work doesn't double.
+          </p>
+        </div>
+      </div>
+
+      <div class="ev-item">
+        <span class="dot"></span>
+        <div>
+          <h4>The design has no distinct image per game</h4>
+          <p class="muted">
+            <em>PopularGames</em> and <em>CrashGames</em> both contain the same six
+            "Gates of Olympus 1000 / Pragmatic Play" cards. The provider row has five unique logos
+            repeated to fill sixteen slots. Concretely: if I simply download what's in Figma,
+            I get one game image, not sixty — and a demo where every game looks the same
+            reads as a defect, not as design.
+          </p>
+        </div>
+      </div>
+
+      <div class="ev-item q">
+        <span class="dot"></span>
+        <div>
+          <h4>I don't know yet what shape the asset export takes</h4>
+          <p class="muted">
+            I haven't run the download yet. I don't know whether the provider logos come out as SVG or PNG,
+            at what resolution, or whether the file names collide with each other. That's why the assets phase
+            is sequential and kept separate: if it comes out badly, redoing it is cheap and it blocks nobody.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================= 3. PALETTE ======================= -->
+  <section id="tokens">
+    <div class="sec-head"><span class="sec-num">03</span><h2>The design system, pulled out of the UI Kit</h2></div>
+    <p class="sec-sub">
+      The colors below are read out of the <em>Colors</em> frame in the Desktop UI Kit, not picked by me.
+      The page you're reading right now is painted with exactly these values — that's the first check that the palette holds.
+      They become <code>tailwind.config.ts</code>, the single source of truth for colors in the project.
+    </p>
+
+    <!-- token explanation -->
+    <div class="card" style="border-color:rgba(212,163,82,.4);background:linear-gradient(180deg,rgba(212,163,82,.06),transparent),var(--bg-card);margin-bottom:20px">
+      <span class="badge gold">What a token is</span>
+      <h3 style="margin:12px 0 10px">A name given to a color, used instead of the value</h3>
+
+      <p>
+        A design token is quite simply <strong>a name</strong>. Instead of writing the color
+        <code>#151624</code> in the code, you write <code>bg-card</code>. The name means "the card background", and somewhere,
+        in a single file, it is written down once that <code>bg-card</code> means <code>#151624</code>.
+      </p>
+
+      <p><strong>The concrete example from this project.</strong>
+        The <em>Gates of Olympus 1000</em> game card in the <em>Popular</em> row sits on the
+        <span class="mono">#151624</span> background. Exactly the same color is on the card in <em>Crash Games</em>,
+        the card in <em>Must Play Slots</em>, the <em>Balance</em> panel that opens from the header,
+        the jackpot menu on mobile and every block in the footer. That's a few dozen places.
+      </p>
+
+      <div class="ba" style="margin-top:16px">
+        <div class="card tight before" style="background:var(--bg-subtle)">
+          <h4>Without a token</h4>
+          <p class="small muted" style="margin:6px 0 0">
+            The color is written by hand in every component. Tomorrow the designer says
+            "the cards are too dark, make them <span class="mono">#1A1B2B</span>".
+            You have to find every occurrence and change them one by one. A few will be missed —
+            and they'll be missed exactly in the places nobody opens often,
+            meaning the <em>search with no results</em> state or the VIP menu.
+          </p>
+        </div>
+        <div class="card tight after" style="background:var(--bg-subtle)">
+          <h4>With a token</h4>
+          <p class="small muted" style="margin:6px 0 0">
+            All those places write <code>bg-card</code>. The change is one line, in
+            <code>tailwind.config.ts</code>. There is no "I forgot one", because there are no copies —
+            there is one definition and dozens of references to it.
+          </p>
+        </div>
+      </div>
+
+      <p style="margin:16px 0 0">
+        <strong>Where risk R-2 comes in.</strong> Normally those names live inside Figma itself,
+        as variables, and the code can read them automatically. Here they <strong>don't</strong> — we checked,
+        the file has a single variable. What we have instead is the UI Kit, where the designer wrote the names
+        as text under each color square: <em>Page Background</em>, <em>Card Background</em>,
+        <em>Gold Nav Active</em>. So the names exist and they're good, but the link between Figma and code
+        is a document we write ourselves (<code>docs/tokens.md</code>), not something that syncs on its own.
+        If that document turns out sloppy, the agents building the components start writing
+        colors by hand again — and we're back to exactly the left-hand column.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="sw-group">
+        <div class="sw-title">Backgrounds</div>
+        <div class="sw-row">
+          <div class="sw"><i style="background:#11111A"></i><b>Page Background</b><span>#11111A</span></div>
+          <div class="sw"><i style="background:#151624"></i><b>Card Background</b><span>#151624</span></div>
+          <div class="sw"><i style="background:rgba(0,0,0,.2)"></i><b>Overlay</b><span>#000000 @ 20%</span></div>
+          <div class="sw"><i style="background:rgba(255,255,255,.02)"></i><b>Subtle Surface</b><span>#FFFFFF @ 2%</span></div>
+          <div class="sw"><i style="background:rgba(255,255,255,.06)"></i><b>Elevated Surface</b><span>#FFFFFF @ 6%</span></div>
+        </div>
+      </div>
+
+      <div class="sw-group">
+        <div class="sw-title">Text</div>
+        <div class="sw-row">
+          <div class="sw"><i style="background:#FFFFFF"></i><b>Primary Text</b><span>#FFFFFF</span></div>
+          <div class="sw"><i style="background:rgba(255,255,255,.7)"></i><b>Secondary Text</b><span>#FFFFFF @ 70%</span></div>
+          <div class="sw"><i style="background:rgba(255,255,255,.6)"></i><b>Tertiary Text</b><span>#FFFFFF @ 60%</span></div>
+          <div class="sw"><i style="background:#839CBF"></i><b>Muted Text</b><span>#839CBF</span></div>
+          <div class="sw"><i style="background:#9E9FAB"></i><b>Nav Inactive</b><span>#9E9FAB</span></div>
+          <div class="sw"><i style="background:#B2B8C2"></i><b>Label Text</b><span>#B2B8C2</span></div>
+          <div class="sw"><i style="background:#DAD7E0"></i><b>Footer Heading</b><span>#DAD7E0</span></div>
+        </div>
+      </div>
+
+      <div class="sw-group">
+        <div class="sw-title">Accent and brand</div>
+        <div class="sw-row">
+          <div class="sw"><i style="background:#007AFF"></i><b>Blue Primary</b><span>#007AFF</span></div>
+          <div class="sw"><i style="background:rgba(0,122,255,.13)"></i><b>Blue Tinted BG</b><span>#007AFF @ 13%</span></div>
+          <div class="sw"><i style="background:#F59E0B"></i><b>Amber / Warning</b><span>#F59E0B</span></div>
+          <div class="sw"><i style="background:#D4A352"></i><b>Gold Nav Active</b><span>#D4A352</span></div>
+          <div class="sw"><i style="background:#34C759"></i><b>Success Green</b><span>#34C759</span></div>
+        </div>
+      </div>
+
+      <div class="sw-group">
+        <div class="sw-title">Gradients</div>
+        <div class="sw-row">
+          <div class="sw"><i style="background:#F0C775"></i><b>Gold Light</b><span>#F0C775</span></div>
+          <div class="sw"><i style="background:#C6903D"></i><b>Gold Dark</b><span>#C6903D</span></div>
+          <div class="sw"><i style="background:#F8B900"></i><b>Orange Start</b><span>#F8B900</span></div>
+          <div class="sw"><i style="background:#E67508"></i><b>Orange End</b><span>#E67508</span></div>
+          <div class="sw"><i style="background:linear-gradient(90deg,#F8B900,#E67508)"></i><b>Composed gradient</b><span>orange-start → end</span></div>
+        </div>
+      </div>
+
+      <div class="sw-group">
+        <div class="sw-title">Borders and separators</div>
+        <div class="sw-row">
+          <div class="sw"><i style="background:rgba(255,255,255,.04)"></i><b>Card Border</b><span>#FFFFFF @ 4%</span></div>
+          <div class="sw"><i style="background:rgba(255,255,255,.07)"></i><b>Divider Light</b><span>#FFFFFF @ 7%</span></div>
+          <div class="sw"><i style="background:rgba(255,255,255,.08)"></i><b>Border Medium</b><span>#FFFFFF @ 8%</span></div>
+          <div class="sw"><i style="background:rgba(255,255,255,.10)"></i><b>Border Strong</b><span>#FFFFFF @ 10%</span></div>
+          <div class="sw"><i style="background:#282936"></i><b>Separator</b><span>#282936</span></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="small muted" style="margin-top:14px">
+      Fonts: <strong>Inter</strong>, <strong>Roboto Flex</strong>, <strong>Bricolage Grotesque</strong>.
+      The only value that shows up as a Figma variable, <code>BG/Quaternary #0D1420</code>, doesn't appear
+      in any of the five groups — we treat it as a one-off exception, not as a token.
+    </p>
+  </section>
+
+  <!-- ======================= 4. WHAT THE DESIGN SHOWS ======================= -->
+  <section id="design">
+    <div class="sec-head"><span class="sec-num">04</span><h2>What the design shows</h2></div>
+    <p class="sec-sub">
+      Three screenshots taken straight from Figma. They're also the evidence for the observation about images in section 02.
+    </p>
+    <div class="grid" style="gap:22px">
+      <figure>
+        <img src="hero.png" alt="The bonus banner with Zeus, a ticker of recent wins and the category bar">
+        <figcaption>
+          <strong>Hero + ticker + category bar.</strong> £5500 bonus up to 250 spins,
+          blue <em>GET</em> button (<span class="mono">#007AFF</span>), under it the recent wins with amounts in green
+          (<span class="mono">#34C759</span>) and masked names of the <span class="mono">le****et</span> type.
+          The active <em>POPULAR</em> pill has the blue outline; the rest are inactive.
+        </figcaption>
+      </figure>
+      <div class="grid g2" style="gap:22px">
+        <figure>
+          <img src="popular.png" alt="The Popular row with six identical cards">
+          <figcaption>
+            <strong>The "Popular" row.</strong> Six cards — all the same image.
+            Same thing in <em>CrashGames</em>. That's where the conclusion comes from that there are no per-game thumbnails.
+          </figcaption>
+        </figure>
+        <figure>
+          <img src="providers.png" alt="The provider row with repeated logos">
+          <figcaption>
+            <strong>The provider row.</strong> Five real logos — Pragmatic, 3 Oaks Gaming,
+            BGaming, Nolimit City and one more — repeated across two rows.
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 5. ARCHITECTURE ======================= -->
+  <section id="arhitectura">
+    <div class="sec-head"><span class="sec-num">05</span><h2>How the design gets into code</h2></div>
+    <p class="sec-sub">
+      One single direction of flow. Every box has a single owner, and everything to the right
+      of a box only reads from it, never rewrites it.
+    </p>
+    <div class="card fig">
+      <svg viewBox="0 0 1000 300" role="img" aria-labelledby="pipe-t pipe-d" xmlns="http://www.w3.org/2000/svg">
+        <title id="pipe-t">The flow from Figma to the rendered page</title>
+        <desc id="pipe-d">The UI Kit produces tokens; the tokens produce primitives; the primitives plus the section registry produce the page; the Figma frames feed the visual check loop in parallel.</desc>
+
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#839CBF"/>
+          </marker>
+          <marker id="arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#D4A352"/>
+          </marker>
+        </defs>
+
+        <g font-family="Inter, Segoe UI, sans-serif">
+
+          <!-- Figma column -->
+          <g id="n-figma">
+            <title>The Figma file — the source of truth</title>
+            <rect x="14" y="46" width="176" height="196" rx="14" fill="#151624" stroke="#D4A352" stroke-width="1.5"/>
+            <text x="102" y="76" text-anchor="middle" fill="#D4A352" font-size="12" font-weight="700" letter-spacing="1.4">FIGMA</text>
+            <rect x="34" y="92" width="136" height="42" rx="9" fill="rgba(212,163,82,.10)" stroke="rgba(212,163,82,.45)"/>
+            <text x="102" y="112" text-anchor="middle" fill="#FFFFFF" font-size="12.5" font-weight="600">UI Kit</text>
+            <text x="102" y="127" text-anchor="middle" fill="#839CBF" font-size="10.5">colors · typography</text>
+            <rect x="34" y="146" width="136" height="42" rx="9" fill="rgba(212,163,82,.10)" stroke="rgba(212,163,82,.45)"/>
+            <text x="102" y="166" text-anchor="middle" fill="#FFFFFF" font-size="12.5" font-weight="600">Frames</text>
+            <text x="102" y="181" text-anchor="middle" fill="#839CBF" font-size="10.5">21 screens and states</text>
+            <rect x="34" y="200" width="136" height="30" rx="9" fill="rgba(212,163,82,.10)" stroke="rgba(212,163,82,.45)"/>
+            <text x="102" y="220" text-anchor="middle" fill="#FFFFFF" font-size="12.5" font-weight="600">Assets</text>
+          </g>
+
+          <!-- tokens -->
+          <g id="n-tokens">
+            <title>tailwind.config.ts — the only source of colors</title>
+            <rect x="242" y="76" width="164" height="72" rx="12" fill="#151624" stroke="rgba(0,122,255,.55)" stroke-width="1.5"/>
+            <text x="324" y="103" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">Tokens</text>
+            <text x="324" y="121" text-anchor="middle" fill="#839CBF" font-size="10.5" font-family="monospace">tailwind.config.ts</text>
+            <text x="324" y="136" text-anchor="middle" fill="#839CBF" font-size="10.5" font-family="monospace">docs/tokens.md</text>
+          </g>
+
+          <!-- primitives -->
+          <g id="n-prim">
+            <title>The primitives — the shared components</title>
+            <rect x="242" y="168" width="164" height="82" rx="12" fill="#151624" stroke="rgba(255,255,255,.18)" stroke-width="1.5"/>
+            <text x="324" y="195" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">Primitives</text>
+            <text x="324" y="213" text-anchor="middle" fill="#839CBF" font-size="10.5">GameCard · Button</text>
+            <text x="324" y="228" text-anchor="middle" fill="#839CBF" font-size="10.5">Panel · SearchInput</text>
+            <text x="324" y="243" text-anchor="middle" fill="#839CBF" font-size="10.5">GameGrid · Pill</text>
+          </g>
+
+          <!-- registry -->
+          <g id="n-reg">
+            <title>The section registry — 15 rows described as data</title>
+            <rect x="458" y="110" width="182" height="106" rx="12" fill="#151624" stroke="#34C759" stroke-width="1.8"/>
+            <text x="549" y="140" text-anchor="middle" fill="#34C759" font-size="12" font-weight="700" letter-spacing="1.2">REGISTRY</text>
+            <text x="549" y="161" text-anchor="middle" fill="#FFFFFF" font-size="11" font-family="monospace">lib/sections.ts</text>
+            <text x="549" y="177" text-anchor="middle" fill="#FFFFFF" font-size="11" font-family="monospace">lib/screens.ts</text>
+            <text x="549" y="197" text-anchor="middle" fill="#839CBF" font-size="10.5">15 sections as data,</text>
+            <text x="549" y="209" text-anchor="middle" fill="#839CBF" font-size="10.5">not as 15 components</text>
+          </g>
+
+          <!-- page -->
+          <g id="n-page">
+            <title>The rendered page</title>
+            <rect x="692" y="76" width="150" height="72" rx="12" fill="#151624" stroke="rgba(0,122,255,.55)" stroke-width="1.5"/>
+            <text x="767" y="103" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">Page</text>
+            <text x="767" y="121" text-anchor="middle" fill="#839CBF" font-size="10.5" font-family="monospace">app/page.tsx</text>
+            <text x="767" y="136" text-anchor="middle" fill="#839CBF" font-size="10.5">desktop + mobile</text>
+          </g>
+
+          <!-- QA -->
+          <g id="n-qa">
+            <title>The visual check loop</title>
+            <rect x="692" y="178" width="150" height="72" rx="12" fill="#151624" stroke="rgba(245,158,11,.55)" stroke-width="1.5"/>
+            <text x="767" y="205" text-anchor="middle" fill="#F59E0B" font-size="13" font-weight="700">Visual QA</text>
+            <text x="767" y="223" text-anchor="middle" fill="#839CBF" font-size="10.5">Figma screenshot</text>
+            <text x="767" y="238" text-anchor="middle" fill="#839CBF" font-size="10.5">vs browser shot</text>
+          </g>
+
+          <!-- lavish -->
+          <g id="n-lavish">
+            <title>The review report</title>
+            <rect x="884" y="118" width="102" height="88" rx="12" fill="rgba(0,122,255,.10)" stroke="rgba(0,122,255,.5)" stroke-dasharray="4 4"/>
+            <text x="935" y="150" text-anchor="middle" fill="#007AFF" font-size="12" font-weight="700">Review</text>
+            <text x="935" y="168" text-anchor="middle" fill="#839CBF" font-size="10.5">this page,</text>
+            <text x="935" y="182" text-anchor="middle" fill="#839CBF" font-size="10.5">but with screens</text>
+            <text x="935" y="196" text-anchor="middle" fill="#839CBF" font-size="10.5">side by side</text>
+          </g>
+
+          <!-- edges -->
+          <g stroke="#839CBF" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+            <path id="e1" d="M190,113 L236,113"><title>The UI Kit feeds the tokens</title></path>
+            <path id="e2" d="M324,148 L324,162"><title>The tokens feed the primitives</title></path>
+            <path id="e3" d="M406,120 C432,120 432,150 452,150"><title>The tokens go into the registry</title></path>
+            <path id="e4" d="M406,200 C432,200 432,178 452,178"><title>The primitives go into the registry</title></path>
+            <path id="e5" d="M640,145 C664,145 664,116 686,116"><title>The registry renders the page</title></path>
+            <path id="e6" d="M640,182 C664,182 664,210 686,210"><title>The registry drives the QA loop too</title></path>
+            <path id="e7" d="M842,120 C860,120 862,146 878,146"><title>The page ends up in the report</title></path>
+            <path id="e8" d="M842,208 C860,208 862,182 878,182"><title>The QA results end up in the report</title></path>
+          </g>
+          <g stroke="#D4A352" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#arg)">
+            <path id="e9" d="M190,214 C220,214 220,236 500,236 C640,236 660,224 686,216"><title>The Figma frames are the reference for QA</title></path>
+          </g>
+          <text x="380" y="272" fill="#D4A352" font-size="10.5" font-style="italic">the frames stay the comparison reference all the way through</text>
+        </g>
+      </svg>
+      <p class="fig-cap">
+        The part that matters: <strong>the registry in the middle</strong>. Everything that describes a screen lives there as data.
+        That is why a new screen from the designer touches neither the page, nor the tokens, nor the existing components.
+      </p>
+    </div>
+  </section>
+
+  <!-- ======================= 6. THE CORE IDEA ======================= -->
+  <section id="idee">
+    <div class="sec-head"><span class="sec-num">06</span><h2>The main decision: 12 rows become data, not code</h2></div>
+    <p class="sec-sub">
+      Of the 15 content rows on desktop, 12 are exactly the same pattern: a header with an icon, a title
+      and a “See All” link, followed by a grid of cards. Only the title and which games go in the grid change.
+    </p>
+
+    <div class="ba">
+      <div class="card before">
+        <span class="badge warn">The naive version</span>
+        <h3 style="margin:12px 0 6px">12 hand-written components</h3>
+        <p class="small muted">
+          Every row, its own file. When the designer asks for the section titles to be 2px bigger,
+          it changes in twelve places. When they add a new row, you write a thirteenth, almost identical
+          component.
+        </p>
+<pre><span class="c">// 12 almost identical files</span>
+PopularGames.tsx
+NewGames.tsx
+CrashGames.tsx
+MustPlaySlots.tsx
+<span class="c">… eight more …</span></pre>
+      </div>
+
+      <div class="card after">
+        <span class="badge ok">The version we chose</span>
+        <h3 style="margin:12px 0 6px">One component + one registry</h3>
+        <p class="small muted">
+          A single <code>ContentRow</code>, fed by a list of descriptions. A new row means
+          four lines of data. A style change happens once, in one place.
+        </p>
+<pre><span class="c">// src/lib/sections.ts</span>
+{ <span class="k">kind</span>: <span class="s">'games'</span>, <span class="k">id</span>: <span class="s">'crash'</span>,
+  <span class="k">title</span>: <span class="s">'Crash Games'</span>, <span class="k">grids</span>: 1,
+  <span class="k">filter</span>: { tag: <span class="s">'crash'</span> },
+  <span class="k">figmaNodeId</span>: <span class="s">'1:3230'</span> }</pre>
+      </div>
+    </div>
+
+    <p class="small muted" style="margin-top:16px">
+      The <code>figmaNodeId</code> field is not decoration. It is what turns the visual check from a chore
+      of twenty manual comparisons into an automatic loop: for every entry in the registry,
+      take the Figma screenshot, take the browser screenshot, put them side by side.
+    </p>
+
+    <div class="grid g3" style="margin-top:20px">
+      <div class="card tight">
+        <h4>The three big banners</h4>
+        <p class="small muted" style="margin:6px 0 0">
+          Tournament, Lottery and Wheel are all 1280×260 and share the same anatomy.
+          One component, three variants.
+        </p>
+      </div>
+      <div class="card tight">
+        <h4>Application state</h4>
+        <p class="small muted" style="margin:6px 0 0">
+          A single Zustand store holds the sign-in mode, the search state and which panel is open.
+          No provider, so the rest of the page stays server-rendered.
+        </p>
+      </div>
+      <div class="card tight">
+        <h4>The data</h4>
+        <p class="small muted" style="margin:6px 0 0">
+          60 games in JSON, re-sliced into rows by filters. The “See All (206)” label
+          stays exactly as in the design, without us inventing 206 records with broken images.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 7. ORCHESTRATION ======================= -->
+  <section id="orchestrare">
+    <div class="sec-head"><span class="sec-num">07</span><h2>Orchestration: a sequential spine, then a fan-out</h2></div>
+    <p class="sec-sub">
+      Eight agents cannot write the same shared components in parallel. The answer is not isolating them in separate
+      copies of the repo, it is splitting ownership by file: each agent gets the exact list of files
+      it is allowed to create and the list of the ones it is only allowed to read. The sets do not
+      overlap, so there is nothing to reconcile at the end.
+    </p>
+    <p class="sec-sub" style="margin-top:-14px">
+      <strong>Decided in review:</strong> the eight do not all start at once, they go in two waves of four.
+      Wave one takes Header, Hero, Rows and Footer — the areas that touch the most primitives.
+      If something comes out wrong there in the game card or the button, it gets fixed once, not eight times.
+    </p>
+
+    <div class="card fig">
+      <svg viewBox="0 0 1000 430" role="img" aria-labelledby="orc-t orc-d" xmlns="http://www.w3.org/2000/svg">
+        <title id="orc-t">The six phases of the build</title>
+        <desc id="orc-d">Five sequential phases build the shared foundation, then eight agents work in parallel on separate areas, then an assembly phase and a visual check phase.</desc>
+
+        <defs>
+          <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#839CBF"/>
+          </marker>
+        </defs>
+
+        <g font-family="Inter, Segoe UI, sans-serif">
+
+          <!-- sequential spine -->
+          <g id="spine">
+            <title>The sequential phase: the shared foundation</title>
+            <rect x="12" y="30" width="212" height="368" rx="14" fill="rgba(255,255,255,.02)" stroke="rgba(255,255,255,.10)" stroke-dasharray="6 4"/>
+            <text x="118" y="55" text-anchor="middle" fill="#839CBF" font-size="11" font-weight="700" letter-spacing="1.4">SEQUENTIAL · ONE AGENT</text>
+          </g>
+
+          <g id="ph0"><title>Phase 0 — scaffold</title>
+            <rect x="32" y="70" width="172" height="48" rx="10" fill="#151624" stroke="rgba(255,255,255,.16)"/>
+            <text x="48" y="92" fill="#FFFFFF" font-size="12.5" font-weight="600">0 · Scaffold</text>
+            <text x="48" y="108" fill="#839CBF" font-size="10.5">Next.js + Tailwind v3</text>
+          </g>
+          <g id="ph1"><title>Phase 1 — tokens from the UI Kit</title>
+            <rect x="32" y="128" width="172" height="48" rx="10" fill="#151624" stroke="rgba(0,122,255,.5)"/>
+            <text x="48" y="150" fill="#FFFFFF" font-size="12.5" font-weight="600">1 · Tokens</text>
+            <text x="48" y="166" fill="#839CBF" font-size="10.5">the palette from section 03</text>
+          </g>
+          <g id="ph2"><title>Phase 2 — contracts and data</title>
+            <rect x="32" y="186" width="172" height="48" rx="10" fill="#151624" stroke="rgba(52,199,89,.5)"/>
+            <text x="48" y="208" fill="#FFFFFF" font-size="12.5" font-weight="600">2 · Contracts</text>
+            <text x="48" y="224" fill="#839CBF" font-size="10.5">types · registry · data</text>
+          </g>
+          <g id="ph2b"><title>Phase 2b — assets from Figma</title>
+            <rect x="32" y="244" width="172" height="48" rx="10" fill="#151624" stroke="rgba(245,158,11,.5)"/>
+            <text x="48" y="266" fill="#FFFFFF" font-size="12.5" font-weight="600">2b · Assets</text>
+            <text x="48" y="282" fill="#839CBF" font-size="10.5">downloaded from Figma</text>
+          </g>
+          <g id="ph3"><title>Phase 3 — the shared primitives</title>
+            <rect x="32" y="302" width="172" height="48" rx="10" fill="#151624" stroke="rgba(255,255,255,.28)"/>
+            <text x="48" y="324" fill="#FFFFFF" font-size="12.5" font-weight="600">3 · Primitives</text>
+            <text x="48" y="340" fill="#839CBF" font-size="10.5">GameCard · Button · Panel</text>
+          </g>
+          <text x="118" y="378" text-anchor="middle" fill="#F59E0B" font-size="10.5" font-style="italic">after phase 2, the contracts freeze</text>
+
+          <!-- fan-out, two waves -->
+          <g id="fan">
+            <title>Phase 4 — eight agents, in two waves of four</title>
+            <rect x="300" y="30" width="404" height="248" rx="14" fill="rgba(0,122,255,.05)" stroke="rgba(0,122,255,.35)" stroke-dasharray="6 4"/>
+            <text x="502" y="50" text-anchor="middle" fill="#007AFF" font-size="11" font-weight="700" letter-spacing="1.4">PHASE 4 · TWO WAVES OF FOUR</text>
+          </g>
+
+          <g font-size="12" fill="#FFFFFF">
+            <text x="318" y="70" fill="#34C759" font-size="10" font-weight="700" letter-spacing="1.2">WAVE 1 · TOUCHES THE MOST PRIMITIVES</text>
+            <g id="a-header"><title>Agent 6 — the desktop header, three sign-in variants</title>
+              <rect x="318" y="76" width="182" height="36" rx="9" fill="#151624" stroke="rgba(52,199,89,.55)"/>
+              <text x="332" y="99">Header · 3 variants</text></g>
+            <g id="a-hero"><title>Agent 7 — hero, recent-wins ticker, category bar</title>
+              <rect x="510" y="76" width="182" height="36" rx="9" fill="#151624" stroke="rgba(52,199,89,.55)"/>
+              <text x="524" y="99">Hero · ticker · nav</text></g>
+            <g id="a-rows"><title>Agent 8 — ContentRow and the provider row</title>
+              <rect x="318" y="118" width="182" height="36" rx="9" fill="#151624" stroke="rgba(52,199,89,.55)"/>
+              <text x="332" y="141">Rows · providers</text></g>
+            <g id="a-footer"><title>Agent 10 — the footer</title>
+              <rect x="510" y="118" width="182" height="36" rx="9" fill="#151624" stroke="rgba(52,199,89,.55)"/>
+              <text x="524" y="141">Footer</text></g>
+
+            <line x1="318" y1="166" x2="692" y2="166" stroke="rgba(255,255,255,.14)" stroke-dasharray="4 4"/>
+            <text x="505" y="181" text-anchor="middle" fill="#F59E0B" font-size="10" font-style="italic">fixes to the primitives land here, before wave 2</text>
+
+            <text x="318" y="200" fill="#839CBF" font-size="10" font-weight="700" letter-spacing="1.2">WAVE 2 · STARTS ON PRIMITIVES ALREADY CHECKED</text>
+            <g id="a-promo"><title>Agent 9 — the Tournament, Lottery and Wheel banners</title>
+              <rect x="318" y="206" width="182" height="36" rx="9" fill="#151624" stroke="rgba(255,255,255,.16)"/>
+              <text x="332" y="229">Promo banners ×3</text></g>
+            <g id="a-search"><title>Agent 11 — all four search states</title>
+              <rect x="510" y="206" width="182" height="36" rx="9" fill="#151624" stroke="rgba(255,255,255,.16)"/>
+              <text x="524" y="229">Search · 4 states</text></g>
+            <g id="a-panels"><title>Agent 12 — the Balance and Personal information panels</title>
+              <rect x="318" y="248" width="182" height="22" rx="7" fill="#151624" stroke="rgba(255,255,255,.16)"/>
+              <text x="332" y="263" font-size="11">Balance · Personal</text></g>
+            <g id="a-mobile"><title>Agent 13 — the mobile bar and the three jackpot menus</title>
+              <rect x="510" y="248" width="182" height="22" rx="7" fill="#151624" stroke="rgba(255,255,255,.16)"/>
+              <text x="524" y="263" font-size="11">Mobile · menus ×3</text></g>
+          </g>
+
+          <g id="assembly"><title>Phase 5 — assembling the page</title>
+            <rect x="318" y="286" width="374" height="44" rx="10" fill="#151624" stroke="rgba(52,199,89,.55)"/>
+            <text x="505" y="307" text-anchor="middle" fill="#FFFFFF" font-size="12.5" font-weight="600">5 · Assembly — layout, page, /dev/screens</text>
+            <text x="505" y="322" text-anchor="middle" fill="#839CBF" font-size="10.5">the only place the full build runs</text>
+          </g>
+          <g id="qa"><title>Phase 6 — visual check across three parallel areas</title>
+            <rect x="318" y="340" width="374" height="44" rx="10" fill="#151624" stroke="rgba(245,158,11,.55)"/>
+            <text x="505" y="361" text-anchor="middle" fill="#FFFFFF" font-size="12.5" font-weight="600">6 · Visual QA — 3 agents, one area each</text>
+            <text x="505" y="376" text-anchor="middle" fill="#839CBF" font-size="10.5">Figma vs browser, section by section</text>
+          </g>
+
+          <!-- edges spine -->
+          <g stroke="#839CBF" stroke-width="1.5" fill="none" marker-end="url(#a2)">
+            <path d="M118,118 L118,124"/><path d="M118,176 L118,182"/>
+            <path d="M118,234 L118,240"/><path d="M118,292 L118,298"/>
+            <path d="M204,326 C250,326 254,240 296,200"><title>The primitives unlock the fan-out</title></path>
+          </g>
+
+          <!-- right column: rules -->
+          <g id="rules">
+            <title>The rules that make parallel work safe</title>
+            <rect x="722" y="70" width="264" height="314" rx="14" fill="#151624" stroke="rgba(255,255,255,.12)"/>
+            <text x="744" y="97" fill="#D4A352" font-size="11" font-weight="700" letter-spacing="1.2">THREE RULES</text>
+
+            <circle cx="752" cy="126" r="4" fill="#34C759"/>
+            <text x="768" y="123" fill="#FFFFFF" font-size="12" font-weight="600">Ownership by file</text>
+            <text x="768" y="140" fill="#839CBF" font-size="10.5">Each agent knows exactly what</text>
+            <text x="768" y="154" fill="#839CBF" font-size="10.5">it creates and what it only reads.</text>
+
+            <circle cx="752" cy="188" r="4" fill="#34C759"/>
+            <text x="768" y="185" fill="#FFFFFF" font-size="12" font-weight="600">Frozen contracts</text>
+            <text x="768" y="202" fill="#839CBF" font-size="10.5">Nobody changes the types</text>
+            <text x="768" y="216" fill="#839CBF" font-size="10.5">or the store after phase 2;</text>
+            <text x="768" y="230" fill="#839CBF" font-size="10.5">ask for the change in the report.</text>
+
+            <circle cx="752" cy="264" r="4" fill="#F59E0B"/>
+            <text x="768" y="261" fill="#FFFFFF" font-size="12" font-weight="600">One build only</text>
+            <text x="768" y="278" fill="#839CBF" font-size="10.5">Parallel agents check only</text>
+            <text x="768" y="292" fill="#839CBF" font-size="10.5">with typecheck, which writes</text>
+            <text x="768" y="306" fill="#839CBF" font-size="10.5">nothing to disk. The build runs</text>
+            <text x="768" y="320" fill="#839CBF" font-size="10.5">only in the sequential phases.</text>
+
+            <text x="744" y="356" fill="#F59E0B" font-size="10.5" font-style="italic">Without that, two builds at once</text>
+            <text x="744" y="370" fill="#F59E0B" font-size="10.5" font-style="italic">corrupt the cache and give phantom errors.</text>
+          </g>
+        </g>
+      </svg>
+      <p class="fig-cap">
+        Why phases 1–3 cannot run in parallel: the tokens and the primitives are the shared vocabulary.
+        Two agents reading the UI Kit on their own will christen the same gray <code>bg-surface</code> once
+        and <code>bg-card</code> the next time; two agents writing the game card produce two different game cards.
+        Serializing the foundation is exactly what keeps the fan-out of eight free of conflicts.
+      </p>
+    </div>
+
+    <h3 style="margin:30px 0 10px">Who owns what, in phase 4</h3>
+    <p class="small muted" style="margin-bottom:14px">
+      They all import from the tokens, types, store and primitives. None of them modifies any of it.
+    </p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th style="width:52px">Wave</th><th style="width:56px">Agent</th><th>Area</th><th>Files it creates</th><th class="mono" style="width:180px">Figma nodes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge ok" style="text-transform:none">1</span></td><td class="mono">6</td><td class="own">Header</td><td class="mono">layout/Header.tsx + 3 variants</td><td class="mono">1:2432, 1:4244</td></tr>
+          <tr><td><span class="badge ok" style="text-transform:none">1</span></td><td class="mono">7</td><td class="own">Hero, ticker, category bar</td><td class="mono">layout/HeroBanner · RecentWinsTicker · CategoryNavBar</td><td class="mono">1:2433, 1:2435, 1:2500</td></tr>
+          <tr><td><span class="badge ok" style="text-transform:none">1</span></td><td class="mono">8</td><td class="own">The game and provider rows</td><td class="mono">sections/ContentRow · ProviderRow</td><td class="mono">1:2592, 1:2620, 1:2649</td></tr>
+          <tr><td><span class="badge ok" style="text-transform:none">1</span></td><td class="mono">10</td><td class="own">Footer</td><td class="mono">layout/Footer.tsx</td><td class="mono">1:3666</td></tr>
+          <tr><td><span class="badge" style="text-transform:none">2</span></td><td class="mono">9</td><td class="own">The promo banners</td><td class="mono">sections/PromoRow + PromoBanner variants</td><td class="mono">1:3427, 1:3524, 1:3580</td></tr>
+          <tr><td><span class="badge" style="text-transform:none">2</span></td><td class="mono">11</td><td class="own">Search, every state</td><td class="mono">all of components/search/</td><td class="mono">1:4314, 1:4321, 1:4334, 1:4479, 1:4611</td></tr>
+          <tr><td><span class="badge" style="text-transform:none">2</span></td><td class="mono">12</td><td class="own">The header panels</td><td class="mono">panels/BalancePanel · PersonalInfoPanel</td><td class="mono">1:4116, 1:4153</td></tr>
+          <tr><td><span class="badge" style="text-transform:none">2</span></td><td class="mono">13</td><td class="own">Mobile</td><td class="mono">layout/MobileNavBar · MobileShell · panels/JackpotMenu</td><td class="mono">1:8235, 1:8751, 1:8260, 1:8503</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:18px;border-color:rgba(245,158,11,.35)">
+      <span class="badge warn">Technical decision</span>
+      <h3 style="margin:12px 0 6px">We do not use isolated copies of the repo</h3>
+      <p class="small muted" style="margin:0">
+        It looks like the safe choice for eight parallel agents, but here it does damage. Every copy would need
+        its own dependency install — eight installs of a few hundred megabytes each, before anyone
+        writes a single line. And with no dependencies installed, an agent cannot even run the type check,
+        which means it loses exactly the control that justifies working in parallel. Splitting ownership by file already
+        solves the collisions, so isolation would pay a steep price for a problem that does not exist.
+      </p>
+    </div>
+  </section>
+
+  <!-- ======================= 8. NEW SCREENS ======================= -->
+  <section id="ecrane-noi">
+    <div class="sec-head"><span class="sec-num">08</span><h2>When the designer adds screens</h2></div>
+    <p class="sec-sub">
+      You said more screens are coming. The architecture is built around that assumption, not bent to fit it afterwards.
+    </p>
+    <ol class="steps">
+      <li><strong>A new games row</strong> — you add four lines to the registry. Zero new components, zero files touched. Five minutes.</li>
+      <li><strong>A new standalone screen</strong> — one entry in the screen registry, with the Figma node and the viewport, plus a component assembled from primitives that already exist.</li>
+      <li><strong>Verification happens by itself</strong> — the internal <code>/dev/screens</code> page automatically renders any entry in the registry, with the Figma node attached, so the comparison loop picks it up without any change at all.</li>
+    </ol>
+    <p class="small muted" style="margin-top:14px">
+      Here is what makes the difference: a new screen never touches the colour configuration, the state store,
+      the app layout or the existing components. If they ever do have to be touched, it means
+      the designer has introduced something genuinely new — and then it deserves a conversation, not an improvisation.
+    </p>
+  </section>
+
+  <!-- ======================= 9. VERIFICATION ======================= -->
+  <section id="verificare">
+    <div class="sec-head"><span class="sec-num">09</span><h2>How we prove it looks like the design</h2></div>
+    <p class="sec-sub">Five gates, from the cheapest to the slowest.</p>
+    <ol class="steps">
+      <li><strong>Type checking and lint</strong>, after every agent. It writes nothing to disk, so it can run in parallel with no risk.</li>
+      <li><strong>Colour discipline</strong> — a lint rule rejects any hex code written straight into a component. If someone writes <code>#151624</code> instead of using the token, it fails at lint, not at human review.</li>
+      <li><strong>Full build and starting the server</strong>, in the sequential phases only. Zero errors in the console, zero hydration warnings.</li>
+      <li><strong>Visual comparison per section</strong> — for every entry in the registry: the Figma capture, then the browser at 1440 or 390 pixels, then the real screenshot, placed side by side. The deviations turn into fixes in the files owned by the agent for that area.</li>
+      <li><strong>Interaction test</strong> — switching prelogin → postlogin → VIP; typing <code>zeu</code> for suggestions, <code>xyzzy</code> for the no-results state, clearing the field for the initial state; opening and closing both panels; all three jackpot menus at 390 pixels.</li>
+    </ol>
+  </section>
+
+  <!-- ======================= 10. RISKS ======================= -->
+  <section id="riscuri">
+    <div class="sec-head"><span class="sec-num">10</span><h2>Risks</h2></div>
+    <p class="sec-sub">
+      Five things that can wreck the execution. The first one is the most likely and it blocks everything, so it gets checked
+      before any agent starts.
+    </p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th style="width:64px">ID</th><th style="width:130px">Impact</th><th>What can happen</th><th>What we do</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">R-1</td>
+            <td><span class="badge warn">Blocks everything</span></td>
+            <td>The scaffold command refuses the directory, because <code>.claude</code> is not on its exception list. A failure in phase 0 leaves every agent stuck.</td>
+            <td>Scaffold into a sibling directory, then move the contents over the existing <code>.git</code> and <code>.claude</code>. It gets tested first.</td>
+          </tr>
+          <tr>
+            <td class="mono">R-2</td>
+            <td><span class="badge warn">It spreads</span></td>
+            <td>With no variables in Figma, naming the tokens is a judgement call made once. If the mapping table comes out thin, the eight downstream agents start inventing colours.</td>
+            <td>The <code>docs/tokens.md</code> table is a mandatory deliverable of phase 1, with at least one row for every swatch in section 03.</td>
+          </tr>
+          <tr>
+            <td class="mono">R-3</td>
+            <td><span class="badge info">Unknown</span></td>
+            <td>The shape of the asset export has not been checked — I do not know whether the logos come out as vectors or raster, at what resolution, and whether the names collide.</td>
+            <td>The assets phase is sequential and isolated, with an indirection file between names and code, so renames do not propagate.</td>
+          </tr>
+          <tr>
+            <td class="mono">R-4</td>
+            <td><span class="badge warn">Visual</span></td>
+            <td>The source has a single game image. The generated placeholders can look like missing images rather than a decision.</td>
+            <td>Decided in review: gradients from the UI Kit palette — gold <span class="mono">#F0C775 → #C6903D</span> and orange <span class="mono">#F8B900 → #E67508</span> — with the game title on top. It reads as a brand decision, not as a missing image.</td>
+          </tr>
+          <tr>
+            <td class="mono">R-5</td>
+            <td><span class="badge warn">Phantom errors</span></td>
+            <td>Two agents running a build at the same time corrupt the compilation cache and produce errors that have nothing to do with the code that was written.</td>
+            <td>The ban is written into the prompt of every parallel agent, not just into the plan. Their only check is the typecheck.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="q" style="margin-top:18px;border-color:rgba(52,199,89,.35)">
+      <span class="badge ok">Confirmed in review · all five</span>
+      <h3 style="margin:12px 0 6px">What happens before construction starts</h3>
+      <p class="small muted" style="margin:0 0 4px">
+        You ticked all five risks. Each one gets its own check and its own report,
+        <strong>before phase 0</strong>. No agent starts until you have seen the results.
+        Every identifier below gets exactly one verdict — handled, deferred with a reason, or rejected with a reason.
+      </p>
+      <div class="tbl-wrap" style="margin-top:14px">
+        <table>
+          <thead><tr><th style="width:64px">ID</th><th>What I actually check</th><th style="width:180px">What you see</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">R-1</td><td>I run the scaffold command in a test directory and check whether it refuses because of <code>.claude</code>. If it refuses, I also test moving the contents over an existing <code>.git</code>.</td><td>The command output, exactly as it appeared.</td></tr>
+            <tr><td class="mono">R-2</td><td>I write <code>docs/tokens.md</code> with all 26 colours from section 03, each one with its Figma name and its Tailwind name.</td><td>The complete table, before the first component.</td></tr>
+            <tr><td class="mono">R-3</td><td>I download the assets of a single node — the provider row — and look at what came out: format, resolution, file names.</td><td>The list of resulting files.</td></tr>
+            <tr><td class="mono">R-4</td><td>I build three test cards with the chosen gradients and put them next to the real card from Figma.</td><td>A visual comparison, before applying them to everything.</td></tr>
+            <tr><td class="mono">R-5</td><td>I write the full prompt for one phase 4 agent, with the list of allowed files and the build ban.</td><td>The raw prompt, so you can judge for yourself whether the rule is clear.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= 11. OPEN QUESTIONS ======================= -->
+  <section id="intrebari">
+    <div class="sec-head"><span class="sec-num">11</span><h2>The decisions taken in review</h2></div>
+    <p class="sec-sub">
+      The three open questions have been answered. I am leaving them here as a written trace, with what each one means
+      in execution. There are no open questions left in this plan.
+    </p>
+
+    <div class="q">
+      <span class="badge ok">Q-1 · Decided</span>
+      <h3 style="margin:12px 0 6px">Phase 4 goes in two waves of four</h3>
+      <p class="small muted" style="margin:0">
+        First wave: Header, Hero, Rows, Footer — the areas that touch the most primitives.
+        Fixes to the game card or the button happen once, and then the second wave starts:
+        Banners, Search, Panels, Mobile. Concretely: if <code>GameCard</code> has the wrong margin,
+        you fix it in one place, not in eight parallel branches that have already built on top of it.
+      </p>
+    </div>
+
+    <div class="q" style="margin-top:16px">
+      <span class="badge ok">Q-2 · Decided</span>
+      <h3 style="margin:12px 0 6px">Cards with no real image get gradients from the UI Kit palette</h3>
+      <p class="small muted" style="margin:0 0 14px">
+        Gold <span class="mono">#F0C775 → #C6903D</span> and orange <span class="mono">#F8B900 → #E67508</span>,
+        with the game title on top. The colours are the ones from the <em>Gradient Colors</em> section of the UI Kit,
+        so the grid stays on brand and does not look like images that failed to load.
+      </p>
+      <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(132px,1fr))">
+        <div style="border-radius:10px;overflow:hidden;border:1px solid var(--border-strong)">
+          <div style="height:118px;background:linear-gradient(160deg,#F0C775,#C6903D);display:grid;place-items:end center;padding:10px">
+            <span style="font-weight:800;font-size:13px;color:#231703;text-align:center;line-height:1.2;text-shadow:0 1px 0 rgba(255,255,255,.35)">GATES OF OLYMPUS</span>
+          </div>
+          <div style="padding:8px 10px;background:var(--bg-card)"><span class="small" style="color:var(--text-muted)">Pragmatic Play</span></div>
+        </div>
+        <div style="border-radius:10px;overflow:hidden;border:1px solid var(--border-strong)">
+          <div style="height:118px;background:linear-gradient(160deg,#F8B900,#E67508);display:grid;place-items:end center;padding:10px">
+            <span style="font-weight:800;font-size:13px;color:#2A1300;text-align:center;line-height:1.2;text-shadow:0 1px 0 rgba(255,255,255,.3)">BIG BASS AMAZON</span>
+          </div>
+          <div style="padding:8px 10px;background:var(--bg-card)"><span class="small" style="color:var(--text-muted)">Pragmatic Play</span></div>
+        </div>
+        <div style="border-radius:10px;overflow:hidden;border:1px solid var(--border-strong)">
+          <div style="height:118px;background:linear-gradient(160deg,#C6903D,#8A5E1F);display:grid;place-items:end center;padding:10px">
+            <span style="font-weight:800;font-size:13px;color:#FFF6E4;text-align:center;line-height:1.2">YETI QUEST</span>
+          </div>
+          <div style="padding:8px 10px;background:var(--bg-card)"><span class="small" style="color:var(--text-muted)">BGaming</span></div>
+        </div>
+        <div style="border-radius:10px;overflow:hidden;border:1px solid var(--border-strong)">
+          <div style="height:118px;background:linear-gradient(160deg,#E67508,#B04A03);display:grid;place-items:end center;padding:10px">
+            <span style="font-weight:800;font-size:13px;color:#FFF1DF;text-align:center;line-height:1.2">SWEET BONANZA</span>
+          </div>
+          <div style="padding:8px 10px;background:var(--bg-card)"><span class="small" style="color:var(--text-muted)">Nolimit City</span></div>
+        </div>
+      </div>
+      <p class="small muted" style="margin:14px 0 0">
+        These are sketched straight in here, in HTML, so you can see the direction right now. The final versions, built
+        in the project and placed next to the real card from Figma, come with the R-4 risk check, before phase 0.
+      </p>
+    </div>
+
+    <div class="q" style="margin-top:16px">
+      <span class="badge ok">Q-3 · Decided</span>
+      <h3 style="margin:12px 0 6px">The <code>/dev/screens</code> page stays visible in the demo</h3>
+      <p class="small muted" style="margin:0">
+        It becomes the designer's working surface, not just an internal test tool. He opens one address
+        and sees every screen in the registry, each with the Figma node identifier next to it —
+        including the screens he adds himself along the way, without us doing anything.
+        The practical consequence: when he adds a new screen, the visual check picks it up automatically.
+      </p>
+    </div>
+  </section>
+
+  <!-- ======================= 12. THE PRE-START CHECKS ======================= -->
+  <section id="prestart">
+    <div class="sec-head"><span class="sec-num">12</span><h2>The checks before phase 0 — results</h2></div>
+    <p class="sec-sub">
+      The five risks, actually checked. Each one has a verdict and the evidence for it.
+      Two of them came out differently from what the plan said — I have flagged those explicitly.
+    </p>
+
+    <!-- R-1 -->
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div class="sec-head" style="margin-bottom:6px">
+        <span class="badge ok">R-1 · Handled</span>
+        <h3>The scaffold really does refuse the directory — and the move had a flaw</h3>
+      </div>
+      <p class="small">
+        I created a test directory with <code>.claude</code> and <code>.git</code> inside it and ran the command.
+        It refuses, exactly as suspected. <code>.git</code> passes, <code>.claude</code> does not:
+      </p>
+<pre>The directory r1-probe contains files that could conflict:
+
+  .claude/
+
+Either try using a new directory name, or remove the files listed above.</pre>
+      <p class="small" style="margin-top:14px">
+        <strong>What I had not anticipated:</strong> the move from the sibling directory fails too, because
+        <code>create-next-app</code> creates its <em>own</em> <code>.git</code> in the scaffold,
+        and you cannot write over the existing <code>.git</code>:
+      </p>
+<pre>Move-Item : Cannot create a file when that file already exists.
+  (C:\...\r1-scaffold\.git:DirectoryInfo) [Move-Item], IOException</pre>
+      <p class="small" style="margin-top:14px">
+        The corrected procedure — you delete the scaffold's <code>.git</code> first, then move — has been tested
+        and it passes: the final directory contains <code>.claude</code> intact, the original <code>.git</code> intact,
+        plus everything Next generated.
+      </p>
+    </div>
+
+    <!-- R-2 -->
+    <div class="card" style="border-left:3px solid var(--amber);margin-top:16px">
+      <div class="sec-head" style="margin-bottom:6px">
+        <span class="badge warn">R-2 · Handled, but it needs a decision</span>
+        <h3>The two UI Kits contradict each other on the same names</h3>
+      </div>
+      <p class="small">
+        I read the Mobile UI Kit as well, not just the Desktop one. Five names appear in both, with different values.
+        They are not mistakes — they are different decisions for different screens. But it means that a single token
+        table cannot have a single value for each name.
+      </p>
+      <div class="tbl-wrap" style="margin-top:12px">
+        <table>
+          <thead><tr><th>Name in Figma</th><th class="mono">Desktop 1440px</th><th class="mono">Mobile 390px</th></tr></thead>
+          <tbody>
+            <tr><td>Page Background</td><td class="mono">#11111A</td><td class="mono" style="color:var(--amber)">#0F121D</td></tr>
+            <tr><td>Overlay</td><td class="mono">#000000 @ 20%</td><td class="mono" style="color:var(--amber)">#161625 @ 80%</td></tr>
+            <tr><td>Secondary Text</td><td class="mono">#FFFFFF @ 70%</td><td class="mono" style="color:var(--amber)">#FFFFFF @ 60%</td></tr>
+            <tr><td>Blue Tinted BG</td><td class="mono">#007AFF @ 13%</td><td class="mono" style="color:var(--amber)">#007AFF @ 15%</td></tr>
+            <tr><td>Card Border</td><td class="mono">#FFFFFF @ 4%</td><td class="mono" style="color:var(--amber)">#262632</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small" style="margin-top:14px">
+        On top of that, mobile brings in four colours that do not exist on desktop — <span class="mono">Section Background #12162B</span>,
+        <span class="mono">Caption Text #8E9BB0</span>, <span class="mono">Emerald Green #00F299</span>,
+        <span class="mono">Cyan Accent #00F0FF</span> — and it names the same value differently:
+        desktop says <em>Separator</em>, mobile says <em>Divider</em>, both of them <span class="mono">#282936</span>.
+      </p>
+      <p class="small">
+        The complete table is written: 26 desktop colours, 22 mobile ones, <strong>30 distinct tokens</strong>
+        after unification, 5 of which have two values.
+      </p>
+
+      <div class="q" style="margin-top:16px;background:var(--bg-subtle);border-color:rgba(52,199,89,.35)">
+        <span class="badge ok">Decided</span>
+        <h3 style="font-size:15px;margin:10px 0 6px">The values from the Mobile kit win</h3>
+        <p class="small muted" style="margin:0">
+          One value per token, the mobile one, applied to both viewports. The decision applies
+          only to the five names in conflict; the tokens that exist only in the Desktop kit —
+          <em>Gold Nav Active</em>, <em>Nav Inactive</em>, <em>Footer Heading</em> and the rest — keep
+          their values, otherwise the active pill in the category bar would lose its gold.
+        </p>
+        <p class="small muted" style="margin:12px 0 0">
+          <strong>One single exception, added after the visual check:</strong> <code>bg-overlay</code>
+          keeps both values, switched at 768px. Here the kits differ for a reason, not out of
+          carelessness — on desktop the layer sits behind a small panel in the corner and leaves the page readable
+          at 20%, on mobile behind a sheet that covers the whole screen, at 80%. With a single value,
+          the Balance panel on desktop came out much darker than in node 1:4116.
+        </p>
+      </div>
+    </div>
+
+    <!-- R-3 -->
+    <div class="card" style="border-left:3px solid var(--amber);margin-top:16px">
+      <div class="sec-head" style="margin-bottom:6px">
+        <span class="badge warn">R-3 · Handled, the plan changes</span>
+        <h3>The asset export cannot be done on whole rows</h3>
+      </div>
+      <p class="small">
+        I ran the download on four different nodes. The results:
+      </p>
+      <ul class="small" style="color:var(--text-muted);padding-left:20px;margin:10px 0 0">
+        <li style="margin-bottom:8px"><strong style="color:var(--text-primary)">On the whole provider row</strong> —
+          out come more than 20 SVG files, cut off at 20, with a truncation message and no names.
+          They are layer fragments, not logos: one of them is literally a black rectangle,
+          <span class="mono">&lt;path d="M59 0H0V10.2924H59V0Z" fill="black"/&gt;</span>, that is, the logo's mask.</li>
+        <li style="margin-bottom:8px"><strong style="color:var(--text-primary)">On a single logo</strong> —
+          clean: two SVGs, the 286-byte mask and the real logo at 6233. Plus a PNG export of the whole badge,
+          4.4 KB, which looks exactly like the design.</li>
+        <li style="margin-bottom:8px"><strong style="color:var(--text-primary)">On the hero banner</strong> —
+          four raster images, correctly PNG. But the big one is <span class="mono">4096×1360 px, 5.7 MB</span>.
+          For a demo it has to be resized, otherwise the page's first load pulls six megabytes on its own.</li>
+        <li><strong style="color:var(--text-primary)">On the game card</strong> — the surprise:
+          the game art exists as an <strong>animated GIF</strong> <span class="mono">480×640, 2.7 MB</span>,
+          plus a static PNG variant <span class="mono">240×320, 125 KB</span>. The design has animated cards.</li>
+      </ul>
+      <p class="small" style="margin-top:14px">
+        <strong>What changes in the plan:</strong> the assets phase does not download by rows, but node by node,
+        and it takes its file names from the Figma layer names. The providers are already named there —
+        <span class="mono">Badge-Pragmatic</span>, <span class="mono">Badge-3 Oaks</span>,
+        <span class="mono">Badge-BGaming</span>, <span class="mono">Badge-Nolimit</span>,
+        <span class="mono">Badge-Spribe</span> — so there are five providers, not sixteen.
+      </p>
+
+      <div class="q" style="margin-top:16px;background:var(--bg-subtle);border-color:rgba(52,199,89,.35)">
+        <span class="badge ok">Decided</span>
+        <h3 style="font-size:15px;margin:10px 0 6px">Static PNG only, no animation</h3>
+        <p class="small muted" style="margin:0">
+          The game art exists in Figma as an animated GIF of 480×640 and 2.7 MB, plus a static PNG
+          variant of 240×320 and 125 KB. Only the static one gets used. With sixty cards on the page,
+          the animated version would have meant hundreds of megabytes on a single load.
+        </p>
+      </div>
+    </div>
+
+    <!-- R-4 -->
+    <div class="card" style="border-left:3px solid var(--green);margin-top:16px">
+      <div class="sec-head" style="margin-bottom:6px">
+        <span class="badge ok">R-4 · Handled</span>
+        <h3>The placeholders, next to the real card</h3>
+      </div>
+      <p class="small">
+        The first one is the card exported from Figma, at its real size, 203×264. The next three are
+        the proposed placeholders, at the same size. Worth noting: in Figma the card has no text node —
+        the title and the provider name are baked into the image. So the placeholder has to draw them itself.
+      </p>
+      <div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-top:16px">
+        <figure>
+          <img src="card-real.png" alt="The real card exported from Figma" style="border-radius:12px">
+          <figcaption><strong style="color:var(--green)">Real, from Figma</strong><br>node 1:2602</figcaption>
+        </figure>
+        <figure>
+          <div style="aspect-ratio:203/264;border-radius:12px;border:1px solid var(--border-strong);background:linear-gradient(160deg,#F0C775,#C6903D);display:flex;flex-direction:column;justify-content:flex-end;padding:14px">
+            <span style="font-weight:800;font-size:15px;color:#231703;line-height:1.1;text-shadow:0 1px 0 rgba(255,255,255,.35)">GATES OF OLYMPUS 1000</span>
+            <span style="font-size:10px;letter-spacing:.8px;color:rgba(35,23,3,.72);margin-top:6px;text-transform:uppercase">Pragmatic Play</span>
+          </div>
+          <figcaption>Gold<br><span class="mono">#F0C775 → #C6903D</span></figcaption>
+        </figure>
+        <figure>
+          <div style="aspect-ratio:203/264;border-radius:12px;border:1px solid var(--border-strong);background:linear-gradient(160deg,#F8B900,#E67508);display:flex;flex-direction:column;justify-content:flex-end;padding:14px">
+            <span style="font-weight:800;font-size:15px;color:#2A1300;line-height:1.1;text-shadow:0 1px 0 rgba(255,255,255,.3)">BIG BASS AMAZON XTREME</span>
+            <span style="font-size:10px;letter-spacing:.8px;color:rgba(42,19,0,.72);margin-top:6px;text-transform:uppercase">Pragmatic Play</span>
+          </div>
+          <figcaption>Orange<br><span class="mono">#F8B900 → #E67508</span></figcaption>
+        </figure>
+        <figure>
+          <div style="aspect-ratio:203/264;border-radius:12px;border:1px solid var(--border-strong);background:linear-gradient(160deg,#C6903D,#5E3C10);display:flex;flex-direction:column;justify-content:flex-end;padding:14px">
+            <span style="font-weight:800;font-size:15px;color:#FFF6E4;line-height:1.1">YETI QUEST</span>
+            <span style="font-size:10px;letter-spacing:.8px;color:rgba(255,246,228,.7);margin-top:6px;text-transform:uppercase">BGaming</span>
+          </div>
+          <figcaption>Dark gold<br><span class="mono">#C6903D → #5E3C10</span></figcaption>
+        </figure>
+      </div>
+      <p class="small muted" style="margin-top:14px">
+        All three use nothing but colours from the <em>Gradient Colors</em> section of the UI Kit.
+        Which gradient a game gets is computed from its identifier, so the same game always looks
+        the same, and the grid has variation without stepping outside the palette.
+      </p>
+    </div>
+
+    <!-- R-5 -->
+    <div class="card" style="border-left:3px solid var(--green);margin-top:16px">
+      <div class="sec-head" style="margin-bottom:6px">
+        <span class="badge ok">R-5 · Handled</span>
+        <h3>The prompt for a phase 4 agent, in full</h3>
+      </div>
+      <p class="small">
+        This is the exact text that agent 10, the one with the footer, receives. Look at the two lists
+        and at the build ban — that is everything standing between eight agents and them trampling each other.
+      </p>
+<pre>Build the desktop footer from Figma, node 1:3666, in the project
+D:\jp-platform (Next.js 15 App Router, TypeScript, Tailwind v3).
+
+BEFORE ANYTHING ELSE: load the resource skill://figma/figma-design-to-code/SKILL.md
+and follow it. On the get_design_context call pass
+skillNames: "resource:figma-design-to-code".
+
+<span class="c">== MAY CREATE — these files only ==</span>
+  src/components/layout/Footer.tsx
+  src/components/layout/FooterLinkColumn.tsx
+  src/components/layout/FooterBottom.tsx
+
+<span class="c">== MAY ONLY IMPORT — read, do NOT modify ==</span>
+  src/lib/types.ts          the FooterData types
+  src/data/footer.json      the footer content
+  src/lib/assets.ts         the paths to the payment and partner logos
+  src/components/primitives/*   Button, Icon, Badge
+  tailwind.config.ts        the colour tokens
+
+<span class="c">== FORBIDDEN ==</span>
+  Do NOT run `npm run build`, `next build` or `next dev`. Other agents
+  are working in parallel in the same directory, and two simultaneous builds
+  corrupt .next and produce errors that have nothing to do with your code.
+  Do NOT write any hex colour code. Use the tokens:
+  bg-card, text-footer-heading, border-separator. The lint rule
+  rejects any #RRGGBB in src/components/.
+  Do NOT modify any file in the "may only import" list. If you
+  need a change there, write the request in the final report and
+  stop — I apply it myself between the waves.
+
+<span class="c">== YOUR OWN CHECK ==</span>
+  npx tsc --noEmit
+  npx eslint src/components/layout/Footer.tsx (and the other two)
+
+<span class="c">== FINAL REPORT ==</span>
+  The files created, with one line about what each one contains.
+  Any deviation from the design you could not reproduce, with the reason.
+  Any request for a change in the frozen files.</pre>
+    </div>
+  </section>
+
+  <!-- ======================= 13. THE COMPARISON ======================= -->
+  <section id="comparatie">
+    <div class="sec-head"><span class="sec-num">13</span><h2>Figma next to the implementation</h2></div>
+    <p class="sec-sub">
+      On the left is the Figma capture, on the right the real browser screenshot, at the same width.
+      Annotate directly on either image — the feedback reaches me with the section attached.
+      The screenshots on the right are taken with reduced motion, so the provider strip is frozen;
+      in the browser it spins.
+    </p>
+
+    <div class="grid" style="gap:26px">
+
+      <!-- mob-main -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>The whole mobile page</h3>
+          <span class="small muted mono">node 1:5720</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The section order is identical to the frame's: header, hero, the category strip, the wins
+          ticker, Popular, New Games, Leading Providers, Recommended, Crash Games, Must-Play Slots,
+          Bonus Buy, Megaways, Jackpots, Weekly Lottery, Drops &amp; Wins, Egypt, wheel and tournament,
+          footer. The only real deviation the walk through the registry turned up was the category
+          strip; it has its own card below. Measured at 390px, in both motion modes:
+          <span class="mono">documentElement.scrollWidth</span> = 390, no section spills out of the
+          page, zero console errors.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          Both screenshots are scaled down to 240px wide, and the frames below scroll vertically —
+          the whole page does not fit here. The real page is 7657px tall, the Figma frame 7119; the
+          difference comes from our rows carrying real content, not from extra sections.
+        </p>
+        <div class="ba">
+          <figure><div style="max-height:560px;overflow:auto;border-radius:10px"><img src="cmp/figma-mob-main.png" alt="The mobile page in Figma"></div><figcaption>Figma</figcaption></figure>
+          <figure><div style="max-height:560px;overflow:auto;border-radius:10px"><img src="cmp/app-mob-main.png" alt="The mobile page in the implementation"></div><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- mobile-nav -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>The bottom tab bar — mobile</h3>
+          <span class="small muted mono">node 1:8235</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          Casino, Live Casino, the raised <em>Menu</em> disc, Sport, Promos — icons, order and the
+          active state (Casino in gold, with the dot underneath) all match. It is not a drawer that
+          slides in: it is a bar pinned to the bottom, on every mobile page. The registry description
+          called it a <em>navigation drawer</em>; that is corrected in <code>src/lib/screens.ts</code>.
+          The bar no longer prefetches routes that do not exist — the three
+          <span class="mono">index.txt?_rsc=</span> requests that returned 404 on every load are gone.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-mobile-nav.png" alt="The tab bar in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-mobile-nav.png" alt="The tab bar in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- jackpot menu prelogin -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>The Jackpot menu — logged-out visitor</h3>
+          <span class="small muted mono">node 1:8751</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The Sport and Casino rows with their chevrons, the six account rows, the
+          <em>Terms of Use</em> strip plus the language, the Support and Vip Manager pills — same
+          order, same icons. It opens from the URL:
+          <code>?auth=prelogin&amp;panel=jackpotMenu</code>.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          One thing shows up on our side and not in the design: the blue focus ring on the panel's
+          first control, here the close button. That is the focus trap moving the keyboard into the
+          panel when it opens — standard accessibility behaviour, and a static Figma frame has no way
+          to draw it.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-jackpot-menu-prelogin.png" alt="The pre-login menu in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-jackpot-menu-prelogin.png" alt="The pre-login menu in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- jackpot menu postlogin -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">Matches, with two differences</span>
+          <h3>The Jackpot menu — logged-in player</h3>
+          <span class="small muted mono">node 1:8260</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The structure is identical. Two things differ, both coming from the data, not from the
+          layout. Next to the badge the design says <span class="mono">ID: 8847291</span>, and in the
+          copyable field <span class="mono">ID: 23885</span>; our test data has no account number, so
+          what shows there is the identifier it does have — the reason is noted in the code, at
+          <code>JackpotMenu.tsx:156-159</code>. And the currency is GBP, your decision from the start.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          <strong style="color:var(--text)">The <em>Sign out</em> row — fixed.</strong> The earlier
+          note said the tab bar was covering it. The measurement said otherwise: the panel is capped at
+          <span class="mono">max-h-[90vh]</span> = 759.6px, and the bar starts at 760, so the panel
+          already ended above it. The row was being cut off by the panel's own scroll — 804px of
+          content in a 759 box. A bottom margin is added <em>after</em> the last row and cannot pull it
+          up, so those 48px were taken out of spacing: the panel insets and four paddings inside the
+          menu. The row heights and the 6px gaps that node 1:8503 pins down are untouched. Measured now
+          at 390×844, in both motion modes: <em>Sign out</em> sits between 708 and 748, the panel is
+          757 tall against 756 of content — nothing scrolls any more — and the page stays 390 wide.
+          The screenshots below are from before the fix.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-jackpot-menu-postlogin.png" alt="The post-login menu in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-jackpot-menu-postlogin.png" alt="The post-login menu in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- jackpot menu vip -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">Matches, with two differences</span>
+          <h3>The Jackpot menu — VIP</h3>
+          <span class="small muted mono">node 1:8503</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The same rows as the logged-in player, plus the <em>VIP</em> badge and the green
+          <em>Vip Manager</em> pill. The same two differences as above: the account identifier and the
+          currency. The <em>Sign out</em> row was fixed along with the menu above: 708 to 748, no
+          scrolling. The screenshot below is from before the fix.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-jackpot-menu-vip.png" alt="The VIP menu in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-jackpot-menu-vip.png" alt="The VIP menu in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- providers no results mobile -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">New · one deliberate difference</span>
+          <h3>Provider search, no results — mobile</h3>
+          <span class="small muted mono">node 1:2218</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          Until now the magnifier in the <em>Leading Providers</em> row header opened the game search,
+          which it has nothing in common with apart from the glyph. Now it opens the row's filter: on
+          mobile the field is drawn under the header and takes the magnifier's place, exactly as in
+          node 1:2222. It opens from the URL with <code>?pq=xyzgame</code>. Measured at 390: the field
+          358×44 on a 24 radius, <span class="mono">#1A1D2E</span> on <span class="mono">#282936</span>,
+          the clear button 28×28 on a 14 radius, the glyph 8px below the field, the page still 390 wide.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          The deliberate difference: node 1:2218 keeps the logo strips under the message. On our side,
+          when nothing matches there are no logos left to draw — the strips would show a result the
+          message has just denied. The magnifier inside the field was grey on our side; now it is blue,
+          as in the design — <code>search-blue.svg</code> is node 1:2239's geometry redrawn, used only
+          by the provider field. Rasterised from the running page, the glyph measures
+          <span class="mono">#007AFF</span> at 390 and at 1440. One question is left for you: the Figma
+          export of the same glyph is <span class="mono">#36BCFF</span>, a light blue that is neither
+          the blue token nor the <span class="mono">#00F0FF</span> cyan.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-mobile-providers-no-results.png" alt="Provider search with no results, mobile, in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-mobile-providers-no-results.png" alt="Provider search with no results, mobile, in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- desktop main -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>The whole desktop page</h3>
+          <span class="small muted mono">node 1:2431</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          Header, hero, ticker, the category strip, all fifteen content sections and the full footer —
+          payment methods, partners, the link columns and the ten flags. Measured at 1440:
+          <span class="mono">scrollWidth</span> = 1440 in both motion modes, zero console errors. The
+          category strip shows four pills where Figma draws six, but three of those are the same
+          <em>Jackpots</em> repeated — it is noted in the code.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          The screenshots are scaled down to 480px wide, and the frames scroll vertically — both go a
+          lot further down than fits here. To see them at full size, right-click and choose
+          <em>Open image</em>.
+        </p>
+        <div class="ba">
+          <figure><div style="max-height:560px;overflow:auto;border-radius:10px"><img src="cmp/figma-desktop-main.png" alt="The desktop page in Figma"></div><figcaption>Figma</figcaption></figure>
+          <figure><div style="max-height:560px;overflow:auto;border-radius:10px"><img src="cmp/app-desktop-main.png" alt="The desktop page in the implementation"></div><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- personal info -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>The Personal info panel</h3>
+          <span class="small muted mono">node 1:4153</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          Wallet, History, Invite Friends, Bonuses, Profile, Sign out — identical order, icons and
+          labels. It opens from the URL: <code>?panel=personalInfo</code>. As with the other panels,
+          the first control gets the blue focus ring when it opens.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-personal-info-opened.png" alt="The Personal info panel in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-personal-info-opened.png" alt="The Personal info panel in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- search popular & recent -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>Search — popular and recent</h3>
+          <span class="small muted mono">node 1:4334</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The field focused, with an empty query: seven popular tags on two rows and four recent
+          searches, each with its own delete button. The same words, in the same order as the design.
+          The visible difference is the category strip again — four pills on our side, six in Figma,
+          three of which are the same <em>Jackpots</em>.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-search-popular-recent.png" alt="Search with popular suggestions in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-search-popular-recent.png" alt="Search with popular suggestions in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- search no results -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>Search — no results</h3>
+          <span class="small muted mono">node 1:4611</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          <em>No games found</em>, <em>Try a different search term or browse our categories below</em>
+          and the <em>Clear search</em> button — the text, the icon and the button match word for
+          word. It opens from the URL: <code>?q=xyzgame</code>.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-search-no-results.png" alt="Search with no results in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-search-no-results.png" alt="Search with no results in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- providers no results desktop -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">New · two small differences</span>
+          <h3>Provider search, no results — desktop</h3>
+          <span class="small muted mono">node 1:4321</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          On desktop the same filter drops down as a 720px popover under the row's magnifier. The
+          registry entry that used to be called <em>empty-search</em> and described no real screen is
+          now <em>providers-no-results-desktop</em>, which is exactly what node 1:4321 draws.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          Measured in the DOM at 1440: the popover is 720 wide, with a 1px border and 32 padding — so
+          the field comes out 654 wide, where Figma draws 656, because there the frame has no border.
+          Two pixels, from the border. The magnifier in the field is blue here too now, the same
+          <code>search-blue.svg</code>; the question about the <span class="mono">#36BCFF</span> in the
+          Figma export is the one above. The Figma frame is just the popover, with no page behind it —
+          that is why the screenshot on the left stops at its edge.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-providers-no-results-desktop.png" alt="The provider no-results popover in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-providers-no-results-desktop.png" alt="The provider no-results popover in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- category strip 390 -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Fixed</span>
+          <h3>The category bar at 390</h3>
+          <span class="small muted mono">node 1:5799</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The one real defect that came out of the walk through the registry. At 390px you could see a
+          single pill, <em>Popular</em>. The cause: the bar was drawing its own <em>Search games…</em>
+          button, 244px wide, right there, even though on mobile search is the magnifier in the header
+          and calls the same action. That left 136px for the pills, and Slots, Live Casino and Jackpots
+          sat behind a horizontal swipe that nothing announced. Node 1:5799 has no search field in that
+          row.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          The button is hidden below 768px, and the pill got its mobile size from node 1:5799:
+          32px height, 14px inset, 12 text, 16 glyph, 6 gap. Re-measured today at 390, in both motion
+          modes, the same numbers: the pills at 17–129, 135–226.1, 232.1–362.6 and
+          368.6–483.4, all 32px tall; the strip shows 372px out of 466 of content, so the last pill is
+          visibly cut by the right edge — exactly what the Figma rendering does at 390 too — and the
+          page stays 390 wide. At 1440 the bar is untouched: 54px pills, the button still 244 wide.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-category-strip.png" alt="The category strip in Figma at 390"><figcaption>Figma — node 1:5799</figcaption></figure>
+          <figure><img src="cmp/app-category-strip.png" alt="The category strip in the implementation, after the fix"><figcaption>Implementation, after</figcaption></figure>
+        </div>
+        <div class="ba" style="margin-top:14px">
+          <figure><img src="cmp/app-category-strip-before.png" alt="The category strip before the fix"><figcaption>Before — one pill and a search field</figcaption></figure>
+          <figure><img src="cmp/app-category-strip.png" alt="The category strip after the fix"><figcaption>After — the whole row for pills</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- accessibility -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Resolved</span>
+          <h3>Accessibility — zero violations, checked automatically</h3>
+          <span class="small muted mono">axe-core 4.10.2 · 9 states</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          <code>node scripts/a11y.mjs &lt;director&gt;</code> opens nine states, injects axe-core from a
+          CDN and writes out the results. No new dependency in the project. The first pass reported
+          12–15 “serious” violations in every state; after the three decisions below not one is left,
+          at any severity. The numbers are nodes, not rules, and they come from today's run.
+          Mobile first.
+        </p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>State</th><th>critical</th><th>serious</th><th>moderate</th><th>minor</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">mob-home (390×844)</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td class="mono">mob-menu (390)</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td class="mono">mob-menu-prelogin (390)</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td class="mono">mob-providers-no-results (390)</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td class="mono">desktop-home (1440×1000)</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td class="mono">desktop-panel-balance</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td class="mono">desktop-panel-personal</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td class="mono">desktop-search-suggestions</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td class="mono">desktop-providers-no-results</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin:14px 0">
+          <strong style="color:var(--text)">Contrast.</strong> Every serious violation was the same
+          rule, <span class="mono">color-contrast</span>, coming from four colour pairs taken straight
+          from Figma. Your decision was to change the colours until they pass AA and to write the
+          deviation down. Each new value keeps the original's hue and saturation exactly; only the
+          lightness moved. The full table, with the Figma node and the composited background each ratio
+          is calculated against, is in <code>docs/tokens.md</code> §2b.
+        </p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Token</th><th>Figma</th><th>Now</th><th>Where you see it</th><th>Ratio</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="mono">--blue</td><td class="mono">#007AFF</td><td class="mono">#006EE6</td>
+                <td>white on solid blue: the <em>Get</em> pill in the mobile hero, the primary button</td>
+                <td class="mono">4.02 → 4.80:1</td>
+              </tr>
+              <tr>
+                <td class="mono">--blue-text</td><td class="mono">#007AFF</td><td class="mono">#479FFF</td>
+                <td>blue text on a tint: <em>See All (206)</em>, the badges in the suggestions, the hero eyebrow</td>
+                <td class="mono">3.51–4.06 → 5.15–5.97:1</td>
+              </tr>
+              <tr>
+                <td class="mono">--text-legal</td><td class="mono">#65616A</td><td class="mono">#7F7A85</td>
+                <td>the legal strip in the footer</td>
+                <td class="mono">3.17 → 4.58:1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin:14px 0">
+          The blue tints keep the design's <span class="mono">0 122 255</span> channels: they are
+          backgrounds, and darkening them would have made the very text they carry worse. The legal
+          strip in the footer was not on the list of three pairs in the report, but it was a serious
+          violation in every one of the nine states, so without it the check could not reach zero. The
+          hover and pressed states of the <em>See All</em> pill were calculated as well, at 5.31:1 and
+          4.72:1, because axe only measures the resting state.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          <strong style="color:var(--text)">The page title.</strong> A single visually hidden
+          <span class="mono">&lt;h1&gt;</span> that reads
+          <span class="mono">Jackpot — Online Casino</span>, because the design has no title set in
+          text — the logo is an image. It sits inside <span class="mono">&lt;main&gt;</span>: putting
+          it above the landmark fixed <span class="mono">page-has-heading-one</span>, but lit up
+          <span class="mono">region</span>, since content outside any landmark is itself a violation.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          <strong style="color:var(--text)">The check now runs on its own.</strong> On every push to
+          <span class="mono">main</span>, the workflow builds the static export, serves it locally and
+          runs the same nine states over it. If even a single critical or serious violation shows up,
+          the build fails before publishing, and the <span class="mono">a11y.json</span> report is
+          uploaded anyway, so it can be read. So the state in the table is not a snapshot of today:
+          it is a condition every future release has to meet.
+        </p>
+        <p class="small muted" style="margin:0">
+          <strong style="color:var(--text)">What stays open, by your decision.</strong>
+          The game and provider cards are not links. Measured on the home page, at 390 and at 1440
+          alike: 90 <span class="mono">&lt;article&gt;</span> elements and zero card links.
+          <code>GameCard</code> and <code>ProviderCard</code> accept an
+          <span class="mono">href</span> and become <span class="mono">&lt;a&gt;</span> when they get
+          one, but nobody passes it, because the demo has no game pages. You decided they should stay
+          <span class="mono">&lt;article&gt;</span> as long as that is the case: a link that goes
+          nowhere is worse than no link. When the game pages arrive, it sorts itself out. The axe rule
+          does not flag this, so the CI check stays green either way.
+        </p>
+      </div>
+
+
+      <!-- header -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>Desktop header</h3>
+          <span class="small muted mono">node 1:2432</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The only difference is the currency symbol: the design says <span class="mono">$ 5,500.00</span>,
+          we say <span class="mono">£5,500.00</span>. That was your call from the start — the currency stays GBP.
+          The logo is the vector exported from node 1:4250, not text set in a font.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-header.png" alt="The header in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-header.png" alt="The header in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- hero -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>Hero, ticker and category bar — desktop</h3>
+          <span class="small muted mono">node 1:2433</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The screenshot on the right includes the header too, because it is taken from the real page.
+          In the ticker, the first three wins have the real thumbnail; the rest have a gradient, because
+          the design contains only three distinct game images.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-hero.png" alt="The hero in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-hero.png" alt="The hero in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- popular -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>The Popular row — desktop</h3>
+          <span class="small muted mono">node 1:2592</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The heading, the dotted line, the <em>See All (206)</em> pill and the six-card grid all match.
+          The content difference is the one you would expect: in Figma all six cards are the same image,
+          on our side three are real and three are the gradients from the UI Kit, with the title and the
+          provider written by us — because in the design the text is baked into the image, the card has no text node.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-popular.png" alt="The Popular row in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-popular.png" alt="The Popular row in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- providers -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">Fixed during verification</span>
+          <h3>Leading Providers</h3>
+          <span class="small muted mono">node 1:2657</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          This is where checking it visually paid for itself. The search button in the heading rendered as a
+          giant magnifying glass spilling off the page. The cause: the file <code>search-btn.svg</code> was not
+          a button, it was a 20×20 SVG that contained the whole Figma canvas — a background rectangle and paths
+          with coordinates from −2254 to 8005. Replaced with the correct vector of node 1:2655.
+          The difference that is left is deliberate: providers without a logo get initials, where the design repeats
+          the same five logos fourteen times.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-providers.png" alt="The providers in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-providers.png" alt="The providers in the implementation, after the fix"><figcaption>Implementation, after the fix</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- tournament -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>Current Tournaments</h3>
+          <span class="small muted mono">node 1:3427</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          Eyebrow, title, subtitle, both pills, the countdown and the gold button.
+          The countdown is derived from the end date in the data, not written by hand, so it really does run.
+          The prize says GBP where Figma says RON — in the same design, the other two banners already say GBP.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-tournament.png" alt="The tournament banner in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-tournament.png" alt="The tournament banner in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- lottery -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">Fixed during verification</span>
+          <h3>Weekly Lottery</h3>
+          <span class="small muted mono">node 1:3524</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The content matched from the start — same title, same subtitle, same two
+          pills, same countdown. What did not match were four spacings and one colour. Measured on
+          node 1:3532: between title and subtitle 12, not 6; between subtitle and pills 12, not 16;
+          between the pills 8, not 12; between the timer and the button 16, not 20. And the amber behind
+          the pills is a second amber — Figma paints node 1:3538 with
+          <span class="mono">rgba(242,193,70,.1)</span>, that is <span class="mono">#F2C146</span>,
+          not <span class="mono">#F59E0B</span>, the colour the text above it actually has.
+          <code>docs/tokens.md</code> had the value written down wrong; now <code>--amber-tint</code> says it
+          correctly, and that is the only pixel change the tournament banner got as well.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-lottery.png" alt="The lottery banner in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-lottery.png" alt="The lottery banner in the implementation, after the fix"><figcaption>Implementation, after the fix</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- wheel -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">Fixed during verification</span>
+          <h3>Wheel</h3>
+          <span class="small muted mono">node 1:3580</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The three rows of stats — <em>Your tickets</em>, <em>Winners</em>, <em>Spin</em> —
+          did render, but they were a constant written into <code>PromoRow</code>. The wave 2 report
+          had said the data has no field for them; that was half true, because the missing
+          field made the very claim at the top of <code>PromoBanner</code> false, the one saying that everything
+          the design draws lives in the data. Now they live in <code>tournaments.json</code>, under
+          <span class="mono">stats</span>. Measured on node 1:3587: the row is 34px, not 40 — it is a
+          22px text box inside 6px of padding, not the line height that
+          <span class="mono">text-lg</span> has of its own — the gap between rows is 9, not 8, and their column
+          sits 24 from the button, not 20. The subtitle now wraps at the width of its own title, like
+          node 1:3591. The rule is not a general one: the other two subtitles run wider than
+          their titles and keep their maximum width.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-wheel.png" alt="The wheel banner in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-wheel.png" alt="The wheel banner in the implementation, after the fix"><figcaption>Implementation, after the fix</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- mobile promo -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Fixed</span>
+          <h3>The promo banners on mobile — it was the desktop one squashed</h3>
+          <span class="small muted mono">nodes 1:6195, 1:6247, 1:6282</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          At 390px all three rendered the 1280×260 desktop composition squeezed into 339: the
+          <em>JOIN NOW</em> button was cut off by the right edge, <em>Draw ends in</em> ran over
+          the art, the pills sat on top of the characters, and the tournament row grew to 367px tall.
+          Figma draws something else there — nodes 1:6195, 1:6247 and 1:6282 are a 358×220 card
+          with the call to action tucked into a pill next to the timer. It is now <code>PromoBannerMobile</code>,
+          a second component and not a handful of <span class="mono">mobile:</span> rules on top of the first one:
+          different boxes, different text sizes, a different reading order.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          Four differences are deliberate. The lottery keeps its own text, because node 1:6253
+          repeats the tournament copy inside the lottery card — <em>SPIN CHALLENGE 2000</em>. The clock shows
+          <span class="mono">hh:mm:ss</span>, the three groups the rest of the site counts,
+          where Figma writes four: <span class="mono">08:12:36:35</span>. The art is the desktop image
+          re-cropped — Figma feeds those frames a wider export of the same scene, 4:1
+          against the 4.92:1 ours has, so we can choose which third shows, but not how
+          close. And the wheel subtitle says <em>everyday</em> where Figma has the typo
+          <em>EVERY DAT</em>.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          Two things only came to light when we measured. The fixed 160px line in the heading of the promo
+          rows refused to shrink at 390px and pushed the page out to 414px wide; node 1:6194
+          draws the elastic line on mobile, so <code>SectionHeader</code> now lets it get
+          shorter only below 767px, while on desktop it stays exactly 160. And the real tournament subtitle,
+          51 characters, wrapped onto three lines in the design's 190px column and pushed
+          the pill 9px below the 220 card; it is cut to two lines with an ellipsis, where
+          Figma puts the short copy <em>Best Slots, Huge Wins!!</em>.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-mob-promo-tournament.png" alt="The tournament banner on mobile in Figma"><figcaption>Figma — tournament</figcaption></figure>
+          <figure><img src="cmp/app-mob-promo-tournament.png" alt="The tournament banner on mobile in the implementation"><figcaption>Implementation — tournament</figcaption></figure>
+        </div>
+        <div class="ba" style="margin-top:14px">
+          <figure><img src="cmp/figma-mob-promo-lottery.png" alt="The lottery banner on mobile in Figma"><figcaption>Figma — lottery</figcaption></figure>
+          <figure><img src="cmp/app-mob-promo-lottery.png" alt="The lottery banner on mobile in the implementation"><figcaption>Implementation — lottery</figcaption></figure>
+        </div>
+        <div class="ba" style="margin-top:14px">
+          <figure><img src="cmp/figma-mob-promo-wheel.png" alt="The wheel banner on mobile in Figma"><figcaption>Figma — wheel</figcaption></figure>
+          <figure><img src="cmp/app-mob-promo-wheel.png" alt="The wheel banner on mobile in the implementation"><figcaption>Implementation — wheel</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- games rows -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">Fixed during verification</span>
+          <h3>The seven game rows</h3>
+          <span class="small muted mono">nodes 1:3230, 1:3285, 1:3364, 1:3456, 1:3485, 1:3548, 1:3635</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          Crash Games, Must-Play Slots, Bonus Buy, Megaways, Jackpots, Drops &amp; Wins and Egypt have
+          exactly the structure of Popular and they match: a 28px heading, <em>See All (206)</em>, cards
+          of 203×264, one grid or two, exactly as <code>sections.ts</code> declares them. Six titles
+          out of seven match once they are uppercased.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          What did not match were two icons. <span class="mono">drops-wins</span> (1:3551) and
+          <span class="mono">egypt</span> (1:3638) had come in as whole-subtree exports and
+          drew different art from the design: a burst of rays instead of the scalloped circle, a pharaoh
+          bust instead of the abstract dome. They are replaced with the single-leaf vectors,
+          read with <code>get_design_context</code> — the same lesson as with the search button.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          Two differences remain. The <span class="mono">bonus-buy</span> icon (1:3367): Figma
+          draws a crown over the BONUS banner, we draw three stars. It is not fixed, because
+          in Figma the glyph is made of fifteen masked fragments, so there is no clean vector
+          to export, and at 20px the difference is barely noticeable. And the title: node 1:3556 says
+          literally <span class="mono">drop&amp;wins</span>, which renders as <em>DROP&amp;WINS</em>;
+          we write <em>DROPS &amp; WINS</em>, the readable English.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-dropswins.png" alt="The Drops and Wins row in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-dropswins.png" alt="The Drops and Wins row in the implementation, after the fix"><figcaption>Implementation, after the fix</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- footer -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>Footer</h3>
+          <span class="small muted mono">node 1:3666</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          All seven payment logos and all seven partners render, including
+          Deutschland Casinos, which had stayed undownloaded and showed up as <span class="mono">partner-7</span>.
+          The ten language flags are list items, not links — there is no routing for them,
+          and ten anchors that lead nowhere are worse for the keyboard than a plain list.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-footer.png" alt="The footer in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-footer.png" alt="The footer in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- search -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Fixed</span>
+          <h3>Search, the state with suggestions</h3>
+          <span class="small muted mono">node 1:4479</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The content was right from the start — the same four games, the same providers, the same
+          category labels, read out of Figma, not invented. What was wrong was the layout:
+          the panel floated below the header, and the category bar underneath was showing at the same time
+          a second search field, closed. Now the field inside the capsule widens in place, gets
+          the cyan outline and the clear button, and the panel drops below it, aligned to the right.
+          Re-checked on 8 September 2026 on <code>?q=swe</code>: the structure of the four rows is
+          the same, and the only mismatch left is one of content — the badge on the
+          <em>Sweet Bonanza</em> row says <em>Popular</em> where Figma says <em>Slots</em>. The badge takes
+          the game's first category, and in the test data the game has <span class="mono">popular</span>
+          before <span class="mono">slots</span> — it is the order of two words in the data, not layout.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-search.png" alt="The search state in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-search.png" alt="The search state in the implementation"><figcaption>Implementation, after the fix</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- balance -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Matches</span>
+          <h3>The Balance panel</h3>
+          <span class="small muted mono">node 1:4116</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          This is where something reading the code did not catch came to light: the panel could not be opened
+          from the address bar, because the state mirror in the URL, asked for in the plan, had never been written
+          and had never been flagged either. Six screenshots I had marked “verified” were in fact showing the
+          default page. Now <code>?panel=balance</code> really does open it. The layer behind it went back
+          to 20% — at 80% the page behind it almost disappeared.
+          Re-checked on 8 September 2026, in both motion modes: the total, the real and the bonus
+          balance, the free spins queue and the Deposit button still match node 1:4116, and
+          the only thing that shows up on our side and not in the design is the blue focus ring on the
+          Deposit button, put there by the panel's focus trap.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-balance.png" alt="The Balance panel in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-balance.png" alt="The Balance panel in the implementation"><figcaption>Implementation</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- mobile hero -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Fixed</span>
+          <h3>Mobile hero — it was the desktop composition shrunk</h3>
+          <span class="small muted mono">nodes 1:5750, 1:5751</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The most serious deviation we found. The mobile design is not a smaller version of the desktop one,
+          it is a different composition: two separate pills instead of one, the <span class="mono">£5,500</span> amount
+          on a line of its own with <em>UP TO 250 FREE SPINS</em> underneath, a <em>Get</em> button, not <em>GET</em>.
+          It has its own art too — node 1:5751, with a navy gradient background, Zeus framed differently and
+          a violet shard in the bottom corner. The first attempt cropped the desktop image, which
+          put the rocks and the gold crown from there in the background and could not produce the shard.
+          Now it is the real image, exported at 3×.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-mob-top.png" alt="The mobile hero in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-mob-top.png" alt="The mobile hero in the implementation"><figcaption>Implementation, after the fix</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- mobile popular -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge ok">Fixed</span>
+          <h3>The Popular row — mobile</h3>
+          <span class="small muted mono">node 1:5882</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The 3×2 grid was already right — the contradiction had been in my brief, and the agent flagged it
+          instead of deciding on its own. What broke were the long titles: the text block is aligned to the bottom
+          of a card with a fixed height that clips at the edge, so a title that needed a third line
+          grew upwards and lost its first line. You could see it on <em>Golden Koi Rising</em> and on
+          <em>Frost Fangs</em>. It is now capped at two lines, with the provider on a single one.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-mob-popular.png" alt="The mobile Popular row in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-mob-popular.png" alt="The mobile Popular row in the implementation"><figcaption>Implementation, after the fix</figcaption></figure>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="q" style="margin-top:24px;border-color:rgba(52,199,89,.35)">
+      <span class="badge ok">All five · resolved</span>
+      <h3 style="margin:12px 0 6px">What got fixed after the first round of comparison</h3>
+      <div class="tbl-wrap" style="margin-top:14px">
+        <table>
+          <thead><tr><th style="width:56px">ID</th><th style="width:220px">What it was</th><th>What it is now</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">V-1</td><td>Mobile hero = the desktop composition shrunk</td><td>The composition of node 1:5750 plus its own art 1:5751, exported at 3×</td></tr>
+            <tr><td class="mono">V-2</td><td>Long titles were cut off on the 114px card</td><td>Two lines maximum, provider on a single one</td></tr>
+            <tr><td class="mono">V-3</td><td>29 SVGs were carrying the Figma canvas</td><td>Cleaned up; the provider strip renders identically afterwards</td></tr>
+            <tr><td class="mono">V-4</td><td>Interactive states never compared</td><td>All ten captured; it brought to light that the deep links were missing entirely</td></tr>
+            <tr><td class="mono">V-5</td><td>Overlay at 80% everywhere</td><td>20% on desktop, 80% below 768px — the only token with two values</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;border-left:3px solid var(--amber)">
+      <span class="badge warn">Incident, fixed structurally</span>
+      <h3 style="margin:12px 0 6px">The site returned 500 on every route, even though the code was correct</h3>
+      <p class="small muted" style="margin:0">
+        During the check, the server started returning <em>Internal Server Error</em> on any
+        address. The code compiled without a single error. From the server log:
+        <span class="mono">ENOENT ... _buildManifest.js.tmp.z5fzbd71okj</span>.
+        The cause: I ran a production build while the development server was running, and both
+        write into the same <code>.next</code> directory. They stepped on each other and corrupted the manifest.
+      </p>
+      <p class="small muted" style="margin:12px 0 0">
+        That prohibition was written into every agent's prompt. The one who broke it was the parent, which is me.
+        That is why the fix is not a reminder note: <code>next.config.ts</code> now reads
+        <code>NEXT_DIST_DIR</code>, and <code>npm run build:check</code> sends the build into a
+        separate directory. Verified: full build run, the server stayed on its feet.
+      </p>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <span class="badge">Remaining differences, deliberate</span>
+      <h3 style="margin:12px 0 6px">What does not match and why that is fine</h3>
+      <ul class="small" style="color:var(--text-muted);padding-left:20px;margin:8px 0 0">
+        <li style="margin-bottom:8px">Providers without a logo have initials — <span class="mono">EV</span>,
+          <span class="mono">RG</span>, <span class="mono">PG</span> — where the design repeats the same
+          five logos fourteen times.</li>
+        <li style="margin-bottom:8px">Cards without art have gradients with the title written on top,
+          because in Figma the title is baked into the image and the card has no text node.</li>
+        <li style="margin-bottom:8px">The currency is GBP everywhere, where the design says
+          <span class="mono">$</span> or <span class="mono">RON</span> in places — your call from the start.</li>
+        <li>The mobile hero shows a single offer. In Figma node 1:5749 is a track of three cards,
+          but the second one starts at x=380 inside a 390 frame, so none of it is visible.
+          A carousel would need a data source for offers, which does not exist.</li>
+      </ul>
+    </div>
+  </section>
+
+
+  <!-- ======================= 14. SEEN IN CHROME ======================= -->
+  <section id="chrome">
+    <div class="sec-head"><span class="sec-num">14</span><h2>Seen in Chrome, 9 September</h2></div>
+    <p class="sec-sub">
+      Two sessions of measurements had already gone by — boxes, axe-core, <span class="mono">scrollWidth</span> —
+      and the page still looked wrong. So this session <em>looked</em> at the site in Claude in Chrome,
+      at 390 and at 1440, state by state, next to the Figma captures. The rig is one page with four
+      390×844 same-origin iframes, each with its scrollbar hidden: one capture =
+      four phone screens, with zoom for detail. Because a downscaled JPEG swallows 16px
+      icons, any "the icon is missing" is confirmed first with
+      <span class="mono">img.naturalWidth</span>, not by eye.
+    </p>
+
+    <div class="grid" style="gap:26px">
+
+      <!-- B1 -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">Fixed</span>
+          <h3>B1 — the promo countdowns sat at 00:00:00</h3>
+          <span class="small muted mono">node 1:6195 · 202ba23</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          <span class="mono">tournaments.json</span> carries the deadline from the design,
+          <span class="mono">endsAt: "2026-09-08T18:12:36Z"</span>, which is in the past, and the banners
+          formatted it once on the server, through <span class="mono">Math.max(0, …)</span>. Now
+          <span class="mono">nextCountdownEnd()</span> rolls an expired deadline forward, in
+          whole 7-day periods, at read time, and the new <span class="mono">useCountdown</span> hook
+          reformats from <span class="mono">Date.now()</span> once a second in the client — which is
+          why those two banners became client components. The capture on the right shows
+          <span class="mono">164:03:23</span>, live. The hours run to three digits because the period is a
+          week, where the design writes <span class="mono">08h</span>; a 24-hour period is a
+          single constant to change, if you prefer the width from the design.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-mob-promo-tournament.png" alt="The tournament banner on mobile in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-b1-countdown.png" alt="The tournament banner with the live countdown"><figcaption>Implementation, after</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- B2 -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">Fixed</span>
+          <h3>B2 — the lottery subtitle got lost in the artwork</h3>
+          <span class="small muted mono">node 1:6247 · 9efd153</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The initial diagnosis — "the text is underneath the image" — was wrong:
+          <span class="mono">document.elementFromPoint</span> at the end of the line returns
+          <span class="mono">&lt;p&gt;</span>, not <span class="mono">&lt;img&gt;</span>, so the text has
+          always been painted on top and a <span class="mono">z-index</span> would have changed
+          nothing on screen. The real defect was contrast: the word "now" falls on the lit phone in
+          the middle of the scene, where <span class="mono">text-subtitle</span> measured 1.68:1 at 390.
+          The fix sits behind the words — a radial scrim of <span class="mono">--bg-card</span>
+          between the image and the body, anchored to the left edge. The wheel card is excluded by your
+          decision (node 1:6282) and renders pixel for pixel identical. "now" now measures 6.50:1, the same in
+          both motion modes. The capture on the left says <em>SPIN CHALLENGE 2000</em> because
+          node 1:6253 repeats the tournament text there — it is a deliberate difference, noted long ago;
+          our text is the real lottery copy.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-mob-promo-lottery.png" alt="The lottery banner on mobile in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-b2-lottery-scrim.png" alt="The lottery banner with a readable subtitle"><figcaption>Implementation, after</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- B3 -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">Fixed</span>
+          <h3>B3 — mobile search was a card floating over the header</h3>
+          <span class="small muted mono">f06e5ae</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          At 390 the search panel was a 358×384 card starting at y=16, which left a strip of
+          header above it, with the balance pill cut in two. Figma has no mobile search
+          frame at all — nodes 1:4334, 1:4479 and 1:4611 are all 1440 wide — so, by
+          your decision, below 768px search takes exactly the shape of the Jackpot menu: <span class="mono">Sheet</span>
+          with <span class="mono">anchor="top"</span>. That is why the image on the left is the Jackpot
+          menu frame: it is the reference shape, not a capture of search. Measured:
+          <span class="mono">[role=dialog]</span> at top 0, width 390, not a pixel of header
+          reachable behind it, focus trapped inside, <span class="mono">Escape</span> returns it to
+          the magnifier in the header. Desktop is pixel for pixel identical.
+        </p>
+        <p class="small muted" style="margin:0 0 14px">
+          <strong>Still open, from before:</strong> a click on the backdrop leaves focus on
+          <span class="mono">body</span>. The same thing happens in the Jackpot menu drawer — it is in
+          <span class="mono">useOverlayBehavior</span>/<span class="mono">Sheet</span>, not in search.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-jackpot-menu-prelogin.png" alt="The Jackpot menu drawer in Figma"><figcaption>Figma — the Jackpot menu, node 1:8751 (the reference shape)</figcaption></figure>
+          <figure><img src="cmp/app-b3-search-sheet.png" alt="Mobile search as a top-anchored drawer"><figcaption>Implementation, after</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- chip -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">Fixed</span>
+          <h3>The search label read "Popular" instead of "Slots"</h3>
+          <span class="small muted mono">node 1:4579 · 5251402</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          Came out of the systematic comparison of all 15 states. The label took
+          <span class="mono">categories[0]</span>, and <span class="mono">games.json</span> puts the
+          "popular" curation tab first on the seven games that carry it — so Sweet Bonanza got
+          "Popular" where Figma writes "Slots". Now the label prefers the genre category and falls
+          back to the curation one, so the order in <span class="mono">games.json</span>, which the
+          Popular tab depends on, stays untouched. The capture on the right is at 390; the node on the left is
+          the 1440 panel, the only one Figma draws.
+        </p>
+        <div class="ba">
+          <figure><img src="cmp/figma-search-chip.png" alt="The suggestions panel in Figma"><figcaption>Figma</figcaption></figure>
+          <figure><img src="cmp/app-search-chip.png" alt="The suggestions in the implementation, with the Slots label"><figcaption>Implementation, after</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- footer -->
+      <div class="card">
+        <div class="sec-head" style="margin-bottom:10px">
+          <span class="badge warn">Fixed</span>
+          <h3>The mobile footer collapsed into a single column</h3>
+          <span class="small muted mono">node 1:6517 · 5251402</span>
+        </div>
+        <p class="small muted" style="margin:0 0 14px">
+          The second difference the systematic comparison turned up. The mobile frame in Figma starts every
+          row at x=8, not at x=16, and those 16px were exactly what kept two 160px payment tiles
+          from fitting on a 316px row. After the alignment: tiles 2/2/2/1 at 160px, partners 3/3/1,
+          "Navigation" and "Policies &amp; Legal" side by side again with the 32px gutter, and the
+          flags 5/5 instead of 6/4 — because on mobile they shrink to 32.2×31.7, the way
+          Figma draws them. <span class="mono">scrollWidth</span> stays 390 in both motion modes, and the
+          desktop footer at 1440 is unchanged (0 pixels different).
+        </p>
+        <div class="ba">
+          <figure><div style="max-height:560px;overflow:auto;border-radius:10px"><img src="cmp/figma-mob-footer.png" alt="The mobile footer in Figma"></div><figcaption>Figma</figcaption></figure>
+          <figure><div style="max-height:560px;overflow:auto;border-radius:10px"><img src="cmp/app-mob-footer.png" alt="The mobile footer in the implementation"></div><figcaption>Implementation, after</figcaption></figure>
+        </div>
+      </div>
+
+      <!-- verified, not being fixed -->
+      <div class="card">
+        <span class="badge ok">Checked against Figma · not being fixed</span>
+        <h3 style="margin:12px 0 6px">What looks odd but is exactly how the design draws it</h3>
+        <ul class="small" style="color:var(--text-muted);padding-left:20px;margin:8px 0 0">
+          <li style="margin-bottom:8px">The dark 64×64 disc behind the
+            <em>Menu</em> button in the tab bar (node 1:8235).</li>
+          <li style="margin-bottom:8px">The short rule in the <em>Leading Providers</em> heading.</li>
+          <li style="margin-bottom:8px"><em>Invite Friends</em> on two lines in the account menu
+            (node 1:4153).</li>
+          <li style="margin-bottom:8px">The orange <em>SPIN THE WHEEL</em> text over the wheel
+            (node 1:6282).</li>
+          <li>The <em>Sign out</em> row is visible without scrolling in the Jackpot menu, both post-login and VIP.</li>
+        </ul>
+        <p class="small muted" style="margin:14px 0 0">
+          Decision 2 of the day: the magnifier in the providers field is <span class="mono">#36BCFF</span>,
+          the colour Figma exports on nodes 1:2239 and 1:4323 — not the blue token, not the
+          cyan. It lives in <span class="mono">public/images/icons/search-blue.svg</span> and is
+          noted in <span class="mono">docs/tokens.md</span> §2b. The open question about its colour
+          closes here.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="cta">
+    <h2 style="margin-bottom:8px">What's next</h2>
+    <p class="muted" style="max-width:66ch;margin:0 auto 4px">
+      The demo is running. <strong>http://localhost:3000</strong> for the platform,
+      <strong>http://localhost:3000/dev/screens</strong> for the screen register.
+      States can be opened directly: <code>?auth=vip</code>, <code>?panel=balance</code>.
+    </p>
+    <p class="muted" style="max-width:66ch;margin:10px auto 0">
+      Ten pairs compared, all of them match now. The visual check turned up three things that
+      reading the code did not catch: the providers search button was showing a fragment of the
+      Figma canvas, the mobile hero was the desktop composition shrunk down, and the state deep links
+      did not exist at all — so half of my "verified" captures were showing the default page.
+    </p>
+    <p class="muted small" style="max-width:66ch;margin:10px auto 0">
+      If you want anything else changed in the plan, annotate right on the page and send — it gets updated here,
+      not in a parallel document.
+    </p>
+    <p class="small muted" style="margin:14px 0 0">
+      The design direction of this page: the product's own design system — the palette from section 03,
+      read from the UI Kit. I did not use an external library, precisely so the page looks like the product it proposes.
+    </p>
+  </div>
+
+</div>
+
+</body>
+</html>

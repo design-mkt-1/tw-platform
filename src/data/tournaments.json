@@ -1,0 +1,78 @@
+{
+  "tournaments": [
+    {
+      "id": "spin-challenge-2000",
+      "title": "SPIN CHALLENGE 2000",
+      "subtitle": "Spin on selected Pragmatic Play slots and climb the leaderboard",
+      "prizePoolGbp": 1000000,
+      "endsAt": "2026-09-08T18:12:36Z",
+      "image": "/images/hero/tournament-banner.webp",
+      "ctaLabel": "JOIN NOW"
+    },
+    {
+      "id": "megaways-marathon",
+      "title": "MEGAWAYS MARATHON",
+      "subtitle": "Every 100 spins on Megaways titles earns a leaderboard ticket",
+      "prizePoolGbp": 250000,
+      "endsAt": "2026-09-12T21:00:00Z",
+      "image": "/images/hero/tournament-banner.webp",
+      "ctaLabel": "JOIN NOW"
+    },
+    {
+      "id": "live-casino-showdown",
+      "title": "LIVE CASINO SHOWDOWN",
+      "subtitle": "Beat the dealer on selected live tables and take a share of the pot",
+      "prizePoolGbp": 120000,
+      "endsAt": "2026-09-15T19:30:00Z",
+      "image": "/images/hero/tournament-banner.webp",
+      "ctaLabel": "JOIN NOW"
+    }
+  ],
+  "promos": [
+    {
+      "id": "current-tournaments",
+      "variant": "tournament",
+      "title": "SPIN CHALLENGE 2000",
+      "subtitle": "Spin on selected Pragmatic Play slots and climb the leaderboard",
+      "image": "/images/hero/tournament-banner.webp",
+      "ctaLabel": "JOIN NOW",
+      "ctaHref": "/tournaments/spin-challenge-2000",
+      "eyebrow": "Weekly tournament active",
+      "pills": [
+        { "label": "1,000,000.00 GBP PRIZE", "tone": "amber" },
+        { "label": "20 Winners Selected", "tone": "neutral" }
+      ],
+      "timerLabel": "Time left to join",
+      "endsAt": "2026-09-08T18:12:36Z"
+    },
+    {
+      "id": "weekly-lottery",
+      "variant": "lottery",
+      "title": "100 FREE SPINS",
+      "subtitle": "Bi-Weekly Lottery draw is now open",
+      "image": "/images/hero/lottery-banner.webp",
+      "ctaLabel": "JOIN NOW",
+      "ctaHref": "/promotions/weekly-lottery",
+      "pills": [
+        { "label": "1 Ticket = 30 GBP Deposit", "tone": "amber" },
+        { "label": "10 Winners Draw", "tone": "neutral" }
+      ],
+      "timerLabel": "Draw ends in:",
+      "endsAt": "2026-09-08T18:12:36Z"
+    },
+    {
+      "id": "wheel",
+      "variant": "wheel",
+      "title": "2000 FREE SPINS",
+      "subtitle": "Spin the wheel everyday and get crazy prizes",
+      "image": "/images/hero/wheel-banner.webp",
+      "ctaLabel": "SPIN",
+      "ctaHref": "/promotions/wheel",
+      "stats": [
+        { "label": "Your tickets", "value": "1" },
+        { "label": "Winners", "value": "20" },
+        { "label": "Spin", "value": "20 GBP" }
+      ]
+    }
+  ]
+}
