@@ -1,4 +1,10 @@
 {
+  "enabledPlugins": {
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
+    "ponytail@ponytail": true,
+    "caveman@caveman": true,
+    "superpowers@claude-plugins-official": true
+  },
   "extraKnownMarketplaces": {
     "ui-ux-pro-max-skill": {
       "source": {
@@ -18,11 +24,5 @@
         "repo": "JuliusBrussee/caveman"
       }
     }
-  },
-  "enabledPlugins": {
-    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
-    "ponytail@ponytail": true,
-    "caveman@caveman": true,
-    "superpowers@claude-plugins-official": true
   }
 }
