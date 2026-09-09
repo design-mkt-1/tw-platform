@@ -6,6 +6,19 @@ Next.js 15 + Tailwind jackpot/casino platform, built against Figma. Static expor
 
 Project skills live in `.claude/skills/` and are committed, so every clone has them.
 
+**A same-named skill in `~/.claude/skills/` wins over the committed one.** Measured: a marker was
+added to the user copy of `nextjs-turbopack` only, the skill was invoked, and Claude Code reported
+`Base directory: C:\Users\grosu.b\.claude\skills\nextjs-turbopack` — the user path, not the repo
+path. `frontend-design-direction` gave the same answer. What was *not* measured is the rule behind
+it; the outcome was observed, the precedence was not traced through Claude Code.
+
+All 21 skills in this repo currently have a same-named twin under `~/.claude/skills/`, and every one
+is byte-identical apart from CRLF, so nothing behaves wrongly today. The trap is later: edit
+`.claude/skills/explica/SKILL.md`, commit it, and on a machine that carries the twin the edit does
+nothing — the user copy still loads. The same commit then behaves one way for whoever has the twin
+and another way on a clean clone. If a change to a committed skill appears to have no effect, check
+`~/.claude/skills/<name>/` before debugging anything else.
+
 Plugins need two things in `.claude/settings.json`, and both are committed: `extraKnownMarketplaces`
 says where each catalogue lives, `enabledPlugins` says which plugin to turn on. `claude-plugins-official`
 is absent from the first block on purpose — Claude Code registers it for every user by itself.
@@ -204,8 +217,12 @@ file beats the committed project config, or the project config is not read at al
 precedence has not been traced through caveman's source. Do not trust the committed value.
 Check `~/.claude/.caveman-active` for the level that is actually in force.
 
-At lite caveman drops filler and hedging but keeps articles and full sentences. It does not
-shorten explanations; it removes the padding around them.
+**The owner has accepted `full`.** Do not "fix" it back to lite on the strength of
+`.caveman/config.json`. The committed `lite` is stale intent, kept only because nobody has found a
+way to pin a level per repo rather than per user.
+
+At full caveman compresses harder than lite: it drops articles and filler and shortens sentences.
+Neither level shortens explanations; both remove the padding around them.
 
 `explica` decides *what must be present*. `caveman` decides *how tightly it is written*.
 On any conflict, `explica` wins:
