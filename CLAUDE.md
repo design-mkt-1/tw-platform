@@ -62,7 +62,8 @@ to be fixed again once someone actually pressed the buttons.
 - `superpowers:brainstorming` before designing anything non-trivial — settle the shape before
   writing the first line.
 - `superpowers:writing-plans` when the work spans more than one file or one sitting.
-- `ponytail` — simplest thing that works. YAGNI, stdlib first, no unrequested abstractions.
+- `ponytail:ponytail` — simplest thing that works. YAGNI, stdlib first, no unrequested
+  abstractions. Plugin skills are always namespaced; a bare `ponytail` does not resolve.
 - `react-patterns` / `react-performance` for component work, `react-testing` for tests, with
   `superpowers:test-driven-development` for the RED-GREEN-REFACTOR order.
 - `no-ai-slop` and `taste` before shipping copy or visual design.
@@ -195,9 +196,16 @@ comments, commit messages, docs, this file — is English.
 
 Both are on. They govern different things, and the order between them is fixed.
 
-`caveman` is pinned to **lite** in `.caveman/config.json` — committed, so it applies to
-everyone who clones. At lite it drops filler and hedging but keeps articles and full
-sentences. It does not shorten explanations; it removes the padding around them.
+`.caveman/config.json` sets `defaultMode: lite` and is committed. **It did not win.** On the
+first session after the plugin was installed, caveman came up in `full`, and
+`~/.claude/.caveman-active` — a single-word file outside the repo, user-global — contained
+`full`. Its log had exactly one entry, `{"mode":"full","prev":null}`. So the per-user state
+file beats the committed project config, or the project config is not read at all; the
+precedence has not been traced through caveman's source. Do not trust the committed value.
+Check `~/.claude/.caveman-active` for the level that is actually in force.
+
+At lite caveman drops filler and hedging but keeps articles and full sentences. It does not
+shorten explanations; it removes the padding around them.
 
 `explica` decides *what must be present*. `caveman` decides *how tightly it is written*.
 On any conflict, `explica` wins:
@@ -215,5 +223,6 @@ normal prose in everything that outlives the chat: code, comments, commits, docs
 and memory files. So this file, the commit messages and `docs/` stay in full English no
 matter what mode the session is in.
 
-Per-session override when you want something different: `/caveman full`, `/caveman ultra`,
-`/caveman off`. The level resets to lite next session.
+Per-session override: `/caveman:caveman full`, `/caveman:caveman ultra`, `/caveman:caveman off`.
+The skill is namespaced like every plugin skill — a bare `/caveman` does not resolve. Whether the
+level resets between sessions depends on `~/.claude/.caveman-active`, not on this repo.
