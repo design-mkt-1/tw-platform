@@ -33,12 +33,17 @@ function gradientFor(slug: string): string {
  * arc the curve is nearly tangent, so one row shows a long coverage ramp. See docs/tokens.md §5.1.
  *
  * It is an `<article>`, not a link. This demo has no game pages, and a link to nowhere is worse
- * than no link at all. The only state it has is the invented pressed one, the same `active:scale`
- * Button uses, so pressing anything on this page feels like pressing anything else.
+ * than no link at all. So it has no pressed state either: until 2026-09-10 it squashed on press
+ * like a Button and did nothing, 48 times on the page, which reads as a control that failed.
+ *
+ * **Width is the grid track's, not a constant.** GameGrid sizes its columns as a third of the
+ * content column and the 114:148 aspect gives the height. At 390 the column is 358, so the card
+ * is exactly 114 x 148 as drawn; at 375 it is 109 wide instead of cutting the third card 15px
+ * short.
  */
 export function GameCard({ game }: { game: Game }) {
   return (
-    <article className="h-card-h w-card-w shrink-0 overflow-hidden rounded-card bg-game-card transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100">
+    <article className="aspect-[114/148] w-full overflow-hidden rounded-card bg-game-card">
       {game.art ? (
         // Icon is the project's single next/image wrapper — it is where `unoptimized` lives, and
         // the static export has no optimiser. Reused here rather than adding a second call site

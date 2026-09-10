@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CATEGORIES, GAMES, gamesInCategory, selectGames } from '@/lib/data'
+import { CATEGORIES, GAMES, dealRows, gamesInCategory } from '@/lib/data'
 import { SECTIONS } from '@/lib/sections'
 import type { CategoryId, SectionSpec } from '@/lib/types'
 
@@ -17,9 +17,9 @@ import type { CategoryId, SectionSpec } from '@/lib/types'
  * the wiring moved: they compare what each chip actually puts on the page.
  */
 
-/** What a row draws for a given chip, in the order the page draws it. */
+/** What a row draws for a given chip, in the order the page draws it — [] for a hidden row. */
 function rowFor(spec: SectionSpec, category: CategoryId) {
-  return selectGames(spec.filter, gamesInCategory(category)).map((game) => game.slug)
+  return (dealRows(category).get(spec.id) ?? []).map((game) => game.slug)
 }
 
 const GRIDS = SECTIONS.filter((spec) => spec.kind === 'game-grid')
@@ -48,25 +48,33 @@ describe('gamesInCategory', () => {
 })
 
 describe('the category chips', () => {
-  it('leaves every row of the drawn page exactly as it was', () => {
+  it('keeps the drawn page at eight full rows', () => {
     // Six games per row, eight rows, on the default chip — the 48 game cards that with the three
     // tournament cards make the 51 articles the page has always rendered.
     expect(GRIDS).toHaveLength(8)
-    for (const spec of GRIDS) {
-      expect(rowFor(spec, 'popular')).toEqual(selectGames(spec.filter).map((game) => game.slug))
-      expect(rowFor(spec, 'popular')).toHaveLength(6)
+    for (const spec of GRIDS) expect(rowFor(spec, 'popular')).toHaveLength(6)
+  })
+
+  it('never draws one game in two rows, and never a row of fewer than three', () => {
+    // Until 2026-09-10, 12 of the 48 tiles were repeats and `Краш Ігри` / `Drop & Wins` shared
+    // five of six. Under a chip `Рекомендовані` drew one tile and `Популярне` two. Owner's
+    // decision: rows share nothing, and a row under three tiles is hidden.
+    for (const category of CATEGORIES) {
+      const rows = GRIDS.map((spec) => rowFor(spec, category.id)).filter((row) => row.length > 0)
+      const slugs = rows.flat()
+      expect(new Set(slugs).size).toBe(slugs.length)
+      for (const row of rows) expect(row.length).toBeGreaterThanOrEqual(3)
     }
   })
 
   it('draws a different page for every chip', () => {
-    // The proof the chips are no longer paint: four chips, four distinct card counts. If any two
-    // of these ever match, check whether the chip is being applied at all before touching the
-    // numbers.
-    const counts = CATEGORIES.map(
-      (category) => GRIDS.flatMap((spec) => rowFor(spec, category.id)).length,
+    // The proof the chips are no longer paint. Counts alone cannot show it any more — лайв Казіно
+    // and Краш Ігри both draw nine cards — so the pages are compared by what is on them.
+    const pages = CATEGORIES.map((category) =>
+      GRIDS.flatMap((spec) => rowFor(spec, category.id)).join(' '),
     )
-    expect(counts).toEqual([48, 30, 10, 15])
-    expect(new Set(counts).size).toBe(CATEGORIES.length)
+    expect(pages.map((page) => page.split(' ').length)).toEqual([48, 36, 9, 9])
+    expect(new Set(pages).size).toBe(CATEGORIES.length)
   })
 
   it('narrows a row rather than replacing its own filter', () => {

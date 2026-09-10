@@ -110,9 +110,12 @@ async function scanOverflow(page) {
     // its ancestry, so without it every unlabelled overflowing element in the build would share
     // the key `(unlabelled) > button` — and one allowlist entry would silence all of them.
     const keyOf = (el) => {
-      const labelled = el.closest('[aria-label]')
+      // `aria-labelledby` counts too: since 2026-09-10 the casino rows name their <section>
+      // by pointing at the <h2> rather than repeating the title in aria-label.
+      const labelled = el.closest('[aria-label], [aria-labelledby]')
       const label = labelled
-        ? labelled.getAttribute('aria-label')
+        ? labelled.getAttribute('aria-label') ??
+          document.getElementById(labelled.getAttribute('aria-labelledby'))?.textContent?.trim()
         : (el.textContent ?? '').trim().slice(0, 24) || '(unlabelled)'
       return `${label} > ${el.tagName.toLowerCase()}`
     }
@@ -518,9 +521,15 @@ async function shot(name, screen, { width, height, url, steps, full = false }) {
           entry,
           await page.evaluate(() => ({
             scrollWidth: document.documentElement.scrollWidth,
-            overflowingSections: [...document.querySelectorAll('section[aria-label]')]
+            overflowingSections: [
+              ...document.querySelectorAll('section[aria-label], section[aria-labelledby]'),
+            ]
               .filter((s) => s.scrollWidth > s.clientWidth)
-              .map((s) => s.getAttribute('aria-label')),
+              .map(
+                (s) =>
+                  s.getAttribute('aria-label') ??
+                  document.getElementById(s.getAttribute('aria-labelledby'))?.textContent?.trim(),
+              ),
           })),
         )
         entry.overflow = allowlisted(await scanOverflow(page))

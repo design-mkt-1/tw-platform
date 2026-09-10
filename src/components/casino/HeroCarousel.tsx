@@ -108,8 +108,10 @@ function Slide() {
 
       {/*
        * CTA 1:3308 — 130x28. The design draws a 28px target, which is under the 44px minimum;
-       * growing it would move the slide's whole layout, so it ships as drawn and the failure is
-       * reported with the other accessibility findings rather than silently redesigned.
+       * growing the paint would move the slide's whole layout, so the paint ships as drawn and
+       * a transparent `after:` extends the target 8px above and below: 28 + 8 + 8 = 44, the
+       * pattern TournamentCard's join button uses. It spans y 113..157 of a 170 slide, so the
+       * slide's `overflow-hidden` does not clip it.
        *
        * `!font-bold` is not decoration. The `cta` variant sets `font-semibold` and this node is
        * Bold 700 (docs/tokens.md §4.3 step 44). Tailwind emits `.font-semibold` *after*
@@ -118,7 +120,7 @@ function Slide() {
        */}
       <ButtonLink
         href="/promo"
-        className="absolute left-[17px] top-[121px] h-[28px] w-[130px] text-xs !font-bold capitalize"
+        className="absolute left-[17px] top-[121px] h-[28px] w-[130px] text-xs !font-bold capitalize after:absolute after:inset-x-0 after:-inset-y-2 after:content-['']"
       >
         отримати бонус
       </ButtonLink>
@@ -156,7 +158,12 @@ export function HeroCarousel() {
         ))}
       </ul>
 
-      <div aria-hidden="true" className="mx-auto flex w-[358px] justify-end gap-1 px-gutter">
+      {/*
+       * The bars end at x 358 in the 390 column — that is where the 358-wide, `px-gutter` box
+       * this used to be put them. `pr-8` keeps that edge 32px from the right at every width;
+       * the fixed 358 box sat 8.5..366.5 at 375 and 1..359 at 360, off the column (measured).
+       */}
+      <div aria-hidden="true" className="flex w-full justify-end gap-1 pr-8">
         {INDICATOR_BARS.map((bar) => (
           <span key={bar} className={`h-1 rounded-hairline ${bar}`} />
         ))}

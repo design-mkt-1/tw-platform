@@ -120,15 +120,18 @@ export function Footer() {
           {PAYMENTS_HEADING}
         </h2>
 
-        {/* A wrapping flex row, not a grid: 160 + 12 + 160 fits the 334 content box exactly twice,
-            so an odd last tile centres on its own row. That is a real layout state (1:5611). */}
+        {/* A wrapping flex row, not a grid: 160 + 12 + 160 fits the 332 content box exactly twice,
+            so an odd last tile centres on its own row. That is a real layout state (1:5611).
+            Below 390 the box is narrower than 332, and a fixed 160 fell to one tile per row —
+            8 rows at 375 and 360, measured. `max-w-[calc(50%-6px)]` is half the box less half
+            the 12px gap, so two tiles share a row at any width and 390 is still 160. */}
         <ul className="flex w-full flex-wrap items-center justify-center gap-3">
           {FOOTER.payments.map((name) => {
             const logo = PAYMENTS[name]
             return (
               <li
                 key={name}
-                className="flex h-[52px] w-[160px] items-center justify-center rounded-chip border border-on-dark-08 bg-footer-tile px-4 py-2"
+                className="flex h-[52px] w-[160px] max-w-[calc(50%-6px)] items-center justify-center rounded-chip border border-on-dark-08 bg-footer-tile px-4 py-2"
               >
                 <Icon
                   src={PAYMENT_LOGOS[name]}

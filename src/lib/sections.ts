@@ -139,12 +139,19 @@ export const SECTIONS: SectionSpec[] = [
   },
   {
     // Latin in the source, not a transliteration slip — confirmed from the rendered string.
+    //
+    // No provider filter, and that is arithmetic rather than taste. This row asked for Spribe, but
+    // all eight Spribe games are crash games, so it and `Краш Ігри` were cutting twelve tiles from
+    // nine games (the crash category is the eight plus Space XY) and shared five of six. No
+    // provider has six games left by the time this last row is dealt either — Pragmatic, whose
+    // promotion the title names, has five. So it takes the six games no row above has drawn
+    // (src/lib/data.ts `dealRows`), which today are five Pragmatic games and Wild Bison Charge.
     id: 'drops-and-wins',
     kind: 'game-grid',
     title: 'Drop & Wins',
     icon: 'dropsAndWins',
     seeAllLabel: SEE_ALL,
-    filter: { provider: 'spribe', limit: GRID_LIMIT },
+    filter: { limit: GRID_LIMIT },
     rows: GRID_ROWS,
     figmaNodeId: '1:5240',
   },

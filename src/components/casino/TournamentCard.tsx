@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/primitives/Button'
+import { Button, INERT } from '@/components/primitives/Button'
 import { Icon } from '@/components/primitives/Icon'
 import { TOURNAMENT_ART } from '@/lib/assets'
 import { countdownEndIso, formatCountdown, formatUahWhole } from '@/lib/format'
@@ -92,8 +92,15 @@ export function TournamentCard({ tournament, from }: TournamentCardProps) {
               30px is under the 44px target and the pill has no room to grow, so the hit area is
               extended with a transparent pseudo-element instead: 30 + 7 + 7 = 44, and not one
               drawn pixel moves.
+
+              It has no target — the demo has no tournament flow — so it says so: `aria-disabled`
+              and INERT, the same as the header's login buttons (Header.tsx:47). Until 2026-09-10
+              it was the only Button in src with neither an onClick nor aria-disabled.
             */}
-            <Button className="relative h-[30px] px-[16px] text-sm after:absolute after:inset-x-0 after:inset-y-[-7px] after:content-['']">
+            <Button
+              aria-disabled="true"
+              className={`relative h-[30px] px-[16px] text-sm after:absolute after:inset-x-0 after:inset-y-[-7px] after:content-[''] ${INERT}`}
+            >
               {/*
                 The label's tracking is -0.26px (`tracking-join`), the shared cta skin carries
                 -0.2px (`tracking-outfit`). A className override cannot win that: Tailwind emits
@@ -107,9 +114,11 @@ export function TournamentCard({ tournament, from }: TournamentCardProps) {
             <span aria-hidden className="h-[16px] border-l border-on-dark-10" />
             <span className="flex items-center gap-[4px]">
               <span className="text-6xs text-white/80">Залишилось часу</span>
+              {/* `tabular-nums`: with proportional digits the pill's right edge moved every
+                  second as a 1 replaced a 0. */}
               <time
                 dateTime={countdownEndIso(tournament.endsAt, now)}
-                className="text-5xs font-extrabold text-on-dark"
+                className="text-5xs font-extrabold tabular-nums text-on-dark"
               >
                 {hours}:{minutes}:{seconds}
               </time>

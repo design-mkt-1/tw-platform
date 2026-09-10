@@ -67,10 +67,10 @@ function Section({ spec }: { spec: SectionSpec }) {
       if (!spec.title) throw new Error(`section ${spec.id} is a game-grid with no title`)
       return (
         <GameGrid
+          id={spec.id}
           title={spec.title}
           icon={spec.icon}
           seeAllLabel={spec.seeAllLabel}
-          filter={spec.filter}
           rows={spec.rows}
         />
       )
@@ -78,19 +78,25 @@ function Section({ spec }: { spec: SectionSpec }) {
     case 'provider-row':
       if (!spec.title) throw new Error(`section ${spec.id} is a provider-row with no title`)
       return (
-        <section aria-label={spec.title} className="flex flex-col gap-4">
-          <div className="px-gutter">
-            {/*
-             * 1:3776 is the one header measured at 40 tall and `gap: 4px` rather than 24/30 and 8
-             * (02-casino-rows-a.md:79, :160): its right-hand control is the 40x40 round search
-             * button 1:3781, not a see-all pill. Until 2026-09-10 this slot was empty and the
-             * header collapsed to the title's 24 — the row rendered 136 tall against the drawn 248.
-             * The remaining 96 is the second provider track, UNKNOWN #6 in the same inventory.
-             */}
-            <SectionHeader title={spec.title} icon={spec.icon} className="gap-1">
-              <SearchButton className="h-10 w-10" />
-            </SectionHeader>
-          </div>
+        // `px-gutter` on the section, not only on the header: the track wrapper 1:3784 sits at
+        // x 16 and is 358 wide (02-casino-rows-a.md:73-77), so the first circle lands at x 20.
+        // Until 2026-09-10 the track ran full-bleed from x 0 and the circle measured at x 4.
+        <section aria-labelledby={`${spec.id}-heading`} className="flex flex-col gap-4 px-gutter">
+          {/*
+           * 1:3776 is the one header measured at 40 tall and `gap: 4px` rather than 24/30 and 8
+           * (02-casino-rows-a.md:79, :160): its right-hand control is the 40x40 round search
+           * button 1:3781, not a see-all pill. Until 2026-09-10 this slot was empty and the
+           * header collapsed to the title's 24 — the row rendered 136 tall against the drawn 248.
+           * The remaining 96 is the second provider track, UNKNOWN #6 in the same inventory.
+           */}
+          <SectionHeader
+            title={spec.title}
+            icon={spec.icon}
+            className="gap-1"
+            headingId={`${spec.id}-heading`}
+          >
+            <SearchButton className="h-10 w-10" />
+          </SectionHeader>
           <ProviderRow providers={PROVIDERS} />
         </section>
       )
@@ -101,9 +107,17 @@ function Section({ spec }: { spec: SectionSpec }) {
       // beats rendering a card with blank fields that reads as a loading state.
       if (!tournament) return null
       return (
-        <section aria-label={spec.title ?? tournament.title} className="flex flex-col gap-4 px-gutter">
+        <section
+          aria-labelledby={spec.title ? `${spec.id}-heading` : undefined}
+          className="flex flex-col gap-4 px-gutter"
+        >
           {spec.title ? (
-            <SectionHeader title={spec.title} icon={spec.icon} seeAllLabel={spec.seeAllLabel} />
+            <SectionHeader
+              title={spec.title}
+              icon={spec.icon}
+              seeAllLabel={spec.seeAllLabel}
+              headingId={`${spec.id}-heading`}
+            />
           ) : null}
           <TournamentCard tournament={tournament} from={RENDERED_AT} />
         </section>

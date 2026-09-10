@@ -7,6 +7,7 @@ import recentWinsJson from '@/data/recentWins.json'
 import sportFiltersJson from '@/data/sportFilters.json'
 import tournamentsJson from '@/data/tournaments.json'
 import userJson from '@/data/user.json'
+import { SECTIONS } from './sections'
 import type {
   Category,
   FooterData,
@@ -14,6 +15,7 @@ import type {
   League,
   Provider,
   RecentWin,
+  SectionSpec,
   SportFilter,
   Tournament,
   UserProfile,
@@ -69,4 +71,36 @@ export function selectGames(
   if (filter.category) out = out.filter((g) => g.categories.includes(filter.category!))
   if (filter.provider) out = out.filter((g) => g.provider === filter.provider)
   return filter.limit ? out.slice(0, filter.limit) : out
+}
+
+/**
+ * Fewer tiles than one full column-line of three reads as a broken row, not a short one: under the
+ * `Краш Ігри` chip `Рекомендовані` came back with Space XY alone and `Популярне` with two tiles
+ * (measured 2026-09-10). Owner's decision of the same day: such a row is hidden whole.
+ */
+const MIN_ROW = 3
+
+/**
+ * What every game grid on the page draws for a chip, dealt top to bottom so no game is in two
+ * rows.
+ *
+ * Until 2026-09-10 each row cut its own filter independently, and 12 of the 48 tiles on the drawn
+ * page were repeats: `Краш Ігри` (category crash) and `Drop & Wins` (provider Spribe) shared five
+ * of six, because every Spribe game is a crash game. Dealing fixes the class rather than the pair:
+ * a row takes the first `limit` games of its own filter that no row above it has taken, so a new
+ * row or a reordered catalogue cannot bring a repeat back. A row that would draw fewer than
+ * MIN_ROW is dropped and takes nothing, so its games stay available to the rows below it.
+ */
+export function dealRows(category: Category['id'], specs: SectionSpec[] = SECTIONS) {
+  const taken = new Set<string>()
+  const rows = new Map<string, Game[]>()
+  const pool = gamesInCategory(category)
+  for (const spec of specs) {
+    if (spec.kind !== 'game-grid') continue
+    const games = selectGames(spec.filter, pool.filter((g) => !taken.has(g.slug)))
+    if (games.length < MIN_ROW) continue
+    for (const g of games) taken.add(g.slug)
+    rows.set(spec.id, games)
+  }
+  return rows
 }

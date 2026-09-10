@@ -19,6 +19,8 @@ interface SectionHeaderProps {
    * `gap-2` lost: measured 2026-09-10, the provider header read `gap: 8px` with both present.
    */
   className?: string
+  /** The `id` the enclosing section's `aria-labelledby` points at, so the name is said once. */
+  headingId?: string
 }
 
 /**
@@ -39,6 +41,7 @@ export function SectionHeader({
   seeAllLabel,
   children,
   className = 'gap-2',
+  headingId,
 }: SectionHeaderProps) {
   return (
     <div className={`flex w-full items-center ${className}`}>
@@ -50,7 +53,7 @@ export function SectionHeader({
           // preserveAspectRatio="none" and would stretch inside a forced square.
           <Icon src={SECTION_ICONS[icon]} alt="" width={20} height={20} className="h-5 w-auto" />
         ) : null}
-        <h2 className="whitespace-nowrap font-roboto text-section-title font-medium text-title">
+        <h2 id={headingId} className="whitespace-nowrap font-roboto text-section-title font-medium text-title">
           {title}
         </h2>
       </div>
