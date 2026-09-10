@@ -327,6 +327,7 @@ Recorded so nobody re-opens them without a reason.
 | Ukrainian only. No language switcher, even though the nav component carries ua/ru/en variants | 2026-09-10 |
 | Every finished piece is pushed to `main` as it lands, rather than held for a complete build | 2026-09-10 |
 | **This is a demo of how the Figma design looks on a live site, not a working product.** Effort goes on the front end and on appearance. Not everything has to function. Build what the Figma file draws; anything it does not draw is built only when the owner asks, or after asking and being answered | 2026-09-12 |
+| **Inert controls look inert**: every control with `aria-disabled="true"` renders at 50% opacity with a `not-allowed` cursor, restored to full on keyboard focus. One rule in `globals.css`, keyed on the attribute. An exception to "colours ship unchanged" | 2026-09-10 |
 
 ## Bug fixes
 

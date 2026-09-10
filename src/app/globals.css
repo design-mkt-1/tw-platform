@@ -211,3 +211,23 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Inert controls look inert. Owner's decision of 2026-09-10: every control the design gives no
+   target — Увійти, Реєстрація, DEPOSIT, the eight `Всі (120)` pills, ★, 🎁, `Всі ліги`,
+   `Більше ліг`, `Всі події`, Лайв, Кіберспорт, Теніс, Приєднатися and Купон — carries
+   `aria-disabled="true"`, and until now wore exactly the paint of a live one, so a sighted user
+   could not tell them apart (ux-audit-2026-09-10 B4-02). This is the one place that says how
+   they look, keyed on the attribute rather than on a class so a new inert control cannot forget.
+
+   Unlayered and after `@tailwind utilities` on purpose: it has to beat `INERT`'s
+   `cursor-default` and any caller's colour utilities at equal specificity.
+
+   Keyboard focus lifts it back to full strength. Opacity dims the focus ring with the control,
+   and a half-strength ring on a half-strength button is a focus state nobody can find. */
+[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+[aria-disabled='true']:focus-visible {
+  opacity: 1;
+}

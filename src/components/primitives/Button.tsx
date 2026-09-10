@@ -24,6 +24,9 @@ import type { ComponentProps, ReactNode } from 'react'
  * `active:scale-[0.97]`. A caller that keeps the primitive needs `!` to win instead: a control
  * that squashes under a finger and then does nothing is a lie told twice.
  *
+ * How an inert control LOOKS (half opacity, `not-allowed` cursor) is not here: globals.css keys
+ * it on `aria-disabled="true"`, so the hand-built six get it too.
+ *
  * Lives here rather than in a panel because the same four buttons appear in two places —
  * `Увійти` and `Реєстрація` are drawn both in the header (1:3295, 1:3297) and in the menu
  * (1:6651, 1:6653), and a string copied into both files drifts.
