@@ -11,6 +11,10 @@ import { assertApp } from './assert-app.mjs'
  */
 const OUT = process.argv[2]
 const BASE = process.argv[3] ?? 'http://localhost:3000'
+// Trailing slash stripped once, so every URL below is built the same way. `${ROOT}/sport`
+// silently produces `http://localhost:3000sport`, which resolves to nothing and is captured
+// as a blank page rather than an error.
+const ROOT = BASE.replace(/\/$/, '')
 
 if (!OUT) {
   console.error('usage: node scripts/review.mjs <outDir> [baseUrl]')
@@ -89,63 +93,45 @@ async function shot(name, { width, height, url = BASE, steps, full = false }) {
   }
 }
 
-const openSearch = async (page) => {
-  /*
-   * The category bar's search affordance looks like a field but is a button carrying the text
-   * "Search games..." (CategoryNavBar). The real input lives in the overlay it opens. Matching on
-   * placeholder therefore finds nothing at 1440; the accessible name comes from the button's text.
-   * `visible=true` is still needed because the mobile header has its own hidden copy.
-   */
-  await page
-    .getByRole('button', { name: /search games/i })
-    .locator('visible=true')
-    .first()
-    .click()
-  await page.waitForTimeout(500)
-}
+/*
+ * Every state the Top-Win design draws, at the one width the design has.
+ *
+ * The Figma file contains no desktop frame, no tablet frame and no breakpoint, so every shot is
+ * 390 wide. The predecessor's list was two thirds desktop; carrying that over would have
+ * produced ten captures of a layout that was never designed.
+ *
+ * States are reached by URL rather than by clicking, through the contract in
+ * src/components/UrlStateBridge.tsx. A state nobody can link to is a state nobody can review:
+ * before those parameters existed, a capture called "the balance panel" was only ever a capture
+ * of the default page.
+ */
+await shot('casino-home', { width: 390, height: 844, full: true })
+await shot('casino-home-prelogin', { width: 390, height: 844, full: true, url: `${ROOT}/?auth=prelogin` })
 
-await shot('desktop-main', { width: 1440, height: 1000, full: true })
-await shot('mob-main', { width: 390, height: 844, full: true })
-await shot('mobile-nav', { width: 390, height: 844 })
+await shot('sport', { width: 390, height: 844, full: true, url: `${ROOT}/sport` })
+await shot('sport-prelogin', { width: 390, height: 844, full: true, url: `${ROOT}/sport?auth=prelogin` })
 
-await shot('search-1-popular-recent', { width: 1440, height: 900, steps: openSearch })
+await shot('menu-postlogin', { width: 390, height: 844, url: `${ROOT}/?panel=menu` })
+await shot('menu-prelogin', { width: 390, height: 844, url: `${ROOT}/?auth=prelogin&panel=menu` })
+await shot('menu-vip', { width: 390, height: 844, url: `${ROOT}/?auth=vip&panel=menu` })
 
-await shot('search-2-suggestions', {
-  width: 1440,
-  height: 900,
-  steps: async (page) => {
-    await openSearch(page)
-    // "swe" matches three Sweet Bonanza titles. An earlier run used "zeu" for Zeus, which matches
-    // nothing — the game is called Gates of Olympus — and made a correct empty state look like a bug.
-    await page.keyboard.type('swe', { delay: 60 })
-    await page.waitForTimeout(400)
-  },
-})
-
-await shot('search-3-no-results', {
-  width: 1440,
-  height: 900,
-  steps: async (page) => {
-    await openSearch(page)
-    await page.keyboard.type('xyzzy', { delay: 60 })
-    await page.waitForTimeout(400)
-  },
-})
-
-await shot('panel-balance', { width: 1440, height: 1000, url: `${BASE}?panel=balance` })
-await shot('panel-personal', { width: 1440, height: 1000, url: `${BASE}?panel=personalInfo` })
-
-await shot('auth-prelogin', { width: 1440, height: 700, url: `${BASE}?auth=prelogin` })
-await shot('auth-vip', { width: 1440, height: 700, url: `${BASE}?auth=vip` })
-
-await shot('mob-menu-prelogin', { width: 390, height: 900, url: `${BASE}?auth=prelogin&panel=jackpotMenu` })
-await shot('mob-menu-postlogin', { width: 390, height: 900, url: `${BASE}?auth=postlogin&panel=jackpotMenu` })
-await shot('mob-menu-vip', { width: 390, height: 900, url: `${BASE}?auth=vip&panel=jackpotMenu` })
-
-// The provider-search empty state is still being built; `?pq=` is captured either way so the shot
-// starts telling the truth the moment the param is wired up.
-await shot('providers-no-results-mob', { width: 390, height: 844, url: `${BASE}?pq=xyzgame` })
-await shot('providers-no-results-desktop', { width: 1440, height: 1000, url: `${BASE}?pq=xyzgame` })
+/*
+ * The four search frames are one component with a state derived from the query, so the query is
+ * what selects them.
+ *
+ * 'bon' matches Sweet Bonanza and Sweet Bonanza CandyLand. The hit probe is Latin because the
+ * catalogue is Latin, and deliberately so — the design's own tile reads GATES OF OLYMPUS 1000
+ * and its suggestions read Pragmatic Play. An earlier version of this file probed with 'бон',
+ * which matches nothing here, so it would have captured the empty state and filed it under
+ * 'search-suggestions'. The screenshot would have looked like a design decision.
+ *
+ * 'ксзщ' matches nothing and is Cyrillic on purpose: it is the home row on a Ukrainian keyboard,
+ * so it is a string a player could actually produce, and it also proves the search survives
+ * Cyrillic input at all.
+ */
+await shot('search-resting', { width: 390, height: 844, url: `${ROOT}/?panel=search` })
+await shot('search-suggestions', { width: 390, height: 844, url: `${ROOT}/?panel=search&q=bon` })
+await shot('search-no-results', { width: 390, height: 844, url: `${ROOT}/?panel=search&q=${encodeURIComponent('ксзщ')}` })
 
 await browser.close()
 

@@ -43,10 +43,10 @@ const STATES = [
   { name: 'menu-prelogin', path: '/?auth=prelogin&panel=menu', width: 390, height: 844 },
   { name: 'menu-vip', path: '/?auth=vip&panel=menu', width: 390, height: 844 },
   { name: 'search-resting', path: '/?panel=search', width: 390, height: 844 },
-  // 'бон' matches the catalogue; 'ксзщ' matches nothing. Both are Cyrillic on purpose — a Latin
-  // probe would pass even if the normaliser still stripped Cyrillic, which is the exact defect
-  // src/lib/search.ts was rewritten to fix.
-  { name: 'search-suggestions', path: '/?panel=search&q=%D0%B1%D0%BE%D0%BD', width: 390, height: 844 },
+  // 'bon' matches Sweet Bonanza; the catalogue is Latin, as the design's own tiles are. 'ксзщ'
+  // matches nothing and is the home row on a Ukrainian keyboard, so it also proves the search
+  // survives Cyrillic input — the defect src/lib/search.ts was rewritten to fix.
+  { name: 'search-suggestions', path: '/?panel=search&q=bon', width: 390, height: 844 },
   { name: 'search-no-results', path: '/?panel=search&q=%D0%BA%D1%81%D0%B7%D1%89', width: 390, height: 844 },
 ]
 

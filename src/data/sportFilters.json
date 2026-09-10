@@ -1,0 +1,20 @@
+[
+  {
+    "id": "football",
+    "label": "Футбол",
+    "icon": "football",
+    "count": 310
+  },
+  {
+    "id": "basketball",
+    "label": "Баскетбол",
+    "icon": "basketball",
+    "count": 84
+  },
+  {
+    "id": "tennis",
+    "label": "Теніс",
+    "icon": "tennis",
+    "count": 46
+  }
+]

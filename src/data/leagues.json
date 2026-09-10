@@ -1,0 +1,141 @@
+[
+  {
+    "id": "ucl",
+    "sport": "football",
+    "sportLabel": "Футбол",
+    "name": "Ліга Чемпіонів УЄФА",
+    "matches": [
+      {
+        "id": "ucl-napoli-arsenal",
+        "kickoff": "Сьогодні, 22:00",
+        "channel": "● EP",
+        "isLive": false,
+        "home": { "name": "Наполі", "badge": "🔵" },
+        "away": { "name": "Арсенал", "badge": "🔴" },
+        "odds": { "home": 5.68, "draw": 4.0, "away": 1.62 }
+      },
+      {
+        "id": "ucl-liverpool-atletico",
+        "kickoff": "Сьогодні, 19:45",
+        "channel": "● EP",
+        "isLive": false,
+        "home": { "name": "Ліверпуль", "badge": "🔴" },
+        "away": { "name": "Атлетіко", "badge": "🔷" },
+        "odds": { "home": 1.77, "draw": 3.96, "away": 4.46 }
+      }
+    ]
+  },
+  {
+    "id": "upl",
+    "sport": "football",
+    "sportLabel": "Футбол",
+    "name": "Українська Прем’єр-ліга",
+    "matches": [
+      {
+        "id": "upl-dynamo-shakhtar",
+        "kickoff": "Сьогодні, 18:00",
+        "channel": "● EP",
+        "isLive": false,
+        "home": { "name": "Динамо", "badge": "🔵" },
+        "away": { "name": "Шахтар", "badge": "🔴" },
+        "odds": { "home": 2.45, "draw": 3.35, "away": 2.81 }
+      },
+      {
+        "id": "upl-zorya-polissya",
+        "kickoff": "Сьогодні, 15:30",
+        "channel": "● EP",
+        "isLive": false,
+        "home": { "name": "Зоря", "badge": "🔷" },
+        "away": { "name": "Полісся", "badge": "🔵" },
+        "odds": { "home": 2.06, "draw": 3.42, "away": 3.55 }
+      },
+      {
+        "id": "upl-kryvbas-veres",
+        "kickoff": "Сьогодні, 13:00",
+        "channel": "● EP",
+        "isLive": false,
+        "home": { "name": "Кривбас", "badge": "🔴" },
+        "away": { "name": "Верес", "badge": "🔷" },
+        "odds": { "home": 1.92, "draw": 3.47, "away": 3.94 }
+      }
+    ]
+  },
+  {
+    "id": "epl",
+    "sport": "football",
+    "sportLabel": "Футбол",
+    "name": "Англійська Прем’єр-ліга",
+    "matches": [
+      {
+        "id": "epl-mancity-chelsea",
+        "kickoff": "Сьогодні, 17:30",
+        "channel": "● EP",
+        "isLive": false,
+        "home": { "name": "Манчестер Сіті", "badge": "🔵" },
+        "away": { "name": "Челсі", "badge": "🔷" },
+        "odds": { "home": 1.71, "draw": 4.15, "away": 4.62 }
+      },
+      {
+        "id": "epl-tottenham-astonvilla",
+        "kickoff": "Сьогодні, 20:00",
+        "channel": "● EP",
+        "isLive": false,
+        "home": { "name": "Тоттенгем", "badge": "🔷" },
+        "away": { "name": "Астон Вілла", "badge": "🔴" },
+        "odds": { "home": 2.31, "draw": 3.58, "away": 2.97 }
+      }
+    ]
+  },
+  {
+    "id": "laliga",
+    "sport": "football",
+    "sportLabel": "Футбол",
+    "name": "Ла Ліга",
+    "matches": [
+      {
+        "id": "laliga-real-sevilla",
+        "kickoff": "Сьогодні, 21:00",
+        "channel": "● EP",
+        "isLive": false,
+        "home": { "name": "Реал Мадрид", "badge": "🔵" },
+        "away": { "name": "Севілья", "badge": "🔴" },
+        "odds": { "home": 1.38, "draw": 5.05, "away": 7.45 }
+      },
+      {
+        "id": "laliga-barcelona-valencia",
+        "kickoff": "Сьогодні, 19:00",
+        "channel": "● EP",
+        "isLive": false,
+        "home": { "name": "Барселона", "badge": "🔴" },
+        "away": { "name": "Валенсія", "badge": "🔷" },
+        "odds": { "home": 1.26, "draw": 6.25, "away": 10.5 }
+      }
+    ]
+  },
+  {
+    "id": "euroleague",
+    "sport": "basketball",
+    "sportLabel": "Баскетбол",
+    "name": "Євроліга",
+    "matches": [
+      {
+        "id": "euroleague-baskonia-panathinaikos",
+        "kickoff": "Сьогодні, 21:45",
+        "channel": "● EP",
+        "isLive": false,
+        "home": { "name": "Басконія", "badge": "🔵" },
+        "away": { "name": "Панатінаїкос", "badge": "🔷" },
+        "odds": { "home": 1.62, "draw": 15.5, "away": 2.55 }
+      },
+      {
+        "id": "euroleague-fenerbahce-olympiacos",
+        "kickoff": "Сьогодні, 19:30",
+        "channel": "● EP",
+        "isLive": false,
+        "home": { "name": "Фенербахче", "badge": "🔴" },
+        "away": { "name": "Олімпіакос", "badge": "🔵" },
+        "odds": { "home": 2.12, "draw": 16.75, "away": 1.86 }
+      }
+    ]
+  }
+]

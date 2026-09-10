@@ -3,7 +3,8 @@
     "ui-ux-pro-max@ui-ux-pro-max-skill": true,
     "ponytail@ponytail": true,
     "caveman@caveman": true,
-    "superpowers@claude-plugins-official": true
+    "superpowers@claude-plugins-official": true,
+    "figma@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "ui-ux-pro-max-skill": {

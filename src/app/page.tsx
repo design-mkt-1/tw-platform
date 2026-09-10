@@ -5,7 +5,6 @@ import { ProviderRow } from '@/components/casino/ProviderRow'
 import { RecentWinsTicker } from '@/components/casino/RecentWinsTicker'
 import { SectionHeader } from '@/components/casino/SectionHeader'
 import { TournamentCard } from '@/components/casino/TournamentCard'
-import { BottomNavBar } from '@/components/layout/BottomNavBar'
 import { CategoryBar } from '@/components/layout/CategoryBar'
 import { Header } from '@/components/layout/Header'
 import { MobileShell } from '@/components/layout/MobileShell'
@@ -109,7 +108,6 @@ export default function Home() {
           <Footer />
         </main>
       </MobileShell>
-      <BottomNavBar />
     </>
   )
 }

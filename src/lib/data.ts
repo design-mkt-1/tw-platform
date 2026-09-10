@@ -1,16 +1,20 @@
 import categoriesJson from '@/data/categories.json'
 import footerJson from '@/data/footer.json'
 import gamesJson from '@/data/games.json'
+import leaguesJson from '@/data/leagues.json'
 import providersJson from '@/data/providers.json'
 import recentWinsJson from '@/data/recentWins.json'
+import sportFiltersJson from '@/data/sportFilters.json'
 import tournamentsJson from '@/data/tournaments.json'
 import userJson from '@/data/user.json'
 import type {
   Category,
   FooterData,
   Game,
+  League,
   Provider,
   RecentWin,
+  SportFilter,
   Tournament,
   UserProfile,
 } from './types'
@@ -30,6 +34,8 @@ export const RECENT_WINS = recentWinsJson as RecentWin[]
 export const TOURNAMENTS = tournamentsJson as Tournament[]
 export const FOOTER = footerJson as FooterData
 export const USER = userJson as UserProfile
+export const LEAGUES = leaguesJson as League[]
+export const SPORT_FILTERS = sportFiltersJson as SportFilter[]
 
 /** Rows select from the catalogue through here, so a row is a filter and not a hand-picked list. */
 export function selectGames(
