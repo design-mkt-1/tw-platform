@@ -2,6 +2,7 @@
 
 import { create } from 'zustand'
 import { SPORT_ICONS } from '@/lib/assets'
+import { INERT } from '@/components/primitives/Button'
 import { Icon } from '@/components/primitives/Icon'
 
 /* --- the bet slip's state -------------------------------------------------- */
@@ -49,19 +50,21 @@ export const useBetSlip = create<BetSlipState>((set) => ({
  * docking, its trigger or its lifetime (07-sport.md UNKNOWN #7). It docks bottom-right, 16px — the
  * page gutter — above the painted bottom-nav plate, and it is absent until a selection exists.
  *
- * The outer frame copies BottomNavBar: `mx-auto w-[390px]` so the button tracks the 390px page
- * rather than the viewport edge, `pointer-events-none` so the empty band beside it stays
+ * The outer frame is `mx-auto w-full max-w-[390px]` so the button tracks the 390px page column
+ * above 390 and the viewport's own gutter below it — a fixed `w-[390px]` put its right edge at
+ * x 374 on a 375 screen, `pointer-events-none` so the empty band beside it stays
  * transparent to taps, and the same `env(safe-area-inset-bottom)` term the nav is pinned with.
  * `z-30` keeps it under the nav (z-40) and under a Sheet (z-50).
  *
  * There is no selection count anywhere in the design — just the ticket and the word `Купон` — so
- * none is drawn or announced. That is a gap in the design, not a simplification here.
+ * none is drawn. It is announced, though: `aria-label` is "Купон, N", the design's word plus the
+ * number, so a screen reader hears that a pick landed. No new copy.
  *
  * **It has no destination, and that is a known open question rather than an oversight.** The Figma
  * file draws no bet-slip panel, sheet or route for `Купон` to open — 1:6484 is the only node about
  * the slip in the whole page — so inventing one would invent a screen. Until the owner says what
- * it opens, the button carries no `onClick`. Flagged, not quietly shipped: a control that looks
- * pressable and does nothing is exactly the defect class MobileShell's comment records.
+ * it opens, the button carries no `onClick`, and so it is `aria-disabled` with `INERT`: no
+ * press squash on a control that does nothing — the defect class MobileShell's comment records.
  */
 export function BetSlipFab() {
   const count = useBetSlip((state) => Object.keys(state.selections).length)
@@ -85,17 +88,18 @@ export function BetSlipFab() {
       <div aria-hidden className="h-[60px]" />
 
       <div
-        className="pointer-events-none fixed inset-x-0 z-30 mx-auto flex w-[390px] justify-end px-gutter"
+        className="pointer-events-none fixed inset-x-0 z-30 mx-auto flex w-full max-w-[390px] justify-end px-gutter"
         // Inline because Tailwind cannot express the env() term, and this is the same expression
         // MobileShell's spacer and BottomNavBar's `bottom` are built from.
         style={{ bottom: 'calc(var(--nav-bar-h) + env(safe-area-inset-bottom) + 16px)' }}
       >
         <button
           type="button"
+          aria-disabled="true"
+          aria-label={`Купон, ${count}`}
           // 16 + 20 + 8 + 44 + 16 = 104 and h-11 = 44, so the measured box falls out of the padding
-          // rather than being pinned. The pressed state is Button's invented `active:scale`, so
-          // this presses like every other control in the build.
-          className="pointer-events-auto inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full bg-hot px-4 shadow-fab transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
+          // rather than being pinned.
+          className={`pointer-events-auto inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full bg-hot px-4 shadow-fab ${INERT}`}
         >
           <Icon src={SPORT_ICONS.betslip} alt="" width={20} height={20} className="h-5 w-5" />
           {/* 1:6487 — Inter Regular 15, white. 3.30:1 on this fill: a recorded failure, shipped as

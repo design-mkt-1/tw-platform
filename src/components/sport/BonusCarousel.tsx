@@ -100,12 +100,14 @@ function Slide() {
        *
        * `!font-bold` is not decoration: the `cta` variant sets `font-semibold`, Tailwind emits
        * `.font-semibold` after `.font-bold`, so a plain `font-bold` loses the cascade wherever
-       * it sits in the class string. The 28px target is under the 44px minimum; it ships as
-       * drawn and the failure is reported rather than silently redesigned.
+       * it sits in the class string. The 28px box ships as drawn; an invisible `after:` layer 8px
+       * above and below makes the target 44 tall (96.5 x 44) without moving a pixel. It stays
+       * inside the 170-tall slide (127 − 8 = 119, 155 + 8 = 163). It does not grow sideways:
+       * review.mjs Guard 2 counts a bleed past the right edge as horizontal overflow.
        */}
       <ButtonLink
         href="/deposit"
-        className="absolute left-[20.5px] top-[127px] h-7 px-4 text-sm uppercase !font-bold"
+        className="absolute left-[20.5px] top-[127px] h-7 px-4 text-sm uppercase !font-bold after:absolute after:inset-x-0 after:-inset-y-2 after:content-['']"
       >
         Депозит
       </ButtonLink>

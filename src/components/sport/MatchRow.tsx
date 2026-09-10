@@ -1,5 +1,6 @@
 'use client'
 
+import { useId } from 'react'
 import { OddsCell } from './OddsCell'
 import { useBetSlip, type BetOutcome } from './BetSlipFab'
 import type { Match } from '@/lib/types'
@@ -33,6 +34,9 @@ export function MatchRow({ match }: { match: Match }) {
   // A primitive, so this row re-renders only when its own selection changes.
   const selected = useBetSlip((state) => state.selections[match.id])
   const toggle = useBetSlip((state) => state.toggle)
+  // Names the fixture for each odds cell: "1 5.68" alone, ×33 on the page, says nothing of which
+  // match it prices. The teams block below is the description, so no new copy is written.
+  const teamsId = useId()
 
   return (
     <li className="flex items-end gap-2 bg-row px-2 pb-3 pt-2">
@@ -80,7 +84,9 @@ export function MatchRow({ match }: { match: Match }) {
          * design separates it from the name with **two** spaces preserved by `white-space:
          * pre-wrap`. Both are reproduced literally.
          */}
-        <div className="flex w-full min-w-0 flex-col gap-1 whitespace-pre-wrap font-roboto text-xs font-medium text-title">
+        <div
+          id={teamsId}
+          className="flex w-full min-w-0 flex-col gap-1 whitespace-pre-wrap font-roboto text-xs font-medium text-title">
           <span className="truncate">{`${match.home.badge}  ${match.home.name}`}</span>
           <span className="truncate">{`${match.away.badge}  ${match.away.name}`}</span>
         </div>
@@ -106,6 +112,7 @@ export function MatchRow({ match }: { match: Match }) {
               label={outcome.label}
               value={match.odds[outcome.key]}
               selected={selected === outcome.key}
+              describedBy={teamsId}
               onToggle={() => toggle(match.id, outcome.key)}
             />
           ))}

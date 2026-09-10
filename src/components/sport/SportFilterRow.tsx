@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { create } from 'zustand'
+import { INERT } from '@/components/primitives/Button'
 import { SPORT_ICONS } from '@/lib/assets'
-import { SPORT_FILTERS } from '@/lib/data'
+import { LEAGUES, SPORT_FILTERS } from '@/lib/data'
 import type { SportId } from '@/lib/types'
 
 /**
@@ -27,6 +28,22 @@ import type { SportId } from '@/lib/types'
  * from the token and the SVG supplies only the shape. No asset was edited to do this.
  */
 
+/**
+ * The selected pill, shared with `LeagueList`, which filters the cards under "Майбутні Події" by
+ * it. A store of its own for the reason `useBetSlip` has one: nothing here belongs in the URL.
+ */
+export const useSportFilter = create<{ sport: SportId; setSport: (sport: SportId) => void }>(
+  (set) => ({ sport: SPORT_FILTERS[0].id, setSport: (sport) => set({ sport }) }),
+)
+
+/**
+ * A pill whose sport has no league in `leagues.json` would empty the list, so it is inert
+ * instead: Теніс today (0 of 5 leagues). Derived from the data rather than listed, so adding a
+ * tennis league brings the pill to life with no edit here. Its count keeps the design's literal
+ * (46) — the counts are drawn numbers, not a tally of this file.
+ */
+const LIVE_SPORTS = new Set(LEAGUES.map((league) => league.sport))
+
 /** Only the shape comes from the file; `background-color` paints it. */
 function maskStyle(src: string) {
   return {
@@ -42,26 +59,30 @@ function maskStyle(src: string) {
 }
 
 export function SportFilterRow() {
-  const [active, setActive] = useState<SportId>(SPORT_FILTERS[0].id)
+  const active = useSportFilter((state) => state.sport)
+  const setActive = useSportFilter((state) => state.setSport)
 
   return (
     // 12px padding-block, 16px padding-inline, 8px gap — 1:6333.
     <div className="scrollbar-none flex gap-2 overflow-x-auto px-gutter py-3">
       {SPORT_FILTERS.map((filter) => {
         const isActive = filter.id === active
+        const inert = !LIVE_SPORTS.has(filter.id)
 
         return (
           <button
             key={filter.id}
             type="button"
             aria-pressed={isActive}
-            onClick={() => setActive(filter.id)}
+            aria-disabled={inert || undefined}
+            onClick={inert ? undefined : () => setActive(filter.id)}
             className={[
               // 36 tall, 4px padding-inline, 8px gap, radius 10, no border in either state —
               // a row scan across every pill edge steps straight from page to fill.
               'flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-chip px-1',
               'text-sm text-primary',
               isActive ? 'bg-surface shadow-card' : 'bg-muted',
+              inert ? INERT : '',
             ].join(' ')}
           >
             <span

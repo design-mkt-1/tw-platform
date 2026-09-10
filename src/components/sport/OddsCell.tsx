@@ -33,15 +33,18 @@ interface OddsCellProps {
   label: string
   value: number
   selected: boolean
+  /** Id of the row's teams block, so the cell is announced with its fixture. */
+  describedBy: string
   onToggle: () => void
 }
 
-export function OddsCell({ label, value, selected, onToggle }: OddsCellProps) {
+export function OddsCell({ label, value, selected, describedBy, onToggle }: OddsCellProps) {
   return (
     <button
       type="button"
       aria-pressed={selected}
       aria-label={`${label} ${value.toFixed(2)}`}
+      aria-describedby={describedBy}
       onClick={onToggle}
       className={[
         'flex h-[42px] min-w-px flex-1 items-center justify-center rounded-chip',

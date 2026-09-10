@@ -64,9 +64,10 @@ export function LeagueStrip() {
       </div>
 
       {/* 1:6089 — 60 tall, tiles at y=8 with a 4px gap, then "More leagues" as a full-height
-          column rather than a tile. */}
+          column rather than a tile. aria-hidden on the list: eight identical unnamed badges read
+          as "list, 8 items" of nothing. */}
       <div className="scrollbar-none flex h-[60px] items-center overflow-x-auto pl-gutter">
-        <ul className="flex shrink-0 gap-1">
+        <ul aria-hidden="true" className="flex shrink-0 gap-1">
           {Array.from({ length: TILE_COUNT }, (_, index) => (
             <li
               key={index}

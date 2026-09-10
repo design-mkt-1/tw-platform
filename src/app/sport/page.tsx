@@ -1,6 +1,6 @@
 import { BetSlipFab } from '@/components/sport/BetSlipFab'
 import { BonusCarousel } from '@/components/sport/BonusCarousel'
-import { LeagueCard } from '@/components/sport/LeagueCard'
+import { LeagueList } from '@/components/sport/LeagueList'
 import { LeagueStrip } from '@/components/sport/LeagueStrip'
 import { PrematchLiveToggle } from '@/components/sport/PrematchLiveToggle'
 import { SportFilterRow } from '@/components/sport/SportFilterRow'
@@ -9,7 +9,6 @@ import { UpcomingHeader } from '@/components/sport/UpcomingHeader'
 import { Header } from '@/components/layout/Header'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { UrlStateBridge } from '@/components/UrlStateBridge'
-import { LEAGUES } from '@/lib/data'
 
 /**
  * The sportsbook, frame `1:5994` "Prelog log" / `1:88` "Post log", 390 x 1021.
@@ -70,11 +69,8 @@ export default function SportPage() {
            */}
           <section aria-label="Майбутні Події" className="flex flex-col gap-2 px-gutter pt-gutter">
             <UpcomingHeader />
-            <div className="flex flex-col gap-5">
-              {LEAGUES.map((league) => (
-                <LeagueCard key={league.id} league={league} />
-              ))}
-            </div>
+            {/* Filtered by the pill selected in `SportFilterRow`, through the `useSportFilter` store. */}
+            <LeagueList />
           </section>
         </main>
 

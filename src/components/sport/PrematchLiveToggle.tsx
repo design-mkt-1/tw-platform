@@ -1,7 +1,5 @@
-'use client'
-
-import { useState } from 'react'
 import type { ReactNode } from 'react'
+import { INERT } from '@/components/primitives/Button'
 import { Icon } from '@/components/primitives/Icon'
 import { SPORT_ICONS } from '@/lib/assets'
 
@@ -24,6 +22,10 @@ import { SPORT_ICONS } from '@/lib/assets'
  *
  * The container declares no background. The `--bg-page` seen inside it at y 60..83 and 136..151
  * is the page showing through (23-gap-sport-chrome.md §5), so nothing is painted here.
+ *
+ * **Лайв is inert** (owner's decision of 2026-09-10): the file draws no live list for it to open,
+ * so it is `aria-disabled` with `INERT`, like ★ Обране in SportNavRow, and Прематч stays the
+ * selected tab. No state is held — there is nothing for a second value to change.
  */
 
 const MODES = [
@@ -33,18 +35,14 @@ const MODES = [
   { id: 'live', label: 'Лайв' },
 ] as const
 
-type ModeId = (typeof MODES)[number]['id']
-
 export function PrematchLiveToggle({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ModeId>('prematch')
-
   return (
     <section className="w-full overflow-hidden rounded-xl pt-3 shadow-container">
       <div className="px-gutter pt-3">
         {/* 1:6009 — 358x52, radius 999, 4px padding and 4px gap. Children are flex:1 → 173x44. */}
         <div className="flex h-[52px] gap-1 rounded-full bg-track p-1">
           {MODES.map((item) => {
-            const isActive = item.id === mode
+            const isActive = item.id === 'prematch'
 
             return (
               <button
@@ -55,13 +53,13 @@ export function PrematchLiveToggle({ children }: { children: ReactNode }) {
                 // would require, and Tab still reaches both. CategoryBar uses `tab` because it
                 // switches the grid under it; this switches nothing yet.
                 aria-pressed={isActive}
-                onClick={() => setMode(item.id)}
+                aria-disabled={isActive ? undefined : true}
                 className={[
                   'flex h-full flex-1 items-center justify-center gap-2 rounded-full',
                   // The label is #102A67 in BOTH tabs — pixel-confirmed on the 1:1 render, the
                   // selected state is fill plus one shadow and nothing else.
                   'text-md text-primary',
-                  isActive ? 'bg-surface shadow-card' : '',
+                  isActive ? 'bg-surface shadow-card' : INERT,
                 ]
                   .filter(Boolean)
                   .join(' ')}

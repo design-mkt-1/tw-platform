@@ -1,12 +1,15 @@
-'use client'
-
-import { useState } from 'react'
+import { INERT } from '@/components/primitives/Button'
 
 /**
  * The Спорт / Кіберспорт switcher plus the Favorites and Gifts buttons — node 1:6016, a child
  * of 1:6007 (see PrematchLiveToggle).
  *
- * Widths add up exactly: 254 + 8 + 44 + 8 + 44 = 358, the page's content width.
+ * Widths add up exactly at 390: 254 + 8 + 44 + 8 + 44 = 358, the page's content width. Below
+ * 390 the switch is the part that gives (`flex-1 min-w-0`, chips `flex-1`), so the two 44px
+ * buttons keep their size and the 16px gutter holds: at 375 a fixed 254 pushed 🎁 to x 374.
+ *
+ * **Кіберспорт is inert** (owner's decision of 2026-09-10): there is no e-sport list in the file
+ * to switch to, so it is `aria-disabled` with `INERT` and Спорт stays pressed. No state is held.
  *
  * The active chip is the same recipe as the casino category bar — fill `--chip-active`, no
  * border, `--shadow-chip-active` — and the label is `--text-primary` in both states. That fill
@@ -23,8 +26,6 @@ const SWITCHER = [
   { id: 'esport', label: 'Кіберспорт' },
 ] as const
 
-type SwitchId = (typeof SWITCHER)[number]['id']
-
 /**
  * 1:6023 and 1:6025 have a resting state and nothing else — no target, no active variant, no
  * count or badge. `aria-disabled` says that out loud instead of drawing a control that swallows
@@ -35,26 +36,25 @@ const ICON_BUTTON =
   'flex h-11 w-11 shrink-0 cursor-default items-center justify-center rounded-track bg-tint'
 
 export function SportNavRow() {
-  const [active, setActive] = useState<SwitchId>('sport')
-
   return (
     <div className="flex h-[76px] items-center overflow-hidden px-gutter py-2">
       <div className="flex flex-1 items-center gap-2">
-        {/* 1:6018 — 254x44, radius 13, 4px padding, 4px gap. */}
-        <div className="flex h-11 w-[254px] shrink-0 gap-1 rounded-track bg-tint p-1">
+        {/* 1:6018 — 254x44 at 390, radius 13, 4px padding, 4px gap. */}
+        <div className="flex h-11 min-w-0 flex-1 gap-1 rounded-track bg-tint p-1">
           {SWITCHER.map((item) => {
-            const isActive = item.id === active
+            const isActive = item.id === 'sport'
 
             return (
               <button
                 key={item.id}
                 type="button"
                 aria-pressed={isActive}
-                onClick={() => setActive(item.id)}
+                aria-disabled={isActive ? undefined : true}
                 className={[
-                  'flex h-9 w-[121px] items-center justify-center rounded-chip',
+                  // 121 wide at 390 = (254 − 2×4 − 4) / 2.
+                  'flex h-9 min-w-0 flex-1 items-center justify-center rounded-chip',
                   'text-chip text-primary',
-                  isActive ? 'bg-chip-active shadow-chip-active' : '',
+                  isActive ? 'bg-chip-active shadow-chip-active' : INERT,
                 ]
                   .filter(Boolean)
                   .join(' ')}
