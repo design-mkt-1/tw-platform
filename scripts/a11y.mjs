@@ -27,16 +27,26 @@ if (!OUT) {
 
 const AXE = 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js'
 
+// Every state the Top-Win design draws, addressed through the query-string contract in
+// src/components/UrlStateBridge.tsx: auth = prelogin | postlogin | vip, panel = menu | search,
+// q = the search query.
+//
+// All 390 wide. The Figma file has no desktop frame, no tablet frame and no breakpoint, so a
+// 1440 row here would be testing a layout that does not exist.
 const STATES = [
-  { name: 'mob-home', path: '/', width: 390, height: 844 },
-  { name: 'mob-menu', path: '/?panel=jackpotMenu', width: 390, height: 844 },
-  { name: 'mob-menu-prelogin', path: '/?auth=prelogin&panel=jackpotMenu', width: 390, height: 844 },
-  { name: 'mob-providers-no-results', path: '/?pq=xyzgame', width: 390, height: 844 },
-  { name: 'desktop-home', path: '/', width: 1440, height: 1000 },
-  { name: 'desktop-panel-balance', path: '/?panel=balance', width: 1440, height: 1000 },
-  { name: 'desktop-panel-personal', path: '/?panel=personalInfo', width: 1440, height: 1000 },
-  { name: 'desktop-search-suggestions', path: '/?q=swe', width: 1440, height: 1000 },
-  { name: 'desktop-providers-no-results', path: '/?pq=xyzgame', width: 1440, height: 1000 },
+  { name: 'casino-home', path: '/', width: 390, height: 844 },
+  { name: 'casino-home-prelogin', path: '/?auth=prelogin', width: 390, height: 844 },
+  { name: 'sport', path: '/sport', width: 390, height: 844 },
+  { name: 'sport-prelogin', path: '/sport?auth=prelogin', width: 390, height: 844 },
+  { name: 'menu-postlogin', path: '/?panel=menu', width: 390, height: 844 },
+  { name: 'menu-prelogin', path: '/?auth=prelogin&panel=menu', width: 390, height: 844 },
+  { name: 'menu-vip', path: '/?auth=vip&panel=menu', width: 390, height: 844 },
+  { name: 'search-resting', path: '/?panel=search', width: 390, height: 844 },
+  // 'бон' matches the catalogue; 'ксзщ' matches nothing. Both are Cyrillic on purpose — a Latin
+  // probe would pass even if the normaliser still stripped Cyrillic, which is the exact defect
+  // src/lib/search.ts was rewritten to fix.
+  { name: 'search-suggestions', path: '/?panel=search&q=%D0%B1%D0%BE%D0%BD', width: 390, height: 844 },
+  { name: 'search-no-results', path: '/?panel=search&q=%D0%BA%D1%81%D0%B7%D1%89', width: 390, height: 844 },
 ]
 
 mkdirSync(OUT, { recursive: true })

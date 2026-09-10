@@ -1,95 +1,61 @@
-import { providers } from './data'
-import type { Game } from './types'
+import type { Game, Provider } from './types'
 
 /**
- * One search implementation for all three search states (popular/recent, typing, no results).
- * Having the three screens share it is the point: otherwise "Bonanza" would return four rows in
- * one state and three in another and nobody would know which was right.
+ * Catalogue search.
+ *
+ * The predecessor project's normaliser ended with `.replace(/[^a-z0-9]+/g, ' ')`, which strips
+ * every character outside the ASCII alphabet. On a Ukrainian catalogue that is not a cosmetic
+ * problem: `Солодкий бонанза` normalises to an empty string, every title collapses to the same
+ * value, and the search returns nothing for any query a player could type. The class below is
+ * built from what to REMOVE (punctuation and separators) rather than what to keep, so it works
+ * for Cyrillic and Latin alike.
  */
+export function normalize(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    // Strip combining marks so `й` and `и`+breve compare equal, and `é` matches `e`.
+    .replace(/\p{Mn}+/gu, '')
+    // Everything that is not a letter or a digit becomes a space — in any script.
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+}
 
-const providerNameById = new Map(providers.map((provider) => [provider.id, provider.name]))
-
-/**
- * Case- and accent-insensitive. Players type "Gonzos" for "Gonzo's" and "Cleopatras" for
- * "Cleopatra's", so punctuation is dropped too — otherwise the apostrophe silently kills the match.
- */
-function normalize(value: string): string {
-  return (
-    value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      // Apostrophes are removed, not turned into a space, and the two straight/curly forms are
-      // treated alike. Collapsing them with the rest of the punctuation made "Gonzo's Quest"
-      // normalise to "gonzo s quest", so a player typing "gonzos" matched nothing \u2014 the exact case
-      // this function was written for. Three titles in the catalogue carry one: Gonzo's Quest,
-      // Pharaoh's Gold Megaways and Cleopatra's Crown.
-      .replace(/['\u2019]/g, '')
-      .replace(/[^a-z0-9]+/g, ' ')
-      .trim()
-  )
+export interface SearchHit {
+  game: Game
+  /** Lower is better. Used only to sort; never rendered. */
+  rank: number
 }
 
 /**
- * Lower is better. A title that starts with the query outranks one that merely contains it, and a
- * title match always outranks a provider-only match — typing "pragmatic" should list games, but
- * typing "gates" should not bury Gates of Olympus under its studio mates.
+ * Ranked in bands, stable inside each band so the catalogue's own order decides ties. A player
+ * typing three letters expects the title that STARTS with them first, which a plain `includes`
+ * cannot give.
  */
-function rank(game: Game, needle: string): number | null {
-  const title = normalize(game.title)
-  const provider = normalize(providerNameById.get(game.provider) ?? game.provider)
+export function searchGames(query: string, games: Game[], providers: Provider[]): SearchHit[] {
+  const q = normalize(query)
+  if (!q) return []
 
-  if (title.startsWith(needle)) return 0
-  if (title.includes(` ${needle}`)) return 1
-  if (title.includes(needle)) return 2
-  if (provider.startsWith(needle)) return 3
-  if (provider.includes(needle)) return 4
-  return null
-}
+  const providerName = new Map(providers.map((p) => [p.id, normalize(p.name)]))
 
-/** Empty or whitespace-only queries return nothing; the caller shows popular/recent instead. */
-export function searchGames(query: string, games: Game[]): Game[] {
-  const needle = normalize(query)
-  if (!needle) return []
-
-  const scored: { game: Game; score: number }[] = []
-
+  const hits: SearchHit[] = []
   for (const game of games) {
-    const score = rank(game, needle)
-    if (score !== null) scored.push({ game, score })
+    const title = normalize(game.title)
+    const provider = providerName.get(game.provider) ?? ''
+
+    let rank: number | null = null
+    if (title.startsWith(q)) rank = 0
+    else if (new RegExp(`(^| )${escapeRegExp(q)}`, 'u').test(title)) rank = 1
+    else if (title.includes(q)) rank = 2
+    else if (provider.startsWith(q)) rank = 3
+    else if (provider.includes(q)) rank = 4
+
+    if (rank !== null) hits.push({ game, rank })
   }
 
-  // Stable within a score band: ties keep catalogue order, so the row does not reshuffle
-  // between keystrokes that produce the same set.
-  return scored
-    .map((entry, index) => ({ ...entry, index }))
-    .sort((a, b) => a.score - b.score || a.index - b.index)
-    .map((entry) => entry.game)
+  return hits.sort((a, b) => a.rank - b.rank)
 }
 
-/** The suggestion dropdown (Figma 1:4479) shows four rows. */
-export const SUGGESTION_LIMIT = 4
-
-export function getSuggestions(query: string, games: Game[], limit = SUGGESTION_LIMIT): Game[] {
-  return searchGames(query, games).slice(0, limit)
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
-
-/** Tags in the focused-empty search panel, Figma node 1:4434. */
-export const popularSearches: string[] = [
-  'Sweet Bonanza',
-  'Gates of Olympus',
-  'Big Bass',
-  'Crazy Time',
-  'Mega Ball',
-  'Book of Dead',
-  'Starburst',
-  "Gonzo's Quest",
-]
-
-/** Seed for the recent-searches list, Figma node 1:4454. The store owns it once the user types. */
-export const defaultRecentSearches: string[] = [
-  'Blackjack VIP',
-  'Lightning Roulette',
-  'Aviator',
-  'Sugar Rush',
-]

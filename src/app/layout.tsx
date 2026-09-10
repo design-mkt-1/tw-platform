@@ -1,59 +1,61 @@
 import type { Metadata, Viewport } from 'next'
-import { Bricolage_Grotesque, Inter, Roboto_Flex } from 'next/font/google'
+import { Inter, Roboto } from 'next/font/google'
 import './globals.css'
 
-/* The three families named in the Figma UI Kit "Font Families" frame (node 1:5325). */
+/**
+ * Two families, both carrying Cyrillic — see docs/tokens.md §4.1.
+ *
+ * The design names six. Three of them cannot render this design's own copy, which was
+ * measured against Next's Google Fonts data rather than assumed:
+ *
+ *   Outfit                 ["latin", "latin-ext"]        — no cyrillic
+ *   Archivo Narrow         ["latin", "latin-ext", ...]   — no cyrillic
+ *   Big Shoulders Display  not in the catalogue at all
+ *
+ * Outfit is used in the file for exactly four strings — Увійти, Реєстрація, Депозит and the
+ * hero CTA — and every one of them is Cyrillic. Archivo Narrow carries one string,
+ * вітальний бонус, also Cyrillic. So Figma itself was already falling back when it rendered
+ * those frames: what the design *looks like* is not Outfit either. Substituting Inter matches
+ * the render rather than departing from it, and it is recorded in docs/tokens.md.
+ *
+ * Roboto Flex appears on the footer headings, the balance figure and the ticker, carrying a
+ * ten-axis fontVariationSettings string. Every axis in it is the axis default, so static
+ * Roboto at the same weight renders identically and is one font fewer to download.
+ */
 const inter = Inter({
+  subsets: ['latin', 'cyrillic'],
   variable: '--font-inter',
-  subsets: ['latin'],
   display: 'swap',
 })
 
-const robotoFlex = Roboto_Flex({
-  variable: '--font-roboto-flex',
-  subsets: ['latin'],
-  display: 'swap',
-})
-
-const bricolage = Bricolage_Grotesque({
-  variable: '--font-bricolage',
-  subsets: ['latin'],
+const roboto = Roboto({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '700'],
+  style: ['normal', 'italic'], // 1:6395 "● EP" is Bold italic
+  variable: '--font-roboto',
   display: 'swap',
 })
 
 export const metadata: Metadata = {
-  title: 'Jackpot',
-  description: 'Casino platform demo built from the Jackpot Figma file.',
-  /*
-   * The review build is hosted publicly so a link can be handed to the client, but it is an
-   * unreleased design and carries third-party brand marks exported from Figma. robots.txt asks
-   * crawlers not to fetch it; this header asks them not to index it if they do anyway. Neither
-   * makes the URL secret — anyone holding it can open the page.
-   */
+  title: 'Top-Win',
+  description: 'Мобільна демонстрація платформи Top-Win',
+  // An unreleased client design carrying other companies' marks. The URL is shareable; it
+  // must not be indexed. Pairs with public/robots.txt.
   robots: { index: false, follow: false },
 }
 
-/*
- * The mobile tab bar (node 1:8235) is fixed to the bottom edge and pads itself with
- * `env(safe-area-inset-bottom)`; MobileShell reserves the same amount at the end of the document.
- * Those insets resolve to zero unless the viewport opts into the full screen, which is the one
- * piece of the mobile chrome that can only be declared here. Everything else — width, initial
- * scale — is Next's default and is left alone.
- */
 export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // The bottom nav sits against the home indicator; without this the safe-area insets read 0.
   viewportFit: 'cover',
+  themeColor: '#e8f1fc', // --bg-header, so the browser chrome matches the app header
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${robotoFlex.variable} ${bricolage.variable}`}>
-        {children}
-      </body>
+    <html lang="uk" className={`${inter.variable} ${roboto.variable}`}>
+      <body className="font-sans">{children}</body>
     </html>
   )
 }

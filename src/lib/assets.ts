@@ -1,159 +1,209 @@
-import type { IconName, PromoVariant } from './types'
-
 /**
- * The only place that knows how an asset name becomes a URL.
+ * Every image path the app can produce, in one place.
  *
- * Every file under `public/images/` was exported node-by-node from the Figma file
- * `2MyylxdZblfGnf05nQacUz`. Components must not hardcode those paths: the Figma layer names are
- * inconsistent (`Img - mock:margin` is in fact the Visa/Mastercard lockup) and a later re-export
- * will rename files. Routing every reference through this module keeps that churn to one diff.
+ * Why this file exists at all: the site deploys to a sub-path
+ * (https://design-mkt-1.github.io/tw-platform/) and Next's `basePath` rewrites links and its
+ * own bundles but NOT an image `src`. A component writing "/images/logo.svg" directly renders
+ * a broken image on the deployed build and a perfectly fine one locally, so the mistake never
+ * shows up until the client opens the link. `withBase()` is the fix and every path below is
+ * already wrapped.
  *
- * The `*_WITH_*` lists are the contract with the placeholder logic: they name exactly the assets
- * that exist on disk, so a component can decide to fall back before it ever requests a 404.
+ * `src/lib/__tests__/assets.test.ts` walks this file both ways: every path here must exist on
+ * disk, and every file on disk must be named here. That test exists because this project has
+ * shipped a sub-path deploy that 404'd every image.
  */
 
 /**
- * Everything under `public/` moves when the site is served from a sub-path.
- *
- * The GitHub Pages review build lives at `/tw-platform/`, and Next's `basePath` rewrites links and
- * its own bundles but NOT the `src` of an image. Without this prefix every picture on the deployed
- * page 404s — the hero, all three real game thumbnails, the logo — while the dev server, served
- * from the root, looks perfectly fine. That is exactly the failure a local check cannot see.
- *
- * Empty in development and in any root-hosted deployment.
+ * Set by next.config.ts from GITHUB_PAGES. Empty locally, '/tw-platform' on Pages.
+ * Read once at module scope: it is inlined at build time, not read at runtime.
  */
-export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? ''
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? ''
 
-/**
- * Prefixes a root-relative asset path with the deployment's base path.
- *
- * Paths that come out of `src/data/*.json` — game thumbnails, footer logos, promo backgrounds —
- * bypass the helpers below, so their call sites have to pass them through this.
- */
-export const withBase = (path: string): string =>
-  path.startsWith('/') ? `${BASE_PATH}${path}` : path
-
-/*
- * WebP, not PNG. The Figma exports were the raw bitmaps and the Pages build serves them untouched
- * — a static export has no image optimiser — so the whole of public/images went through
- * `node scripts/to-webp.mjs`: 2.7 MB down to 313 KB. Add a new export by running that script, not
- * by dropping a .png in beside these.
- */
-export const gameThumb = (slug: string) => withBase(`/images/games/${slug}.webp`)
-
-export const providerLogo = (id: string) => withBase(`/images/providers/${id}.svg`)
-
-/** Section headers and the category bar. `IconName` is closed, so a typo fails to compile. */
-export const sectionIcon = (name: IconName) => withBase(`/images/icons/${name}.svg`)
-
-/** The Jackpot wordmark, node 1:4250. Was a literal in two components before the sub-path move. */
-export const LOGO = withBase('/images/logo.svg')
-
-/**
- * The three game slugs whose artwork was actually baked into the Figma design. Everything else in
- * `games.json` is invented for the demo and has no exported art — `hasGameArt` returns false and
- * GameCard draws its gradient placeholder instead.
- */
-export const GAMES_WITH_ART: readonly string[] = [
-  'gates-of-olympus-1000',
-  'big-bass-amazon-xtreme',
-  'yeti-quest',
-]
-
-/** The five providers named in the Figma "Leading Providers" slider. The other seven are mock. */
-export const PROVIDERS_WITH_LOGO: readonly string[] = [
-  'pragmatic-play',
-  'three-oaks-gaming',
-  'bgaming',
-  'nolimit-city',
-  'spribe',
-]
-
-export const hasGameArt = (slug: string): boolean => GAMES_WITH_ART.includes(slug)
-
-export const hasProviderLogo = (id: string): boolean => PROVIDERS_WITH_LOGO.includes(id)
-
-/**
- * Resolves to a real file or to `null`, never to a broken URL. Components branch on the `null`
- * rather than on a load error, so the placeholder renders on the first paint.
- */
-export const gameThumbOrNull = (slug: string): string | null =>
-  hasGameArt(slug) ? gameThumb(slug) : null
-
-export const providerLogoOrNull = (id: string): string | null =>
-  hasProviderLogo(id) ? providerLogo(id) : null
-
-/** Hero art under the header (Figma node 1:2437), exported at scale 1 to stay under 600 KB. */
-export const HERO_BONUS = withBase('/images/hero/welcome-bonus.webp')
-
-/**
- * The mobile hero has its own artwork in Figma (node 1:5751), not a crop of the desktop one: the
- * navy gradient, the figure and the violet shard in the bottom corner are all painted into it.
- * Exported at 3x for a 358x170 card.
- */
-export const HERO_BONUS_MOBILE = withBase('/images/hero/welcome-bonus-mobile.webp')
-
-/** Backdrops for the three promo rows. Keyed by `PromoVariant` so the banner needs no switch. */
-export const PROMO_BANNERS: Readonly<Record<PromoVariant, string>> = {
-  tournament: withBase('/images/hero/tournament-banner.webp'),
-  lottery: withBase('/images/hero/lottery-banner.webp'),
-  wheel: withBase('/images/hero/wheel-banner.webp'),
+export function withBase(path: string): string {
+  if (!path.startsWith('/')) throw new Error(`asset path must be absolute: ${path}`)
+  return `${BASE_PATH}${path}`
 }
 
-/**
- * Footer payment logos, keyed by the ids in `src/data/footer.json`. File names keep the Figma
- * layer names, which is why the keys and the paths disagree — that mismatch is the reason this
- * map exists rather than a template string.
- */
-export const PAYMENT_LOGOS: Readonly<Record<string, string>> = {
-  'cascading-gbp': withBase('/images/payments/cascading-gbp-a.svg'),
-  'gateway-crypto': withBase('/images/payments/gateway-crypto.svg'),
-  'bitcoin-cash': withBase('/images/payments/gatewaycrypto-bch.svg'),
-  bitcoin: withBase('/images/payments/gatewaycrypto-btc.svg'),
-  ethereum: withBase('/images/payments/gatewaycrypto-eth.svg'),
-  tether: withBase('/images/payments/gatewaycrypto-usdt.svg'),
-  'visa-mastercard': withBase('/images/payments/mock.svg'),
-}
+/* --- chrome ------------------------------------------------------------- */
+
+export const LOGO = withBase('/images/nav/topwin-logo.svg')
+
+/** Header and in-row search glyph. One file, three call sites in the design. */
+export const SEARCH_ICON = withBase('/images/icons/search-header.svg')
+export const CHEVRON_RIGHT = withBase('/images/icons/chevron-right.svg')
+export const DEPOSIT_PLUS = withBase('/images/icons/balance-deposit-plus.svg')
+
+/* --- bottom navigation --------------------------------------------------- */
 
 /**
- * Footer partner logos, keyed by the ids in `src/data/footer.json`. `partner-7` is deliberately
- * absent: the Figma slot (node 1:3993) is an empty frame.
+ * The plate ships as an SVG rather than a CSS box for two reasons that a rounded rect cannot
+ * reproduce: a 78px notch cut into its top edge, and a 1px rim that fades from opaque white at
+ * the bar's top to nothing at its bottom, following the notch. See docs/tokens.md §5.2.
  */
-export const PARTNER_LOGOS: Readonly<Record<string, string>> = {
-  casinostest: withBase('/images/partners/casinostest.svg'),
-  gamblersbet: withBase('/images/partners/gamblersbet.svg'),
-  'casino-bonus-now': withBase('/images/partners/cbn.svg'),
-  'no-deposit': withBase('/images/partners/nodeposit.svg'),
-  'casino-bonus-club': withBase('/images/partners/cbc.svg'),
-  // Zamsino was a raster fill in Figma, not a vector — the only partner that is not an SVG.
-  zamsino: withBase('/images/partners/zamsino.webp'),
-}
+export const NAV_PLATE = withBase('/images/nav/nav-bar-plate.svg')
+export const NAV_CENTER_BUTTON = withBase('/images/nav/nav-center-button.svg')
+export const NAV_BURGER = withBase('/images/nav/nav-menu-burger.svg')
+export const NAV_ACTIVE_DOT = withBase('/images/nav/nav-active-dot.svg')
 
-export const paymentLogo = (id: string): string | null => PAYMENT_LOGOS[id] ?? null
+export const NAV_TABS = {
+  casino: withBase('/images/nav/tab-casino.svg'),
+  sport: withBase('/images/nav/tab-sport.svg'),
+  liveCasino: withBase('/images/nav/tab-live-casino.svg'),
+  promo: withBase('/images/nav/tab-promo.svg'),
+} as const
 
-export const partnerLogo = (id: string): string | null => PARTNER_LOGOS[id] ?? null
+/* --- casino category chips ----------------------------------------------- */
+
+export const CHIP_ICONS = {
+  popular: withBase('/images/icons/chip-popular.svg'),
+  slots: withBase('/images/icons/chip-must-play-slots.svg'),
+  liveCasino: withBase('/images/icons/chip-live-casino.svg'),
+} as const
+
+export type ChipIconName = keyof typeof CHIP_ICONS
+
+/* --- casino section headers ---------------------------------------------- */
 
 /**
- * The language switcher in the footer (Figma node 1:4016). Figma named every one of these layers
- * `en`, so the codes below come from reading the flags, not from the layer names.
+ * Nine of the design's section icons. Three more (megaways, wheel-fortune, and the 20px
+ * must-play-slots) could not be exported: download_assets caps a subtree at 20 SVG fragments
+ * and the icons' mask stacks consume the cap. Sections using those fall back to `popular`,
+ * and the gap is recorded in docs/tokens.md.
  */
-export const LANGUAGE_FLAGS: readonly string[] = [
-  'gb',
-  'ru',
-  'de',
-  'bg',
-  'nl',
-  'tr',
-  'no',
-  'it',
-  'dk',
-  'se',
-]
+export const SECTION_ICONS = {
+  popular: withBase('/images/icons/section-popular.svg'),
+  newGames: withBase('/images/icons/section-new-games.svg'),
+  recommended: withBase('/images/icons/section-recommended.svg'),
+  crashGames: withBase('/images/icons/section-crash-games.svg'),
+  tournaments: withBase('/images/icons/section-current-tournaments.svg'),
+  jackpots: withBase('/images/icons/section-jackpots.svg'),
+  lottery: withBase('/images/icons/section-lottery.svg'),
+  dropsAndWins: withBase('/images/icons/section-drops-and-wins.svg'),
+} as const
 
-export const languageFlag = (code: string) => withBase(`/images/flags/${code}.svg`)
+export type SectionIconName = keyof typeof SECTION_ICONS
 
-/** 16px glyph inside the search input of the category bar (node 1:2589). */
-export const SEARCH_ICON = withBase('/images/icons/search.svg')
+/** The dashed rule between a section title and its right-hand control. */
+export const SECTION_DIVIDER = withBase('/images/icons/section-divider.svg')
 
-/** 20px glyph of the standalone search button in the Leading Providers header (node 1:2656). */
-export const SEARCH_BUTTON_ICON = withBase('/images/icons/search-btn.svg')
+/* --- artwork -------------------------------------------------------------- */
+
+/**
+ * Four distinct game tiles exist in the whole Figma file. The design itself uses ONE, repeated
+ * across all 48 cards of all 8 grid rows — the five URLs an earlier pass recorded as different
+ * artwork are byte-identical (Figma mints a fresh URL per instance). Three more were recovered
+ * from a page-wide sweep. This is the ceiling on how varied the grid can look.
+ */
+export const GAME_ART = {
+  'gates-of-olympus-1000': withBase('/images/games/gates-of-olympus-1000.webp'),
+  'big-bass-amazon-extreme': withBase('/images/games/big-bass-amazon-extreme.webp'),
+  'yeti-quest': withBase('/images/games/yeti-quest.webp'),
+} as const
+
+export type GameArtName = keyof typeof GAME_ART
+
+export const PROVIDER_LOGOS = {
+  pragmatic: withBase('/images/providers/pragmatic.svg'),
+  '3-oaks': withBase('/images/providers/3-oaks.svg'),
+  bgaming: withBase('/images/providers/bgaming.svg'),
+  'nolimit-city': withBase('/images/providers/nolimit-city.svg'),
+  spribe: withBase('/images/providers/spribe.svg'),
+} as const
+
+export type ProviderLogoName = keyof typeof PROVIDER_LOGOS
+
+export const HERO_CASINO = withBase('/images/promo/hero-casino-welcome.webp')
+
+/**
+ * The tournament banners are the FULL-BLEED source, not the cropped view Figma draws. The card
+ * is 358x220 and the file is 1573x478, so CSS re-crops with the percentages recorded in
+ * docs/tokens.md. Deriving the crop from the file's own pixel size gives the wrong framing.
+ */
+export const TOURNAMENT_ART = {
+  zeus: withBase('/images/promo/tournament-zeus-trophy.webp'),
+  bigBass: withBase('/images/promo/tournament-big-bass-trophy.webp'),
+  spinWheel: withBase('/images/promo/tournament-spin-wheel.webp'),
+} as const
+
+export type TournamentArtName = keyof typeof TOURNAMENT_ART
+
+/* --- sportsbook ----------------------------------------------------------- */
+
+export const SPORT_HERO = withBase('/images/sport/hero-sport-welcome.webp')
+export const SPORT_HERO_GLOW = withBase('/images/sport/hero-sport-welcome-glow.svg')
+
+export const SPORT_ICONS = {
+  football: withBase('/images/sport/icon-football.svg'),
+  basketball: withBase('/images/sport/icon-basketball.svg'),
+  tennis: withBase('/images/sport/icon-tennis.svg'),
+  liveStream: withBase('/images/sport/icon-live-stream.svg'),
+  calendar: withBase('/images/sport/icon-calendar.svg'),
+  betslip: withBase('/images/sport/icon-betslip-ticket.svg'),
+  moreLeagues: withBase('/images/sport/chevron-down-more-leagues.svg'),
+} as const
+
+export type SportIconName = keyof typeof SPORT_ICONS
+
+/**
+ * One badge, not eight. The design's league strip repeats a single Europa League mark eight
+ * times — proven by sha256, not by layer name. Varied league logos are not obtainable from
+ * this Figma file.
+ */
+export const LEAGUE_BADGE = withBase('/images/sport/league-badge-europa-league.svg')
+
+/**
+ * Slides 3 and 4 of the sport carousel are casino artwork with English, GBP-denominated copy —
+ * layer names "зевс" and "Gates of Olympus_Game Art". They are Figma leftovers on a Ukrainian
+ * sportsbook page and are deliberately NOT referenced by any component. Kept on disk so the
+ * decision is reversible without another Figma call; excluded from the asset test for the same
+ * reason.
+ */
+export const UNUSED_SPORT_SLIDES = [
+  '/images/sport/casino-slide-blur-blob.webp',
+  '/images/sport/casino-slide-lens-flare.webp',
+  '/images/sport/casino-slide-zeus-character.webp',
+] as const
+
+/* --- footer --------------------------------------------------------------- */
+
+export const PAYMENT_LOGOS = {
+  visa: withBase('/images/footer/payment/visa.svg'),
+  mastercard: withBase('/images/footer/payment/mastercard.svg'),
+  'visa-mastercard': withBase('/images/footer/payment/visa-mastercard-lockup.svg'),
+  bitcoin: withBase('/images/footer/payment/bitcoin.svg'),
+  'bitcoin-cash': withBase('/images/footer/payment/bitcoin-cash.svg'),
+  ethereum: withBase('/images/footer/payment/ethereum.svg'),
+  tether: withBase('/images/footer/payment/tether.svg'),
+  /** 26 separate vector exports in Figma, recombined into one file. The word itself is
+   *  outlined rather than live text, so it cannot be translated without a re-export. */
+  cryptocurrencies: withBase('/images/footer/payment/cryptocurrencies.svg'),
+} as const
+
+export type PaymentLogoName = keyof typeof PAYMENT_LOGOS
+
+export const PARTNER_LOGOS = {
+  'casino-bonus-club': withBase('/images/footer/partners/casino-bonus-club.svg'),
+  'casino-bonuses-now': withBase('/images/footer/partners/casino-bonuses-now.svg'),
+  casinostest: withBase('/images/footer/partners/casinostest.svg'),
+  gamblersbet: withBase('/images/footer/partners/gamblersbet.svg'),
+  'no-deposit': withBase('/images/footer/partners/no-deposit.svg'),
+  /** Both PNG originals are scaled past their box and cropped — 165x44 in a 100x32 slot, and
+   *  2048x2048 in a 90x40 slot. The crops are part of the design; preserve them. */
+  zamsino: withBase('/images/footer/partners/zamsino.webp'),
+  'deutschland-casinos': withBase('/images/footer/partners/deutschland-casinos.webp'),
+} as const
+
+export type PartnerLogoName = keyof typeof PARTNER_LOGOS
+
+/**
+ * All three flag layers are named "en" in Figma and carry no locale metadata. Ukraine is
+ * certain — the layer is also named Flag_of_Ukraine and the fills are #0057B7 / #FFD700. The
+ * other two are named for the artwork they draw, not for a locale nobody could prove.
+ */
+export const LANGUAGE_FLAGS = {
+  ukraine: withBase('/images/footer/flags/flag-ukraine.svg'),
+  'union-jack': withBase('/images/footer/flags/flag-union-jack.svg'),
+  'tricolour-white-blue-red': withBase('/images/footer/flags/flag-tricolour-white-blue-red.svg'),
+} as const
+
+export type LanguageFlagName = keyof typeof LANGUAGE_FLAGS

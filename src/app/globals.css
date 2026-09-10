@@ -3,167 +3,145 @@
 @tailwind utilities;
 
 /*
- * Design tokens — see docs/tokens.md for the full Figma mapping.
+ * Top-Win design tokens.
  *
- * Source: UI Kit — Desktop / Colors (node 1:5199) and UI Kit — Mobile / Colors (node 1:4745)
- * of Figma file 2MyylxdZblfGnf05nQacUz. The file has no Figma variables, so these values are
- * transcribed from the swatch fills. Where the two kits disagreed, the Mobile value was adopted.
+ * Every value here was measured from Figma file s2CqwGqe0O0FcALhBNlTRe and is recorded in
+ * docs/tokens.md with the node it came from. That document is the only bridge between the
+ * design and this code: the Figma file carries six variables against roughly forty raw
+ * values, so the palette cannot be read from Figma and is hard-coded here instead.
  *
- * Never write a raw hex value in a component. Use the Tailwind token instead — the lint rule
- * in eslint.config.mjs rejects hex literals under src/components/.
+ * Add nothing to this file without adding it to docs/tokens.md first, with its node id.
+ * An eslint rule rejects raw hex under src/components/ so the mapping cannot be forked.
+ *
+ * Two nodes are deliberately absent: 1:6594 and 1:6617 are leftover JACKPOT headers pasted
+ * onto the Top-Win canvas and are not children of any screen. Their dark #080814 and gold
+ * gradient are not Top-Win values.
  */
+
 :root {
-  color-scheme: dark;
+  /* --- page and surfaces ------------------------------------------------ */
+  --bg-page: #f7faff;              /* 1:4888, 1:5072, 1:5240, 1:3391, 1:5994 */
+  --bg-surface: #ffffff;           /* variable "BG main"; 1:6383, 1:6010, 1:3787 */
+  --bg-header: #e8f1fc;            /* 1:3290 casino, 1:582 post-login, 1:5995 sport */
+  --bg-search-panel: #eff6ff;      /* 1:7363, 1:7595, 1:7806, 1:7214 */
+  --bg-menu-panel: #f4f6fa;        /* 1:6655, 1:6854 */
+  --bg-footer: #000d3b;            /* 1:5607 */
+  --bg-card-dark: #11111a;         /* 1:5227 tournament, 1:4701 lottery */
+  --bg-slide: #000000;             /* 1:3306, 1:3318, 1:6030, 1:6038 */
+  --bg-game-card: rgb(240 243 255 / 0);  /* 1:3575 — alpha 0, the card is deliberately flat */
 
-  /* Backgrounds */
-  --bg-page: #0f121d;
-  --bg-card: #151624;
-  --bg-section: #12162b;
-  --bg-overlay: rgb(0 0 0 / 0.2);
-  --bg-subtle: rgb(255 255 255 / 0.02);
-  --bg-elevated: rgb(255 255 255 / 0.06);
-  /*
-   * Icon Button states, node 1:5687. The rest fill is --bg-elevated (white 6%), which the node
-   * spells out as "Fill: #FFFFFF @ 6%"; these are the other two rows of its States frame. No
-   * shadow in any of the three. The pressed value really is lighter than the rest value.
-   */
-  --bg-icon-btn-hover: rgb(255 255 255 / 0.12);
-  --bg-icon-btn-active: rgb(255 255 255 / 0.04);
+  --surface-tint: #e8f1fc;         /* 1:3337 track, 1:6406 odds cell, 1:6857 menu row */
+  --surface-track: #dcebff;        /* 1:6009 prematch/live track, 1:6337 count badge */
+  --surface-muted: #edf5ff;        /* 1:3295 login, 1:3299 search, 1:6340 sport pill */
+  --surface-row: #f5f8fd;          /* 1:6391 match row */
+  --surface-footer-card: rgb(11 16 32 / 0.15);  /* 1:5608 */
+  --surface-footer-tile: rgb(11 16 32 / 0.1);   /* 1:5612 */
 
-  /* Text */
-  --text-primary: #ffffff;
-  --text-secondary: rgb(255 255 255 / 0.6);
-  --text-tertiary: rgb(255 255 255 / 0.6);
-  --text-muted: #839cbf;
-  --text-caption: #8e9bb0;
-  --text-nav: #9e9fab;
-  --text-label: #b2b8c2;
-  --text-footer-heading: #dad7e0;
-  --text-subtitle: #a5a6b5; /* mobile promo card subtitle, node 1:6254 */
+  --chip-link-bg: #eff6ff;         /* 1:5052 see-all, 1:6085, 1:7390 */
+  --chip-active: #c9dcf4;          /* 1:3338 casino, 1:6019 sport */
+  --chip-info-bg: #dbeafe;         /* search chips 1/3/5, 1:7410, 1:7843 */
+  --chip-warn-bg: #fff7ed;         /* search chips 2/4, 1:7846 */
 
-  /* Accent & brand */
-  /*
-   * Figma paints this blue #007AFF (node 1:5199 / 1:4745). White on it measures 4.02:1, under
-   * AA's 4.5, so the solid form is the same hue and saturation nine tenths as bright — the RGB
-   * channels scaled 0.9, which keeps hue 211.3 and saturation 100 exactly. White on it is now
-   * 4.80:1. The tints below keep Figma's own 0 122 255 channels: they are backgrounds, and
-   * darkening them would only make the text on them harder to read. See docs/tokens.md §2b.
-   */
-  --blue: #006ee6;
-  --blue-tint: rgb(0 122 255 / 0.15);
-  /*
-   * The blue that text is written in when it sits on one of those tints — the See All pill and the
-   * blue badges. #007AFF on the tinted surfaces measures 3.5–4.1:1; this is the same hue and
-   * saturation raised to lightness 64%, which measures 4.7–6.0:1 across every surface it lands on,
-   * the pressed See All fill included.
-   */
-  --blue-text: #479fff;
-  --amber: #f59e0b;
-  --gold: #d4a352;
-  --green: #34c759;
-  --emerald: #00f299;
-  --cyan: #00f0ff;
+  --balance-pill-bg: #ffe2d5;      /* 1:586, 1:93 */
+  --avatar-bg: #dde2ed;            /* 1:6826 */
+  --copy-btn-bg: rgb(216 221 231 / 0.6);   /* 1:6843 */
+  --deposit-btn-bg: #00b579;       /* 1:6836 */
+  --contact-accent: #10b981;       /* 1:6983 Support, 1:6985 Vip Manager */
+  --cta-search-bg: #f97316;        /* 1:7263 Усі провайдери */
+  --join-pill-bg: rgb(242 193 70 / 0.5);   /* 1:5234, 1:4708 — with backdrop-blur(2px) */
+  --wager-badge-bg: rgb(255 149 0 / 0.1);  /* 1:3316 20X WAGER */
+  --sport-badge-bg: rgb(0 122 255 / 0.1);  /* 1:6033 — with backdrop-blur(8.539px) */
+  --ticker-thumb-bg: rgb(0 0 0 / 0.2);     /* 1:3393 */
+  --lang-flag-scrim: rgb(17 20 24 / 0.2);  /* 1:6968 */
+  --nav-plate: rgb(25 25 112 / 0.8);       /* 1:6490 — variable "Navy" at 80% over blur(2.5px) */
 
-  /* Gradient stops */
-  --gold-light: #f0c775;
-  --gold-dark: #c6903d;
-  --orange-start: #f8b900;
-  --orange-end: #e67508;
+  /* --- text ------------------------------------------------------------- */
+  --text-title: #07134f;           /* 1:4318 section titles, 1:6398 team names */
+  --text-primary: #102a67;         /* the default dark-blue body colour */
+  --text-navy: #191970;            /* variable "Navy" — 1:6387, 1:588 */
+  --text-widget-title: #173b68;    /* 1:6084 Рекомендовані ліги only */
+  --text-muted: #71809a;           /* 1:3378 inactive chip label, 1:6345 count */
+  --text-meta: #758098;            /* 1:6390 league name, 1:6394 kickoff, 1:6402 "1 Н 2" */
+  --text-body-muted: #64748b;      /* 1:7262 empty state, 1:3397 masked player */
+  --text-placeholder: #94a3b8;     /* 1:7388 input, 1:3398 ticker game name */
+  --text-subtle: #839cbf;          /* 1:7845 suggestion subtitle */
+  --text-link: #1e40af;            /* 1:5053 "Всі (120) " and its chevron stroke */
+  --text-accent: #1e3a8a;          /* search chips 1/3/5, 1:7844 */
+  --text-label: #3b82f6;           /* 1:7394 small caps labels, blue glyphs */
+  --text-count-active: #17458f;    /* 1:6338 selected count, 1:6335 selected icon */
+  --text-on-dark: #ffffff;         /* 1:6493 nav labels, 1:3298 register */
+  --text-nav-active: #ffb095;      /* 1:6506 label and 1:6504 icon, same value */
+  --text-footer-heading: #e6edf5;  /* 1:5610, 1:5698 */
+  --text-footer-link: #afc1e8;     /* 1:5938 and all twelve link rows */
+  --text-win-up: #16a34a;          /* 1:3396 ticker amount, entry 1 */
+  --text-win-alt: #f97316;         /* 1:3404, 1:3411 — the switching rule is not in the design */
+  --text-badge-warn: #e67508;      /* 1:7847 СЛОТИ / ЛАЙВ badges */
+  --text-chip-warn: #c2410c;       /* search chips 2/4 */
+  --text-promo: #ffae00;           /* 1:3311 hero promo badge, 1:3317 wager */
+  --text-tournament-title: #ff8700;/* 1:5232 СПІН-ЧЕЛЕНДЖ */
+  --text-banner-offer: #0d1a59;    /* 1:6035 225% ДО 15000 ₴ */
+  --text-banner-badge: #007aff;    /* 1:6034 ВІТАЛЬНИЙ БОНУС */
+  --text-more: #ff8101;            /* 1:6853 the menu "More" toggle */
 
-  /* Strokes & separators */
-  --border-card: #262632;
-  --border-divider: rgb(255 255 255 / 0.07);
-  --border-medium: rgb(255 255 255 / 0.08);
-  --border-strong: rgb(255 255 255 / 0.1);
-  --border-separator: #282936;
+  /* --- icons and accents ------------------------------------------------ */
+  --icon-section: #92bdf3;         /* 1:3426 section flame — same hex as --text-id-label */
+  --text-id-label: #92bdf3;        /* 1:6841 "ID:" — separate role, will move separately */
+  --icon-menu-row: #7fb4f2;        /* 1:6862 and seven siblings */
+  --icon-chevron: #626a7a;         /* 1:6667 weui:arrow-filled */
+  --icon-star-active: #1677e8;     /* 1:6024 ★ in Favorites */
+  --icon-live: #ff7a45;            /* 1:6013 the Live tab stream icon */
+  --accent-hot: #f45b24;           /* 1:6407 odds, 1:6395 ● EP, 1:6484 FAB, 1:6516 nav dot */
 
-  /* Documented exception: the file's only Figma variable, BG/Quaternary.
-     Not part of either UI Kit palette — used only where a node asks for it. */
-  --bg-quaternary: #0d1420;
+  /* Carousel indicator: four bars, monotonically narrower and paler. Which one means
+     "current" is not derivable from the file — 1:3330 has four bars over two slides. */
+  --dot-1: #1e3a8a;                /* 1:3331, 40px wide */
+  --dot-2: #3b82f6;                /* 1:3332, 24px */
+  --dot-3: #f97316;                /* 1:3333, 16px */
+  --dot-4: #fed7aa;                /* 1:3334, 8px */
 
-  /*
-   * Layer values the design uses but neither UI Kit documents.
-   *
-   * The wave-1 agents hit each of these, correctly refused to inline a hex, and reported it.
-   * They are transcribed here from the nodes named beside them so components keep a token to
-   * reach for. Anything added below must cite its node — that is what keeps this list from
-   * becoming a dumping ground for one-off colours.
-   */
-  --bg-header: #080814; /* header bar, node 1:4245 — darker than the page itself */
-  --border-header: #18273a; /* header bottom rule, node 1:4245 */
-  --bg-footer: #070f1d; /* footer surface, node 1:3666 */
-  --bg-field: #1a1d2e; /* search field fill, node 1:4314 */
-  /* Promo pills 1:3446 / 1:3538 / 1:3594-1:3600. A second amber, #F2C146 — deliberately not
-     --amber at 10%, which is the #F59E0B the text on those pills uses. */
-  --amber-tint: rgb(242 193 70 / 0.1);
-  --border-flag: #19191d; /* language flag ring, node 1:4016 */
-  /* Footer legal strip, node 1:4115. Figma writes #65616A, which is 3.17:1 on the footer — the
-     same hue and saturation at lightness 50% instead of 39.8% measures 4.59:1. */
-  --text-legal: #7f7a85;
-  --border-emphasis: rgb(255 255 255 / 0.15); /* wins-ticker divider, node 1:2433 */
-  /* The solid form of the same #F2C146 that --amber-tint carries at 10%: the join/countdown pill
-     of the mobile promo cards, node 1:6255, is filled with it outright. */
-  --amber-soft: #f2c146;
-  /* The near-black the design writes *on* that pill — its label, its countdown and its 15% rule,
-     nodes 1:6256 to 1:6260. Not --bg-page: the pill is a light surface and the design gives it its
-     own ink, two points darker than the page it sits on. */
-  --ink: #09090d;
-  /* The deposit button of the rebuilt jackpot-menu frames, node 13:2340. Not the emerald family:
-     that token is the far brighter #00F299 of the support buttons, and this is a flat fill the
-     design paints only here. Figma writes DEPOSIT on it in white, which measures 2.66:1; the
-     label is --bg-page instead, 7.01:1. See docs/tokens.md §2b. */
-  --deposit-green: #00b579;
-  /* Sign out, node 13:2491 — the only red in the file. 7.22:1 on the menu's --bg-quaternary. */
-  --text-signout: #ff787a;
-  /* The rows and the ID field of the rebuilt jackpot-menu frames, nodes 13:2362 and 13:2342, which
-     both declare this as a flat fill. It used to be reachable as `bg-elevated` — white 6% over
-     --bg-card composites to #232431, one unit off — but the panel now sits on --bg-quaternary,
-     where that same 6% falls to #1C222D. An opaque token is what the design actually specifies and
-     is the only form that survives a change of surface. */
-  --bg-menu-row: #222431;
-  /* The balance pill in that menu's header, node 13:2325. A green so faint it reads as a shade of
-     the panel rather than as a colour; nothing else in the design uses it. */
-  --bg-balance-chip: rgb(0 92 64 / 0.04);
+  /* --- borders ---------------------------------------------------------- */
+  --border-chip: #bfdbfe;          /* see-all pills, link chips, the 2px search field */
+  --border-warn: #fed7aa;          /* search chips 2/4 */
+  --border-divider: #dcebff;       /* Vector 100 in every section header — dashed 2 2 */
+  --border-ticker-divider: #cbd5e1;/* 1:3399, the one vertical hairline in the ticker */
+  --border-footer: #1e2a44;        /* 1:5607 top, 1:5935 dashed 4 4 */
+  --border-panel: #d8dde7;         /* 1:6817 menu right edge */
+  --border-on-dark-06: rgb(255 255 255 / 0.06);
+  --border-on-dark-08: rgb(255 255 255 / 0.08);
+  --border-on-dark-09: rgb(255 255 255 / 0.09);
+  --border-on-dark-10: rgb(255 255 255 / 0.1);
+  --border-promo: rgb(255 140 0 / 0.25);
 
-  /*
-   * Geometry, not colour, and the only length in this list.
-   *
-   * The mobile tab bar's own height (node 1:8235, 390x84). Three places need it: the bar draws it,
-   * `MobileShell` reserves it at the end of the document so the last section is not covered, and a
-   * `Sheet` with `clearsNavBar` stops its scrim above it. A bar that is 84 in one of them and 80 in
-   * another is a strip of live page showing under a modal, which is exactly the defect this fixes.
-   */
-  --mobile-nav-h: 84px;
+  /* --- gradients -------------------------------------------------------- */
+  /* The primary button recipe, on seven independent nodes across four areas. */
+  --grad-cta: linear-gradient(to right, #ff8c00, #ff4500);
+  /* The raised nav button. Strictly top-to-bottom, and a DIFFERENT orange from --grad-cta. */
+  --grad-nav-button: linear-gradient(180deg, #fe8200, #fe4800);
+  --grad-promo-badge: linear-gradient(to right, rgb(255 140 0 / 0.15), rgb(255 69 0 / 0.15));
+  --grad-flag-active: linear-gradient(118.996deg, #1e40af 5.5841%, #3b82f6 99.924%);
+  /* 1:6490's second path: an opaque white rim along the bar's top edge fading to nothing
+     by its bottom. It follows the notch, which is why the plate ships as an SVG. */
+  --grad-nav-plate-stroke: linear-gradient(to top, transparent, #ffffff);
 
-  /*
-   * Component-level fills for the "See All" pill, node 1:5655.
-   *
-   * The designer documented this button's three states after the first build, and its resting fill
-   * is blue at 13% — the Desktop kit's Blue Tinted BG, which the "mobile kit wins" decision replaced
-   * with 15% everywhere. Rather than reopen that decision for one pill, the button carries its own
-   * three values. Hover and active (22% and 30%) exist nowhere else in the design.
-   */
-  --see-all-bg: rgb(0 122 255 / 0.13);
-  --see-all-bg-hover: rgb(0 122 255 / 0.22);
-  --see-all-bg-active: rgb(0 122 255 / 0.3);
-}
+  /* --- shadows ---------------------------------------------------------- */
+  --shadow-cta: 0 8px 12px rgb(255 69 0 / 0.33), inset 0 1px 0 0 rgb(255 255 255 / 0.25);
+  --shadow-vip-badge: 0 8px 24px 0 rgb(255 69 0 / 0.33), inset 0 1px 0 0 rgb(255 255 255 / 0.25);
+  --shadow-card: 0 6px 18px 0 rgb(23 69 143 / 0.08);
+  --shadow-chip-active: 0 2px 5px 0 rgb(35 101 169 / 0.1);
+  --shadow-provider: 0 6px 9px 0 rgb(23 69 143 / 0.08);
+  --shadow-fab: 0 10px 24px 0 rgb(16 42 103 / 0.15);
+  --shadow-field: 0 4px 8px rgb(59 130 246 / 0.1);
+  --shadow-search-cta: 0 4px 6px rgb(249 115 22 / 0.3);
+  --shadow-deposit: 0 4px 6px rgb(198 144 61 / 0.25);  /* gold glow on a green button — measured */
+  --shadow-container: 0 8px 12px rgb(0 0 0 / 0.05);
+  --shadow-promo-badge: 0 0 6.635px rgb(255 140 0 / 0.12), 0 2.212px 6.635px rgb(0 0 0 / 0.25);
 
-/*
- * The one token that keeps two values.
- *
- * The rule everywhere else is a single value per token, taking the Mobile kit where the two kits
- * disagreed. Overlay is the exception, by owner decision, because the two kits disagree here for a
- * reason rather than by accident: on desktop the scrim sits behind a small popover in the corner
- * (node 1:4116, black at 20%, the page stays readable), while on mobile it sits behind a sheet that
- * covers most of the screen (node 1:4759, #161625 at 80%). Forcing one value made desktop panels
- * far darker than designed.
- *
- * Adding a second viewport-scoped value to any other token needs the same kind of justification.
- */
-@media (max-width: 767px) {
-  :root {
-    --bg-overlay: rgb(22 22 37 / 0.8);
-  }
+  /* --- layout ----------------------------------------------------------- */
+  /* The bottom nav is 111 tall but only its bottom 68 are painted: the raised button sits
+     43px proud of the bar. Content reserves the painted height plus the safe area. */
+  --nav-bar-h: 68px;               /* 1:6490, the painted plate */
+  --nav-frame-h: 111px;            /* 1:6488, plate plus the raised button's overhang */
+  --page-gutter: 16px;             /* every section on every screen starts at x 16, width 358 */
 }
 
 @layer base {
@@ -172,78 +150,46 @@
   }
 
   body {
-    @apply bg-page text-secondary antialiased;
-    font-family: var(--font-inter), system-ui, sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    /* The design is 390 wide with no breakpoint anywhere in the file. Centre it rather than
+       stretch it, so a desktop browser shows the phone layout instead of a stretched one. */
+    margin-inline: auto;
+    max-width: 100%;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* The design uses a dark page throughout; keep form controls in step. */
-  ::selection {
-    background-color: var(--blue-tint);
-    color: var(--text-primary);
+  /* Nothing in the design carries a focus state — measured across every button, chip, card
+     and odds cell in the file. This is the invented one, recorded in docs/tokens.md §8. */
+  :focus-visible {
+    outline: 2px solid var(--text-label);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
 @layer utilities {
-  .bg-gradient-gold {
-    background-image: linear-gradient(160deg, var(--gold-light), var(--gold-dark));
-  }
-
-  .bg-gradient-orange {
-    background-image: linear-gradient(160deg, var(--orange-start), var(--orange-end));
-  }
-
-  /*
-   * The Leading Providers row is drawn in Figma as a 1680px track inside a 1280px clip
-   * (nodes 1:2658 / 1:2919), i.e. a marquee. Reproducing that needs a keyframe, which only
-   * exists here — a component cannot declare one.
-   * The track must render its items twice for the wrap to be seamless.
-   */
-  @keyframes marquee-left {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(-50%);
-    }
-  }
-
-  @keyframes marquee-right {
-    from {
-      transform: translateX(-50%);
-    }
-    to {
-      transform: translateX(0);
-    }
-  }
-
-  .animate-marquee {
-    animation: marquee-left 40s linear infinite;
-  }
-
-  .animate-marquee-reverse {
-    animation: marquee-right 40s linear infinite;
-  }
-
-  /*
-   * Paused, not removed. With `animation: none` the track loses its transform, and a 3376px
-   * `w-max` track with no transform widens the document to 3307px at a 390px viewport even though
-   * its parent is overflow-hidden — the page then pans sideways for every user with Reduce Motion
-   * on. Paused at its first keyframe the track keeps `translateX(0)` and the page stays 390 wide.
-   */
-  @media (prefers-reduced-motion: reduce) {
-    .animate-marquee,
-    .animate-marquee-reverse {
-      animation-play-state: paused;
-    }
-  }
-
-  /* Horizontal card rails scroll but never show a scrollbar, as in the design. */
-  .no-scrollbar {
+  /* Horizontal scrollers: the category bar, the ticker, the league strip and both carousels
+     all overflow 390 on purpose. Hide the bar, keep the scroll. */
+  .scrollbar-none {
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-
-  .no-scrollbar::-webkit-scrollbar {
+  .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* Pause animation rather than remove it. `animation: none` collapses a marquee's transform
+   and lets its content set the document width — in the predecessor project that widened a
+   390px page to 3307px in exactly this mode, which no screenshot caught because nobody
+   captured the reduced-motion state. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-play-state: paused !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

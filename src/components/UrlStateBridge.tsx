@@ -1,83 +1,77 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
-import type { PanelId } from '@/store/useAppStore'
-import type { AuthMode } from '@/lib/types'
+import type { AuthMode, PanelId } from '@/lib/types'
 
 /**
- * Mirrors four pieces of store state into the query string, and reads them back once on mount.
+ * Mirrors store state into the query string, and reads it back once on mount.
  *
- * The URL is the mirror, never the source. Nothing in the app reads state from here at runtime —
- * the store stays the single owner — but a state that cannot be linked to cannot be reviewed, and
- * the whole design-comparison loop depends on being able to open one exact state directly:
- * `?auth=vip&panel=balance` has to land on the VIP header with the balance panel already open.
+ * This exists so a state can be reviewed. A screenshot called "the menu, logged in as VIP" is
+ * worthless if the only way to reach that state is to press four things in order — nobody can
+ * check it, and the capture scripts cannot reach it at all. Every state the design draws gets
+ * an address:
  *
- * Written with `replaceState` rather than the router so typing in the search box does not push a
- * history entry per keystroke or trigger a navigation.
+ *   ?auth=prelogin | postlogin | vip     which header and menu variant
+ *   ?panel=menu | search                 which full-screen sheet is open
+ *   ?q=<text>                            the search query, which picks the search state
+ *
+ * scripts/review.mjs and scripts/a11y.mjs deep-link against exactly these three names.
+ *
+ * Two rules that keep it from fighting the app:
+ *  - the URL is a mirror, never a source. It is read once, on mount, and after that only
+ *    written. A component that read it continuously would re-render on its own writes.
+ *  - `history.replaceState`, not the router. Pushing would put every panel open/close into the
+ *    back stack, so leaving the site would take eleven presses of Back.
  */
+const AUTH_MODES: AuthMode[] = ['prelogin', 'postlogin', 'vip']
+const PANELS: PanelId[] = ['menu', 'search']
 
-const AUTH_MODES: readonly AuthMode[] = ['prelogin', 'postlogin', 'vip']
-const PANELS: readonly PanelId[] = ['balance', 'personalInfo', 'jackpotMenu']
+export function UrlStateBridge() {
+  const auth = useAppStore((s) => s.auth)
+  const panel = useAppStore((s) => s.panel)
+  const query = useAppStore((s) => s.query)
 
-function isAuthMode(value: string | null): value is AuthMode {
-  return value !== null && (AUTH_MODES as readonly string[]).includes(value)
-}
-
-function isPanel(value: string | null): value is PanelId {
-  return value !== null && (PANELS as readonly string[]).includes(value)
-}
-
-export default function UrlStateBridge() {
-  const applied = useRef(false)
-
+  // Read once. The empty dependency list is deliberate: re-running this would overwrite the
+  // user's interaction with whatever the URL said when the page loaded.
   useEffect(() => {
-    if (applied.current) return
-    applied.current = true
-
     const params = new URLSearchParams(window.location.search)
-    const auth = params.get('auth')
-    const panel = params.get('panel')
-    const query = params.get('q')
-    const providerQuery = params.get('pq')
-
     const store = useAppStore.getState()
 
-    // Order matters: setAuthMode clears any open panel, so it has to run before the panel is set,
-    // and each of the three overlays closes the other two — so the last one applied is the one
-    // the URL leaves open.
-    if (isAuthMode(auth)) store.setAuthMode(auth)
-    if (query) store.setQuery(query)
-    if (isPanel(panel)) store.openPanel(panel)
-    if (providerQuery) {
-      store.openProviderSearch()
-      store.setProviderQuery(providerQuery)
+    const urlAuth = params.get('auth')
+    if (urlAuth && (AUTH_MODES as string[]).includes(urlAuth)) {
+      store.setAuth(urlAuth as AuthMode)
+    }
+
+    const urlQuery = params.get('q')
+    if (urlQuery) store.setQuery(urlQuery)
+
+    // Panel last: setQuery does not open anything, and openPanel must not be undone by it.
+    const urlPanel = params.get('panel')
+    if (urlPanel && (PANELS as string[]).includes(urlPanel)) {
+      store.openPanel(urlPanel as PanelId)
     }
   }, [])
 
-  useEffect(
-    () =>
-      useAppStore.subscribe((state) => {
-        const params = new URLSearchParams(window.location.search)
+  // Write on every change.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
 
-        const write = (key: string, value: string | null) => {
-          if (value) params.set(key, value)
-          else params.delete(key)
-        }
+    if (auth === 'postlogin') params.delete('auth')
+    else params.set('auth', auth)
 
-        write('auth', state.authMode === 'postlogin' ? null : state.authMode)
-        write('panel', state.panel)
-        write('q', state.search.open && state.search.query ? state.search.query : null)
-        write('pq', state.providerQuery)
+    if (panel) params.set('panel', panel)
+    else params.delete('panel')
 
-        const search = params.toString()
-        const next = `${window.location.pathname}${search ? `?${search}` : ''}`
-        if (next !== `${window.location.pathname}${window.location.search}`) {
-          window.history.replaceState(null, '', next)
-        }
-      }),
-    [],
-  )
+    if (query) params.set('q', query)
+    else params.delete('q')
+
+    const search = params.toString()
+    const next = `${window.location.pathname}${search ? `?${search}` : ''}`
+    if (next !== `${window.location.pathname}${window.location.search}`) {
+      window.history.replaceState(null, '', next)
+    }
+  }, [auth, panel, query])
 
   return null
 }

@@ -1,235 +1,195 @@
-/**
- * The shared vocabulary of the demo. Every other module imports its shapes from here so a
- * rename happens in one place instead of fifteen.
- *
- * Money is always a plain number of GBP units (not minor units): the mock data is authored by
- * hand and `41.04` is easier to read and to audit than `4104`. Rendering goes through
- * `src/lib/format.ts` — never through a local `toFixed`.
- */
+import type {
+  ChipIconName,
+  GameArtName,
+  LanguageFlagName,
+  PartnerLogoName,
+  PaymentLogoName,
+  ProviderLogoName,
+  SectionIconName,
+  SportIconName,
+  TournamentArtName,
+} from './assets'
 
-/** The four tabs of the category bar (Figma node 1:2500). */
-export type CategoryId = 'popular' | 'slots' | 'live-casino' | 'jackpots'
-
-/**
- * Row membership. A tag is what puts a game into a homepage row; a category is what puts it
- * behind a nav tab. They are deliberately separate: "crash" is a row but not a tab.
- */
-export type GameTag =
-  | 'new'
-  | 'hot'
-  | 'drops'
-  | 'megaways'
-  | 'bonusbuy'
-  | 'crash'
-  | 'jackpot'
-  | 'instant'
-  | 'egypt'
-  | 'lottery'
+/* --- account ------------------------------------------------------------- */
 
 /**
- * Icon slots used by section headers and the category bar. Kept as a closed union so a typo in
- * a data file fails at compile time rather than rendering an empty box.
+ * Three header and menu states exist in the design. `vip` differs from `postlogin` only by a
+ * VIP badge above the username in the menu panel (node 1:6832) — the header is identical.
  */
-export type IconName =
-  | 'popular'
-  | 'new'
-  | 'providers'
-  | 'recommended'
-  | 'crash'
-  | 'slots'
-  | 'bonus-buy'
-  | 'tournaments'
-  | 'megaways'
-  | 'jackpots'
-  | 'lottery'
-  | 'drops-wins'
-  | 'wheel'
-  | 'instant'
-  | 'egypt'
-  | 'live-casino'
-  | 'search'
-  /**
-   * The same magnifier drawn blue, for the two provider fields only (nodes 1:2239 and 1:4323).
-   * A separate file rather than a `text-*` class because `Icon` serves a flat exported stroke
-   * through next/image, which no colour utility can reach.
-   */
-  | 'search-blue'
-  // UI glyphs rather than section marks: the clear control of the search field (node 1:4319),
-  // the 32x32 disc that opens the balance panel (node 1:4280) and the deposit plus (node 1:5741).
-  | 'close'
-  | 'chevron-down'
-  | 'plus'
+export type AuthMode = 'prelogin' | 'postlogin' | 'vip'
+
+/** The two full-screen sheets. Only one can be open: both cover the whole viewport. */
+export type PanelId = 'menu' | 'search'
+
+export interface UserProfile {
+  username: string
+  /** Node 1:6842 prints a bare number, not a slug. */
+  id: string
+  /** Minor units (kopiyky), so arithmetic never touches a float. */
+  balanceMinor: number
+}
+
+/* --- casino --------------------------------------------------------------- */
+
+/**
+ * The four chips in the category bar. The design's fourth chip is a byte-identical copy of the
+ * third — same layer name, same icon, same string `лайв Казіно` — so the fourth category is
+ * ours. Recorded as a deviation in docs/tokens.md.
+ */
+export type CategoryId = 'popular' | 'slots' | 'live-casino' | 'crash'
+
+export interface Category {
+  id: CategoryId
+  /** Stored mixed-case; the chip applies `text-transform: capitalize`, as node 1:3342 does. */
+  label: string
+  icon: ChipIconName
+}
 
 export interface Game {
-  id: string
-  /** Also the thumbnail file name: `/images/games/<slug>.webp`. */
   slug: string
   title: string
-  /** A `Provider.id`, not a display name. Resolve through `providers.json`. */
-  provider: string
-  /**
-   * `null` whenever no real artwork was exported from Figma. GameCard then draws a deterministic
-   * gradient placeholder with the title and provider on top — the Figma card bakes both into the
-   * image, so the placeholder has to supply them itself.
-   */
-  thumb: string | null
-  /**
-   * May be empty: crash and instant titles belong to no nav tab. Consumers that need a badge
-   * should fall back to the first entry of `tags`.
-   */
+  provider: ProviderId
   categories: CategoryId[]
-  tags: GameTag[]
-  /** Present only on games that actually carry a progressive pot. */
-  jackpotGbp?: number
-  rtp?: number
+  /**
+   * Four distinct tiles exist in the entire Figma file and the design repeats one of them
+   * across all 48 cards. A game without art gets a generated gradient rather than the same
+   * picture a fourth time — see GameCard.
+   */
+  art?: GameArtName
 }
+
+export type ProviderId = ProviderLogoName
 
 export interface Provider {
-  id: string
+  id: ProviderId
   name: string
-  /** `/images/providers/<id>.svg`, or `null` when no logo was exported from Figma. */
-  logo: string | null
-  /** Number of games this provider has in `games.json` — kept in sync with the data by hand. */
-  gameCount: number
 }
 
+/** One entry in the recent-wins ticker, node 1:3392 and its two siblings. */
 export interface RecentWin {
   id: string
-  gameId: string
+  amountMinor: number
+  /** Stored whole; the ticker masks it for display, as `le****et` in node 1:3397. */
+  player: string
   gameTitle: string
-  thumb: string | null
-  amountGbp: number
-  /** Already masked at the source, e.g. "le****et". Never store or render a full username. */
-  username: string
-  /** ISO 8601 timestamp. */
-  at: string
-}
-
-export type JackpotTier = 'mini' | 'minor' | 'major' | 'grand'
-
-export interface Jackpot {
-  id: string
-  tier: JackpotTier
-  amountGbp: number
-  label: string
+  art: GameArtName
+  /** Node 1:3396 is green and 1:3404 / 1:3411 are orange. No rule in the design says why. */
+  tone: 'up' | 'alt'
 }
 
 export interface Tournament {
   id: string
+  /** Node 1:5232, uppercase in the design via CSS, stored as written. */
   title: string
   subtitle: string
-  prizePoolGbp: number
-  /** ISO 8601 timestamp; the countdown is derived from it, not stored. */
+  prizeMinor: number
+  art: TournamentArtName
+  /** ISO instant. Past deadlines roll forward — see nextCountdownEnd in format.ts. */
   endsAt: string
-  image: string
-  ctaLabel: string
 }
 
-export type PromoVariant = 'tournament' | 'lottery' | 'wheel'
+/* --- page composition ------------------------------------------------------ */
 
 /**
- * One of the small pills under a promo subtitle. `amber` is the warning tint of nodes 1:3446 and
- * 1:3538; `neutral` the white-tinted sibling next to it.
+ * The casino page is fifteen sections of four shapes. Keeping them as data means a new row is
+ * a few lines here rather than a new component, and it is why every row in the design that
+ * looks the same really is the same code.
  */
-export interface PromoPill {
-  label: string
-  tone?: 'amber' | 'neutral'
-}
+export type SectionKind = 'game-grid' | 'provider-row' | 'tournament' | 'hero' | 'ticker'
 
-/** A label/value row of the wheel's right column (nodes 1:3594–1:3602). */
-export interface PromoStat {
-  label: string
-  value: string
-}
-
-export interface PromoBannerData {
+export interface SectionSpec {
   id: string
-  variant: PromoVariant
-  title: string
-  subtitle: string
-  image: string
-  ctaLabel: string
-  ctaHref: string
-  /** Amber dot plus caption above the title (node 1:3441). Tournament only in the current data. */
-  eyebrow?: string
-  /** Absent rather than empty when the banner draws no pills — the wheel (1:3587) has none. */
-  pills?: PromoPill[]
-  /** Stacked label/value rows of the right column (nodes 1:3594–1:3602). Wheel only. */
-  stats?: PromoStat[]
-  /** "Time left to join" (1:3452) / "Draw ends in:" (1:3544). Omit to hide the timer. */
-  timerLabel?: string
-  /**
-   * ISO 8601 end of the countdown. The clock is derived from this rather than stored as
-   * "08h : 12m : 36s", so a banner cannot show a frozen string once the data file ages.
-   */
-  endsAt?: string
+  kind: SectionKind
+  /** Node 1:4318 and siblings. Absent on the hero and the ticker, which have no header. */
+  title?: string
+  icon?: SectionIconName
+  /** The see-all pill's literal label. The design writes `Всі (120) ` with a trailing space. */
+  seeAllLabel?: string
+  /** Which games this row draws. Absent means the section supplies its own content. */
+  filter?: GameFilter
+  /** Rows are one line of six or two lines of three; both scroll horizontally past 390. */
+  rows?: 1 | 2
+  tournamentId?: string
+  /** The Figma node this section was built from, so a review can open it directly. */
+  figmaNodeId: string
 }
 
-export interface Category {
-  id: CategoryId
+export interface GameFilter {
+  category?: CategoryId
+  provider?: ProviderId
+  limit?: number
+}
+
+/* --- sportsbook ------------------------------------------------------------ */
+
+export type SportId = 'football' | 'basketball' | 'tennis'
+
+export interface SportFilter {
+  id: SportId
   label: string
-  icon: IconName
+  icon: SportIconName
+  /** Node 1:6339 — the count badge beside the label. */
   count: number
 }
 
-export interface UserProfile {
+/**
+ * One match row, node 1:6391. The three odds are labelled `1`, `Н`, `2` — the middle one is
+ * Cyrillic Н for нічия (draw), not a Latin X. Shipping X would be a translation nobody asked
+ * for.
+ */
+export interface Match {
   id: string
-  displayName: string
-  email: string
-  phone: string
-  /** ISO date, `YYYY-MM-DD`. */
-  dob: string
-  address: string
-  tier: 'standard' | 'vip'
-  kycVerified: boolean
+  kickoff: string
+  /** Node 1:6395 renders `● EP` in bold italic. Whether EP is a real broadcaster is unknown. */
+  channel: string
+  isLive: boolean
+  home: Team
+  away: Team
+  odds: { home: number; draw: number; away: number }
 }
 
-export interface Balance {
-  totalGbp: number
-  cashGbp: number
-  bonusGbp: number
-  withdrawableGbp: number
-  wagering: {
-    requiredGbp: number
-    completedGbp: number
-  }
+export interface Team {
+  name: string
+  /** A coloured glyph, not an asset — the design draws 🔵 🔴 🔷 as text in nodes 1:6397+. */
+  badge: string
 }
 
-/** Which of the three balance sets a screen shows follows `useAppStore().authMode`. */
-export type AuthMode = 'prelogin' | 'postlogin' | 'vip'
-
-export interface FooterLogo {
+export interface League {
   id: string
-  label: string
-  /** `null` until the asset is exported; the component then falls back to the label. */
-  src: string | null
-  href?: string
+  sport: SportId
+  /** Node 1:6387, the sport name printed above the league. */
+  sportLabel: string
+  name: string
+  matches: Match[]
 }
 
-export interface FooterLink {
-  label: string
-  href: string
-}
+/* --- footer ---------------------------------------------------------------- */
 
-export interface FooterColumn {
-  title: string
-  links: FooterLink[]
+export interface FooterLinkColumn {
+  heading: string
+  links: { label: string; href: string }[]
 }
 
 export interface FooterData {
-  paymentLogos: FooterLogo[]
-  partnerLogos: FooterLogo[]
-  columns: FooterColumn[]
-  legal: string
+  columns: FooterLinkColumn[]
+  policies: { label: string; href: string }[]
+  payments: PaymentLogoName[]
+  partners: PartnerLogoName[]
+  flags: { id: LanguageFlagName; active: boolean }[]
+  /**
+   * The design's footer carries no licence number, no regulator mark, no 18+ badge and no
+   * responsible-gambling line, and its support address is the previous project's domain. The
+   * owner has decided to ship it exactly as drawn. Recorded here so it is findable in code and
+   * not only in a document.
+   */
+  supportEmail: string
 }
 
+/* --- search ----------------------------------------------------------------- */
+
 /**
- * Declarative row query. All present fields must match (AND). `limit` is applied last, after
- * filtering, so a row of six is `{ tag: 'crash', limit: 6 }`.
+ * Four frames, one component. Which one renders is derived from the query, not stored: an
+ * empty field with history shows `popular`, an empty field without it shows `empty`, a query
+ * with matches shows `suggestions`, one without shows `no-results`.
  */
-export interface GameFilter {
-  tag?: GameTag
-  category?: CategoryId
-  provider?: string
-  limit?: number
-}
+export type SearchState = 'empty' | 'popular' | 'suggestions' | 'no-results'

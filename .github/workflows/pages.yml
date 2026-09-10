@@ -45,15 +45,25 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
 
-      # axe-core over the nine states, run against the artifact that is about to be deployed rather
+      # axe-core over every state, run against the artifact that is about to be deployed rather
       # than against a dev server, so the check sees the same base path and the same bundles the
       # client will. basePath puts every asset under /tw-platform/, so the export has to be served
       # from a directory of that name for the page to load its own CSS; a copy is cheaper than
       # teaching http.server a prefix. python3 and Google Chrome are both preinstalled on
       # ubuntu-latest, and scripts/a11y.mjs asks playwright for `channel: 'chrome'`, so this adds no
-      # dependency. The script exits 1 when a critical or serious violation exists, which fails the
-      # job before the deploy step runs.
-      - name: Accessibility check
+      # dependency.
+      #
+      # REPORTING, NOT BLOCKING — owner's decision of 2026-09-10. The Top-Win design ships with its
+      # colours unchanged, and 23 of its text pairs fall below WCAG AA: #71809A on #E8F1FC measures
+      # 3.50:1, and white on the primary orange CTA gradient measures 2.33-3.44. Those are design
+      # decisions the client has to take, not defects to be fixed in code, so a11y.mjs's exit code
+      # no longer stops the deploy. The report still runs on every push and is still uploaded; see
+      # docs/tokens.md §7 for every pair with the value that would pass.
+      #
+      # The server guard below stays blocking. That distinction matters: a11y.mjs records a page it
+      # could not reach as a state with ZERO violations, so a server that never came up would
+      # produce a clean report of nothing. Swallowing that too would make the report worthless.
+      - name: Accessibility report
         run: |
           mkdir -p a11y-site
           cp -r out a11y-site/tw-platform
@@ -62,11 +72,9 @@ jobs:
             if curl -sf http://localhost:4173/tw-platform/ > /dev/null; then break; fi
             sleep 1
           done
-          # Repeated deliberately: a11y.mjs records a page it could not reach as a state with zero
-          # violations, so a server that never came up would pass the job silently. This line fails
-          # it instead.
           curl -sf http://localhost:4173/tw-platform/ > /dev/null
-          node scripts/a11y.mjs a11y-out http://localhost:4173/tw-platform
+          node scripts/a11y.mjs a11y-out http://localhost:4173/tw-platform \
+            || echo "::warning::axe-core found blocking violations. This does not fail the build - see docs/tokens.md 7."
 
       # Uploaded whether or not the check passed: when it fails, the report is the only way to see
       # which state and which rule failed.

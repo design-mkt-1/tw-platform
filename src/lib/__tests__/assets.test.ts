@@ -1,194 +1,79 @@
-import { existsSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readdirSync, statSync } from 'node:fs'
+import { join, relative, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import {
-  BASE_PATH,
-  GAMES_WITH_ART,
-  HERO_BONUS,
-  HERO_BONUS_MOBILE,
-  LANGUAGE_FLAGS,
-  LOGO,
-  PARTNER_LOGOS,
-  PAYMENT_LOGOS,
-  PROMO_BANNERS,
-  PROVIDERS_WITH_LOGO,
-  SEARCH_BUTTON_ICON,
-  SEARCH_ICON,
-  gameThumb,
-  languageFlag,
-  providerLogo,
-  sectionIcon,
-} from '@/lib/assets'
-import { desktopSections } from '@/lib/sections'
-import type { IconName } from '@/lib/types'
-import footer from '@/data/footer.json'
-import games from '@/data/games.json'
-import providers from '@/data/providers.json'
-import tournaments from '@/data/tournaments.json'
+import * as assets from '../assets'
 
 /**
- * Every image the app can ask for has to exist on disk.
+ * Walks every asset path the app can produce, in both directions.
  *
- * This is the one failure this project has already shipped twice. The sub-path deploy broke every
- * image at once, because `basePath` rewrites links but not an image `src`, and the page looked
- * perfect on the dev server the whole time. Separately, a bad Figma export left `search-btn.svg`
- * holding the entire page instead of the 20x20 glyph. Neither shows up in a type check or a lint
- * run: a wrong path is a valid string.
+ * Forward: everything assets.ts names must exist on disk. This is the failure that has already
+ * shipped from this codebase once — a sub-path deploy where every image 404'd, which looked
+ * perfect locally because locally there is no base path.
  *
- * So the suite walks in both directions — every path the code can produce must have a file, and
- * every file that ships must be one the code knows about.
+ * Backward: everything on disk must be named. An orphan is either dead weight in a static
+ * export that ships whatever it contains, or a file somebody forgot to wire up.
+ *
+ * What it cannot see: the inside of a file. It calls existsSync, nothing more. A dirty Figma
+ * re-export carrying a whole page background passes this test — look at the bytes.
  */
 
 const PUBLIC_DIR = join(process.cwd(), 'public')
+const IMAGES_DIR = join(PUBLIC_DIR, 'images')
 
-/** Turns a public URL back into a path on disk, undoing the deployment prefix if one is set. */
-function fileFor(url: string): string {
-  const rooted = BASE_PATH && url.startsWith(BASE_PATH) ? url.slice(BASE_PATH.length) : url
-  return join(PUBLIC_DIR, rooted)
+/** Deliberately unreferenced: Figma leftovers kept on disk so the decision is reversible. */
+const ALLOWED_ORPHANS = new Set<string>(assets.UNUSED_SPORT_SLIDES)
+
+function collectPaths(value: unknown, found: Set<string>): void {
+  if (typeof value === 'string') {
+    if (value.startsWith('/images/')) found.add(value)
+    return
+  }
+  if (Array.isArray(value)) {
+    for (const entry of value) collectPaths(entry, found)
+    return
+  }
+  if (value && typeof value === 'object') {
+    for (const entry of Object.values(value)) collectPaths(entry, found)
+  }
 }
 
-function expectExists(url: string) {
-  expect(existsSync(fileFor(url)), `${url} has no file under public/`).toBe(true)
+function walk(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry)
+    if (statSync(full).isDirectory()) walk(full, out)
+    else out.push(`/${relative(PUBLIC_DIR, full).split(sep).join('/')}`)
+  }
+  return out
 }
 
-/**
- * Exhaustive by construction: `IconName` is a closed union, so `Record<IconName, true>` fails to
- * compile the day a glyph is added to the type without being added here.
- */
-const ALL_ICONS: Record<IconName, true> = {
-  popular: true,
-  new: true,
-  providers: true,
-  recommended: true,
-  crash: true,
-  slots: true,
-  'bonus-buy': true,
-  tournaments: true,
-  megaways: true,
-  jackpots: true,
-  lottery: true,
-  'drops-wins': true,
-  wheel: true,
-  instant: true,
-  egypt: true,
-  'live-casino': true,
-  search: true,
-  'search-blue': true,
-  close: true,
-  'chevron-down': true,
-  plus: true,
-}
+const referenced = new Set<string>()
+collectPaths(assets, referenced)
 
-describe('paths produced by src/lib/assets.ts', () => {
-  it('resolves every section icon to a file', () => {
-    for (const icon of Object.keys(ALL_ICONS) as IconName[]) {
-      expectExists(sectionIcon(icon))
-    }
+describe('assets', () => {
+  it('names at least one path per area', () => {
+    // A guard on the guard: if collectPaths ever stopped finding anything — a rename, a change
+    // in how the module exports — both assertions below would pass vacuously.
+    expect(referenced.size).toBeGreaterThan(40)
   })
 
-  it('resolves the standalone glyphs and the wordmark', () => {
-    for (const url of [LOGO, SEARCH_ICON, SEARCH_BUTTON_ICON]) {
-      expectExists(url)
-    }
+  it.each([...referenced].sort())('%s exists on disk', (path) => {
+    expect(existsSync(join(PUBLIC_DIR, path))).toBe(true)
   })
 
-  it('resolves both hero artworks and all three promo backdrops', () => {
-    for (const url of [HERO_BONUS, HERO_BONUS_MOBILE, ...Object.values(PROMO_BANNERS)]) {
-      expectExists(url)
-    }
+  it('has no unreferenced files under public/images', () => {
+    const orphans = walk(IMAGES_DIR)
+      .filter((path) => !referenced.has(path))
+      .filter((path) => !ALLOWED_ORPHANS.has(path))
+    expect(orphans).toEqual([])
   })
 
-  it('resolves every game slug it claims to have art for', () => {
-    for (const slug of GAMES_WITH_ART) {
-      expectExists(gameThumb(slug))
-    }
+  it('prefixes nothing when NEXT_PUBLIC_BASE_PATH is unset', () => {
+    // The deployed build sets it to /tw-platform. Locally it must stay empty, or every path
+    // gains a prefix the dev server does not serve.
+    expect(assets.LOGO).toBe('/images/nav/topwin-logo.svg')
   })
 
-  it('resolves every provider it claims to have a logo for', () => {
-    for (const id of PROVIDERS_WITH_LOGO) {
-      expectExists(providerLogo(id))
-    }
-  })
-
-  it('resolves every payment, partner and flag in the footer maps', () => {
-    for (const url of [...Object.values(PAYMENT_LOGOS), ...Object.values(PARTNER_LOGOS)]) {
-      expectExists(url)
-    }
-    for (const code of LANGUAGE_FLAGS) {
-      expectExists(languageFlag(code))
-    }
-  })
-})
-
-/**
- * The data files name their own paths — `games.json` carries a `thumb`, `footer.json` an `src` per
- * logo — and those bypass the helpers above entirely. They are wrapped with `withBase()` at the
- * call site, which means a typo here fails only in the browser.
- */
-describe('paths written directly into src/data/*.json', () => {
-  it('resolves every game thumbnail', () => {
-    for (const game of games) {
-      if (game.thumb) expectExists(game.thumb)
-    }
-  })
-
-  it('resolves every provider logo', () => {
-    for (const provider of providers) {
-      if (provider.logo) expectExists(provider.logo)
-    }
-  })
-
-  it('resolves every footer logo', () => {
-    for (const logo of [...footer.paymentLogos, ...footer.partnerLogos]) {
-      if (logo.src) expectExists(logo.src)
-    }
-  })
-
-  it('resolves every promo and tournament image', () => {
-    for (const item of [...tournaments.tournaments, ...tournaments.promos]) {
-      if (item.image) expectExists(item.image)
-    }
-  })
-})
-
-/**
- * The other direction. `GAMES_WITH_ART` and `PROVIDERS_WITH_LOGO` are described in `assets.ts` as
- * "the contract with the placeholder logic": a card consults them to decide whether to draw the
- * picture or the gradient fallback. A file that arrives on disk without being added to the list
- * ships as dead weight and never renders — silent, and only visible by comparing two folders.
- */
-describe('files on disk that no list mentions', () => {
-  const slugsOf = (dir: string, extension: string) =>
-    readdirSync(join(PUBLIC_DIR, 'images', dir))
-      .filter((name) => name.endsWith(extension))
-      .map((name) => name.slice(0, -extension.length))
-
-  it('has no game artwork missing from GAMES_WITH_ART', () => {
-    const onDisk = readdirSync(join(PUBLIC_DIR, 'images', 'games')).map((name) =>
-      name.replace(/\.[^.]+$/, ''),
-    )
-    expect([...onDisk].sort()).toEqual([...GAMES_WITH_ART].sort())
-  })
-
-  it('has no provider logo missing from PROVIDERS_WITH_LOGO', () => {
-    expect(slugsOf('providers', '.svg').sort()).toEqual([...PROVIDERS_WITH_LOGO].sort())
-  })
-
-  it('has no section icon that no row and no glyph constant asks for', () => {
-    // `search-btn.svg` is reached through SEARCH_BUTTON_ICON rather than through `sectionIcon`,
-    // so the constants have to be folded in by file name or the check reports its own blind spot.
-    const basename = (url: string) => url.split('/').pop()?.replace(/\.svg$/, '') ?? ''
-
-    const referenced = new Set<string>([
-      ...desktopSections.map((section) => section.icon),
-      ...(Object.keys(ALL_ICONS) as IconName[]),
-      basename(SEARCH_ICON),
-      basename(SEARCH_BUTTON_ICON),
-    ])
-    for (const name of slugsOf('icons', '.svg')) {
-      expect(referenced.has(name), `public/images/icons/${name}.svg is referenced nowhere`).toBe(
-        true,
-      )
-    }
+  it('rejects a relative path', () => {
+    expect(() => assets.withBase('images/logo.svg')).toThrow()
   })
 })
