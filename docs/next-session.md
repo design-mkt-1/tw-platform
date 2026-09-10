@@ -81,37 +81,56 @@ Two new things to know before you run anything:
 
 In the order I would take it.
 
-1. **The coverage guard over-reports, and a guard nobody believes is worse than none.** The last
-   clean run printed 24 problems, all on `/sport`, all odds cells sitting under the fixed bottom
-   navigation at a sampled scroll position. **Measured: at true maximum scroll (991) all three are
-   reachable** — the user scrolls 73px further and presses them. But `review.mjs` samples
-   `[0, height/2, height]`, and `height` is the document height, not the maximum scroll offset, so it
-   never tests the position that matters. The comment at `scripts/review.mjs:157` argues the reports
-   are true and deliberate, and it is right about the glow — that defect showed at scrollY 462, twelve
-   pixels **above** the painted bar, and a filter excluding the navigation would have hidden it. So
-   the fix is not a filter. Start with the sampling: test at `scrollHeight - innerHeight`, not at
-   `scrollHeight`.
-2. **Three of the four category states have no address.** Tapping `Слоти` changes the page and
+1. **Three of the four category states have no address.** Tapping `Слоти` changes the page and
    nothing can link to the result, so `review.mjs` and `a11y.mjs` never see it. This is the same rule
    that gave the search states their `?q=`. It needs a fourth param in `UrlStateBridge` and three
    rows in `screens.json`.
-3. **`1:7363`, the `Нещодавні запити` search state, still has no address** and has never been
+2. **`1:7363`, the `Нещодавні запити` search state, still has no address** and has never been
    captured or scanned. It needs `recent.length > 0`, and `recent` lives only in the store. Same fix
-   shape as item 2.
-4. **The tournament prize shows `2 000 ₴`; the design draws a bare `2000`.** `formatUahWhole` is the
+   shape as item 1.
+3. **The tournament prize shows `2 000 ₴`; the design draws a bare `2000`.** `formatUahWhole` is the
    single place in `src` that touches `Intl` and that is deliberate, so this is a copy decision, not
    a bug. Note the design is already inconsistent about currency across adjacent screens —
    `₴250.000` on the hero, `$ 140.00` on the balance chip, `41.04 GBP` in the ticker.
-5. **`Купон` has no `onClick`.** The Figma file draws no bet-slip panel for it to open. Either it
+4. **`Купон` has no `onClick`.** The Figma file draws no bet-slip panel for it to open. Either it
    joins the register of controls the design gives no target, or the panel needs designing.
-6. **The bottom navigation is unusable at a 195px layout viewport** — `Лайв казіно` and `Промо` are
+5. **The bottom navigation is unusable at a 195px layout viewport** — `Лайв казіно` and `Промо` are
    fully offscreen and a fixed box does not scroll (WCAG 1.4.10). That is 200% zoom on a 390px
    screen.
-7. **The type scale is px-only**, so a reader who raises their browser font size sees no change
+6. **The type scale is px-only**, so a reader who raises their browser font size sees no change
    (WCAG 1.4.4). Filed from `tailwind.config.ts:173-195`; **not observed in a browser**, because
    Chrome's font-size setting could not be reached from this environment.
-8. **`a11y.mjs` does not assert which frame it scanned.** `review.mjs` now does, via `expectText` per
+7. **`a11y.mjs` does not assert which frame it scanned.** `review.mjs` now does, via `expectText` per
    registry row. Sharing that needs a helper under `scripts/`.
+
+### The coverage guard, closed on 2026-09-12 — and the claim that sent it the wrong way
+
+The previous handover filed the over-reporting as a sampling bug: `review.mjs` scrolled to
+`document.scrollHeight` rather than to `scrollHeight - innerHeight`, so "it never tests the position
+that matters". **That claim is wrong, and it was written by the coordinator rather than measured.**
+Measured on `/sport` at 390x844: the document is 1835 tall in an 844 viewport, and
+`window.scrollTo(0, 1835)` lands at **991**. The browser clamps. The bottom position was always the
+true maximum; what the finding printed was the number it had asked for, not the one it reached.
+
+The real fault was the criterion. Any control covered at any one sampled position was reported, so
+an odds cell passing under the painted glass bar on its way down the page counted as unpressable.
+`1 1.77` on `/sport` is covered at scrollY 0 — its centre lands at y 775, the plate's own top edge —
+and free at every position from 50 to 750. The player scrolls and presses it. All 24 reports were of
+that shape.
+
+The rule is now **pressable somewhere**: a control reports only if it is covered at every position
+it is ever visible at, walking the page in half-viewport steps. Verified both ways on the static
+export: as built, 0 problems across all 20 captures; with `pointer-events: none` lifted from the nav
+glow and the export rebuilt, the last odds cell of the last fixture, `1 2.12`, reports at scrollY 991
+as covered at the only position it is visible at.
+
+That change alone loses something, and Guard 6 is why it does not. On `/` the revived glow steals
+four footer links and part of the provider scroller, and every one of those is free at some other
+scroll position, so "pressable somewhere" would not report the defect there at all. Guard 6 catches
+the cause instead of the consequence, statically and on every state: nothing inside a control may
+take pointer events more than 12px outside it. Measured tolerance — as built the only bleeds are the
+bottom tab's deliberate 44px hit overlay at 1.5px and its active dot at 7px; the revived glow bleeds
+37.7px, and reports on all 20 states.
 
 ### Ten accessibility findings that were always there and were never mentioned
 
@@ -201,7 +220,8 @@ Measured on the static export served the way CI serves it, on 2026-09-10, after 
 - `next build` with `GITHUB_PAGES=true`: 7 static routes, including `/dev/screens`.
 - `scripts/review.mjs`: 20 of 20 captured, zero console errors, zero responses at 400 or above, zero
   wrong-frame reports, `scrollWidth` 390 in every state, five allowlisted overflows printed by name,
-  and the 24 coverage reports discussed in open item 1.
+  and — since the guard was corrected on 2026-09-12 — **0 problems**, where the same export
+  previously reported 24.
 - `scripts/a11y.mjs`: 0 critical, 188 serious, 10 moderate.
 - 86 files under `public/images`, 2.6 MB — three more than the previous count, the recovered
   section icons.

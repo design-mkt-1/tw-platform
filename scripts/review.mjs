@@ -145,24 +145,52 @@ async function scanOverflow(page) {
   })
 }
 
+const CONTROL = 'a[href], button, input, [tabindex="0"]'
+
 /**
- * Guard 3 — no control may be covered by anything.
+ * Give every control a name that survives scrolling, so one control can be followed from the top
+ * of the page to the bottom.
  *
- * For every control in the viewport, the centre of its own box must resolve back to it. This is
- * the guard for a defect that was invisible in the code, in the screenshots and in axe: the
- * bottom navigation's decorative glow is a `123.891 x 131.535` span inside a button that is
- * `63.653 x 93`, so it hung out over the page and swallowed taps meant for whatever was behind
- * it. On `/sport` that made the last odds cell of the first match unreachable — the control was
- * present, correctly labelled, correctly sized, and could not be pressed.
+ * Tagged once, before the scan loop, rather than matched on the description string: two odds
+ * cells on `/sport` can carry the same accessible name — `1 1.77` appears on more than one
+ * fixture — and merging them would let a pressable cell vouch for an unpressable one.
+ */
+async function tagControls(page) {
+  await page.evaluate((selector) => {
+    const modal = document.querySelector('[role="dialog"][aria-modal="true"]')
+    const scope = modal ?? document
+    scope
+      .querySelectorAll(selector)
+      .forEach((el, index) => el.setAttribute('data-review-control', String(index)))
+  }, CONTROL)
+}
+
+/**
+ * Guard 3 — every control must be pressable somewhere.
  *
- * **Controls that have scrolled under the bottom navigation are reported, and that is on purpose.**
- * They are true reports — at that scroll position those odds cells genuinely cannot be pressed —
- * and the obvious rule for suppressing them does not survive contact with the defect. Measured on
- * the 2026-09-11 export at 390x844: with the glow live, `/sport` at scrollY 462 reported the odds
- * cell `1 1.71` covered at y 763, which is twelve pixels ABOVE the painted bar; the same scan with
- * `pointer-events: none` on the glow does not report it at all. Every remaining report sits at
- * y >= 787, inside the bar. A filter that excluded the fixed navigation would have excluded the
- * bug, because the bug lived inside the fixed navigation.
+ * For every tagged control, the centre of its visible box must resolve back to it at at least one
+ * scroll position. This is the guard for a defect that was invisible in the code, in the
+ * screenshots and in axe: the bottom navigation's decorative glow is a `123.891 x 131.535` span
+ * inside a button that is `63.653 x 93`, so it hung out over the page and swallowed taps meant for
+ * whatever was behind it. On `/sport` that made the last odds cell of the last fixture
+ * unreachable — the control was present, correctly labelled, correctly sized, and could not be
+ * pressed at any scroll position.
+ *
+ * **"Somewhere" is the whole guard, and it is a correction of 2026-09-12.** Until then any control
+ * covered at any one sampled position was reported, and the last clean run printed 24 problems on
+ * that rule, every one of them an odds cell passing under the painted glass bar on its way down
+ * the page. Those were false. Measured on the dev server at 390x844: the cell `1 1.77` on `/sport`
+ * is covered by the nav plate at scrollY 0, where its centre lands at y 775 — the plate's own top
+ * edge — and free at every position from 50 to 750. The player scrolls and presses it. A guard
+ * that reports 24 things a player can do is a guard nobody reads.
+ *
+ * The defect survives that change and the false reports do not, which is the measurement the rule
+ * is built on. With `pointer-events: none` lifted from the glow, the cell `1 2.12` is covered at
+ * 3 of the 3 positions it is ever visible at, by the glow, and reports; with the glow as built the
+ * same cell is free at scrollY 991 and does not. One caveat, because it is a real loss: on `/` the
+ * revived glow steals footer links and part of the provider scroller, and every one of those is
+ * free at some other scroll position, so this rule alone would not report the defect there. That
+ * is why Guard 6 exists — it catches the same fault statically, on both pages, without scrolling.
  *
  * When a modal sheet is open the scan is scoped to it. That is not a convenience: the menu and
  * the search render as `role="dialog" aria-modal="true"`, and `aria-modal` means everything
@@ -181,11 +209,9 @@ async function scanCoverage(page) {
       return `${el.tagName.toLowerCase()}${label ? `[aria-label="${label}"]` : ''}${classes}`
     }
 
-    const modal = document.querySelector('[role="dialog"][aria-modal="true"]')
-    const scope = modal ?? document
-    const offenders = []
+    const sightings = []
 
-    for (const el of scope.querySelectorAll('a[href], button, input, [tabindex="0"]')) {
+    for (const el of document.querySelectorAll('[data-review-control]')) {
       const rect = el.getBoundingClientRect()
       // The visible part of the box, not the whole box: a control half-scrolled off the top has
       // a centre above the viewport, and elementFromPoint answers null for a point outside it.
@@ -198,43 +224,135 @@ async function scanCoverage(page) {
       const x = (left + right) / 2
       const y = (top + bottom) / 2
       const hit = document.elementFromPoint(x, y)
-      if (hit && (hit === el || el.contains(hit))) continue
 
-      offenders.push({
+      sightings.push({
+        id: el.getAttribute('data-review-control'),
         control: describe(el),
+        pressable: Boolean(hit && (hit === el || el.contains(hit))),
         coveredBy: describe(hit),
         at: `${Math.round(x)},${Math.round(y)}`,
       })
     }
-    return offenders
+    return sightings
   })
 }
 
 /**
- * Run a viewport-relative scan at the top, the middle and the bottom of the page.
+ * Guard 6 — nothing inside a control may take pointer events far outside it.
  *
- * One position is not enough, and the measurement says so rather than the intuition. On `/sport`
- * the odds cell the nav glow stole, `1 1.71`, is only covered at scrollY 462 — at 0 it has not
- * scrolled down to the glow yet, and at the bottom of the page it has passed under the opaque
- * bar, where being covered proves nothing. The one scroll position that shows the defect cleanly
- * is the one in the middle.
+ * Guard 3 catches the consequence, and only where the page cannot scroll the victim clear. This
+ * catches the cause, in one static pass: a decoration that has grown past the control it belongs
+ * to steals taps from whatever is behind it, on whichever page that decoration appears.
  *
- * Offenders are deduplicated across the three positions, because a fixed element covers the same
- * control at every one of them and three copies of one defect read as three defects.
+ * The tolerance is measured rather than chosen. As built, on `/` and `/sport` at 390x844, the only
+ * non-scrolling controls with a child that bleeds past them are the bottom tab's deliberate
+ * 44px hit overlay at 1.5px (BottomNavBar.tsx:90) and its 4x4 active dot at 7px, which sits below
+ * a 41px link by design (BottomNavBar.tsx:96). With `pointer-events: none` lifted from the nav
+ * glow, that span bleeds 37.7px. Twelve separates them with room on both sides.
+ *
+ * Controls that scroll their own content are skipped, and they have to be: the sport bonus
+ * carousel is a `ul` with `tabindex="0"`, and its slides stick 310px past it because that is what
+ * a scroller is. Those children cannot steal a tap, because the scroller clips them.
  */
-async function atThreeScrollPositions(page, scan) {
-  const height = await page.evaluate(() => document.documentElement.scrollHeight)
+const HIT_BLEED_TOLERANCE = 12
+
+async function scanHitBleed(page) {
+  return page.evaluate(
+    ({ selector, tolerance }) => {
+      const describe = (el) => {
+        const label = el.getAttribute('aria-label')
+        const classes =
+          typeof el.className === 'string' && el.className.trim()
+            ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.')
+            : ''
+        return `${el.tagName.toLowerCase()}${label ? `[aria-label="${label}"]` : ''}${classes}`
+      }
+
+      const offenders = []
+      for (const control of document.querySelectorAll(selector)) {
+        const box = control.getBoundingClientRect()
+        if (box.width < 1 || box.height < 1) continue
+        const own = getComputedStyle(control)
+        if (/auto|scroll/.test(own.overflowX + own.overflowY)) continue
+
+        for (const child of control.querySelectorAll('*')) {
+          const style = getComputedStyle(child)
+          if (style.pointerEvents === 'none') continue
+          if (style.display === 'none' || style.visibility === 'hidden') continue
+          // Only the control's own descendants. A nested control owns its own subtree.
+          if (child.closest(selector) !== control) continue
+
+          const rect = child.getBoundingClientRect()
+          if (rect.width < 1 || rect.height < 1) continue
+          const bleed =
+            Math.round(
+              Math.max(
+                box.left - rect.left,
+                rect.right - box.right,
+                box.top - rect.top,
+                rect.bottom - box.bottom,
+              ) * 100,
+            ) / 100
+          if (bleed <= tolerance) continue
+
+          offenders.push({ control: describe(control), child: describe(child), bleed })
+        }
+      }
+      return offenders
+    },
+    { selector: CONTROL, tolerance: HIT_BLEED_TOLERANCE },
+  )
+}
+
+/**
+ * Walk the page in half-viewport steps and keep only the controls that were pressable nowhere.
+ *
+ * Half a viewport rather than a round number, because it is what guarantees the sampling: a
+ * control shorter than the viewport is on screen across more than `innerHeight` of scroll travel,
+ * so a step of `innerHeight / 2` sees every control at least twice. Three fixed positions did not
+ * guarantee that, and a control seen once and covered once reads as a control that is never
+ * pressable.
+ *
+ * The last position is the true maximum, `scrollHeight - innerHeight`. Asking for `scrollHeight`
+ * would have worked too and the handover of 2026-09-11 was wrong to file it as the bug: measured
+ * on `/sport`, `window.scrollTo(0, 1835)` lands at 991, because the browser clamps. What it did
+ * not do was report the position it actually reached — the finding said `scrollY 1835` for a page
+ * that stops at 991 — so the number in the report is now read back from `window.scrollY`.
+ */
+async function whereverItCanBePressed(page, scan) {
+  await tagControls(page)
+  const { maxScroll, step } = await page.evaluate(() => ({
+    maxScroll: Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
+    step: Math.max(1, Math.round(window.innerHeight / 2)),
+  }))
+
+  const positions = []
+  for (let y = 0; y < maxScroll; y += step) positions.push(y)
+  positions.push(maxScroll)
+
   const seen = new Map()
-  for (const y of [0, Math.round(height / 2), height]) {
+  for (const y of positions) {
     await page.evaluate((top) => window.scrollTo(0, top), y)
     await page.waitForTimeout(120)
-    for (const offender of await scan(page)) {
-      const key = JSON.stringify([offender.control, offender.coveredBy])
-      if (!seen.has(key)) seen.set(key, { ...offender, scrollY: y })
+    const scrollY = await page.evaluate(() => Math.round(window.scrollY))
+    for (const sighting of await scan(page)) {
+      const record = seen.get(sighting.id) ?? { covered: [], pressableAt: [] }
+      if (sighting.pressable) record.pressableAt.push(scrollY)
+      else record.covered.push({ ...sighting, scrollY })
+      seen.set(sighting.id, record)
     }
   }
   await page.evaluate(() => window.scrollTo(0, 0))
+
   return [...seen.values()]
+    .filter((record) => record.pressableAt.length === 0 && record.covered.length > 0)
+    .map((record) => ({
+      control: record.covered[0].control,
+      coveredBy: record.covered[0].coveredBy,
+      at: record.covered[0].at,
+      scrollY: record.covered[0].scrollY,
+      coveredAt: record.covered.length,
+    }))
 }
 
 /**
@@ -406,7 +524,8 @@ async function shot(name, screen, { width, height, url, steps, full = false }) {
           })),
         )
         entry.overflow = allowlisted(await scanOverflow(page))
-        entry.coveredControls = await atThreeScrollPositions(page, scanCoverage)
+        entry.hitBleed = await scanHitBleed(page)
+        entry.coveredControls = await whereverItCanBePressed(page, scanCoverage)
       }
       findings.push({ ...entry, ok: true })
     } catch (error) {
@@ -449,7 +568,11 @@ const problems = findings.flatMap((f) => [
   ...(f.badResponses ?? []).map((r) => `${f.name}/${f.motion}: HTTP ${r.status} ${r.url}`),
   ...(f.wrongFrame ?? []).map((w) => `${f.name}/${f.motion}: ${w}`),
   ...(f.overflow ?? []).map((o) => `${f.name}/${f.motion}: ${o.kind} ${o.key} ${o.scrollWidth} in ${o.clientWidth} — ${JSON.stringify(o.text)}`),
-  ...(f.coveredControls ?? []).map((c) => `${f.name}/${f.motion}: ${c.control} covered by ${c.coveredBy} at ${c.at} (scrollY ${c.scrollY})`),
+  ...(f.hitBleed ?? []).map((h) => `${f.name}/${f.motion}: ${h.child} takes pointer events ${h.bleed}px outside ${h.control}`),
+  ...(f.coveredControls ?? []).map(
+    (c) =>
+      `${f.name}/${f.motion}: ${c.control} pressable at no scroll position — covered by ${c.coveredBy} at ${c.at} (scrollY ${c.scrollY}; covered at all ${c.coveredAt} positions it was visible at)`,
+  ),
 ])
 
 console.log(`\n${problems.length} problem${problems.length === 1 ? '' : 's'}:`)

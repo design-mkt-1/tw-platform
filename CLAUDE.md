@@ -352,7 +352,14 @@ component-level walk does not see that. Grep the store for a field whose only re
 131.535` span inside a `63.653 x 93` button; it surrendered 748 of 837 sample points to a decoration
 and made the last odds cell on `/sport` open the menu instead. Three sibling cases —
 `HeroCarousel.tsx:53` and both slides in `BonusCarousel.tsx` — already carried `pointer-events-none`;
-only the nav had been missed. `review.mjs` now hit-tests every control's own centre.
+only the nav had been missed. Two guards in `review.mjs` watch it, and it takes both. Guard 3
+hit-tests every control's own centre at every half-viewport of scroll and reports only a control
+that is pressable at **no** position — measured 2026-09-12, the earlier "covered anywhere" rule
+produced 24 false reports of odds cells passing under the glass bar, and a guard nobody believes is
+worse than none. That rule alone would have missed the `/` half of this very defect, where every
+stolen control is free further up the page, so Guard 6 checks the cause statically instead: nothing
+inside a control may take pointer events more than 12px outside it. As built the only bleeds are
+1.5px and 7px, both deliberate and both in `BottomNavBar.tsx`; the glow bleeds 37.7px.
 
 **A layout box measured against a font that cannot render its text.** The hero promo badge is 178
 wide and the Cyrillic inside it needs 169.98 in a 168px content box, so it wrapped and dropped its

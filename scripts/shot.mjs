@@ -83,6 +83,14 @@ if (targetRaw && !/^\d+$/.test(targetRaw)) {
   await page.screenshot({ path: out, fullPage: full === 'full' })
 }
 
+/*
+ * Read back rather than echoed. `window.scrollTo` clamps to `scrollHeight - innerHeight`, so a
+ * request for 1835 on a 1835-tall `/sport` in an 844 viewport lands at 991 and reporting the
+ * argument would name a position the shot was not taken at. review.mjs printed a finding at
+ * "scrollY 1835" for months on the strength of the same echo.
+ */
+const scrollY = await page.evaluate(() => Math.round(window.scrollY))
+
 await browser.close()
 
-console.log(JSON.stringify({ url, out, width, height, clipped, scrollY: targetRaw, errors }, null, 2))
+console.log(JSON.stringify({ url, out, width, height, clipped, scrollY, errors }, null, 2))
