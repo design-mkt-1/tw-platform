@@ -40,7 +40,7 @@ They were also living in a session temp directory, which does not survive.
 | `20` – `25-gap-*.md` | The second pass: the colours, type and effects the quota cut short |
 | `manifest-*.md` | One row per downloaded asset — file path, node id, Figma layer name, format, size, and whether it came from a recorded URL or a fresh call |
 
-## Two corrections to carry, because a file here is wrong
+## Three corrections to carry, because a file here is wrong
 
 **`00-tokens.md` records `#080814` as "the app header background". It is not.** That value was
 measured on nodes `1:6594` and `1:6617`, which are leftover JACKPOT headers pasted onto the
@@ -54,7 +54,14 @@ eight declare it and the eighth bakes it in by hand, which is why a pixel sample
 `#E8F1FC` is `#7FB4F2` exactly, on all three channels. The pixel pass had sampled a blend and
 recorded it as the paint.
 
-Both corrections are in `../tokens.md`. They are left standing in the files above rather than
+**`08-menus.md` §6 (lines 304-305) says the navbar in the three menu frames is in its "Меню"
+active state, with the other four items dimmer.** It is not. On 2026-09-10 one `get_screenshot` of
+the nav instance `1:6815` inside `1:6641`, decoded pixel by pixel, showed the component's ordinary
+Спорт-active variant: `Спорт` at `#FFB095` with its dot, and `Казіно`, `Лайв казіно`, `Промо` and
+`Меню` all `#FFFFFF`, nothing dimmed. The rest of §6 holds — the nav does sit on top of the panel,
+lit. The build keeps the current route's tab active while the menu is open.
+
+The first two corrections are in `../tokens.md`; the third is in `../ux-audit-2026-09-10.md`. They are left standing in the files above rather than
 edited out, because the point of a dated record is that it says what was known at the time.
 
 ## Three things these files record as unknown that are now known

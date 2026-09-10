@@ -3,6 +3,12 @@
 Rewritten 2026-09-10, at the end of the session that swept the build in a browser and fixed what it
 found. The previous version of this file was written earlier the same day, before any of that.
 
+> **Also read [`ux-audit-2026-09-10.md`](ux-audit-2026-09-10.md).** A full UI/UX audit ran later on
+> 2026-09-10, from the code and in Chrome at 360, 375, 390, 430 and desktop. It made the layout
+> fluid below 390 and a centred 390 column above, put the nav on top of the open menu, gave the
+> 404 the header and nav, made the sport pills filter, and dealt the casino rows so no two share a
+> tile. Its last section lists what still waits on the owner.
+>
 > **Read [`sweep-2026-09-12.md`](sweep-2026-09-12.md) first.** A seven-worker visual fidelity sweep
 > ran on 2026-09-12 and moved most of what follows. In short: the casino page was spaced 8px too far
 > apart at every section boundary and is now on the design's own 370/276 pitch; the bottom nav plate
