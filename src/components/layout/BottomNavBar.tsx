@@ -2,8 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@/components/primitives/Icon'
 import { NAV_BURGER, NAV_CENTER_BUTTON, NAV_PLATE, NAV_TABS } from '@/lib/assets'
+import { plateImage } from '@/lib/navPlate'
 import { followLinkOutOfPanel, useAppStore } from '@/store/useAppStore'
 
 /**
@@ -32,18 +34,18 @@ import { followLinkOutOfPanel, useAppStore } from '@/store/useAppStore'
  * The nav is fluid on every phone, capped at --page-max like the page (owner's decision,
  * 2026-09-10). Measured before the first fluid pass: the frame was a fixed 390 at every width, so
  * at 375 `Промо` ended at 383 and at 360 the whole right group sat 23px off screen. The plate
- * stretches to the frame (its SVG is `preserveAspectRatio="none"`), the two tab groups keep their
+ * is drawn to the frame's width (see below), the two tab groups keep their
  * 7px insets and the 96px well between them, and the centre cluster rides the notch: its left
  * edge is `calc(48.169% - 31.859px)`, which is 156 at 390 and tracks the stretched notch centre
  * (image x 188.34 of 391) at every other width. Centring it on the frame instead would reopen
  * point 3 above — the notch is where the plate says, not at 50%.
  *
- * Open question for the owner, not a decision: stretching also WIDENS the notch while the button
- * stays 63.65. Measured on the dev server, notch width at its top edge / gap to the button each
- * side: 390 — 78.07 / 7.69 + 6.74; 440 — 88.05 / 12.74 + 11.67; 480 — 96.04 / 16.78 + 15.62. The
- * button stays centred on the notch at all three (187.82 vs 187.84, 211.90 vs 211.92, 231.16 vs
- * 231.19), but the ring visibly loosens above 390. Left as a plain stretch until the owner picks
- * a treatment.
+ * The plate is redrawn for the frame's width rather than stretched (owner's decision,
+ * 2026-09-10, option A in docs/mockups/nav-notch). Stretching widened the notch while the button
+ * stayed 63.65 — measured, gap to the button each side: 390 — 7.69 + 6.74; 440 — 12.74 + 11.67;
+ * 480 — 16.78 + 15.62. `plateImage` (src/lib/navPlate.ts) keeps the notch's shape and lengthens
+ * only the flat runs, so the ring is 7.7 + 6.7 at every width. Until the first measurement after
+ * hydration the stretched export stands in; at 390 the two are the same path.
  *
  * Every glyph in the design is a single flat fill — the Sport export just has #FFB095 baked in
  * where the other three have white — so the tabs draw their glyph as a CSS mask painted with
@@ -138,6 +140,14 @@ export function BottomNavBar() {
   const openPanel = useAppStore((state) => state.openPanel)
   const closePanel = useAppStore((state) => state.closePanel)
   const menuOpen = panel === 'menu'
+  const navRef = useRef<HTMLElement>(null)
+  const [plate, setPlate] = useState(NAV_PLATE)
+
+  useEffect(() => {
+    const observer = new ResizeObserver(([entry]) => setPlate(plateImage(entry.contentRect.width)))
+    observer.observe(navRef.current!)
+    return () => observer.disconnect()
+  }, [])
 
   return (
     // 111 tall: the bottom 68 are the painted plate, the top 43 exist only so the raised button
@@ -156,6 +166,7 @@ export function BottomNavBar() {
     // tab the route owns stays active here, and `aria-expanded` on the Меню button carries the
     // open state.
     <nav
+      ref={navRef}
       data-bottom-nav
       className={`pointer-events-none fixed inset-x-0 mx-auto h-nav-frame w-full max-w-[var(--page-max)] ${
         menuOpen ? 'z-[60]' : 'z-40'
@@ -169,8 +180,8 @@ export function BottomNavBar() {
         aria-hidden
         className="absolute left-[-0.5px] top-[42.5px] h-[69px] w-[calc(100%+1px)] backdrop-blur-[2.5px]"
         style={{
-          WebkitMaskImage: `url(${NAV_PLATE})`,
-          maskImage: `url(${NAV_PLATE})`,
+          WebkitMaskImage: `url("${plate}")`,
+          maskImage: `url("${plate}")`,
           WebkitMaskSize: '100% 100%',
           maskSize: '100% 100%',
         }}
@@ -184,7 +195,7 @@ export function BottomNavBar() {
           side. BonusCarousel.tsx:66 already carried this class for the same reason.
           `w-[calc(100%+1px)]` is that same 391 at 390 and stretches with the frame below it. */}
       <Icon
-        src={NAV_PLATE}
+        src={plate}
         alt=""
         width={391}
         height={69}

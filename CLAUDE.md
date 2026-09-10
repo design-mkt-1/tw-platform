@@ -341,6 +341,7 @@ Recorded so nobody re-opens them without a reason.
 | Menu `More` and `ENGLISH` are inert controls | 2026-09-10 |
 | Small type: 12px only for the information-bearing ones — kickoff time, countdown, sport filter counts | 2026-09-10 |
 | Search field gets a blue border on focus, in every search frame | 2026-09-10 |
+| **The nav notch keeps its shape at every width.** Only the plate's flat runs grow or shrink, so the ring round Меню stays 7.7 + 6.7px (option A of `docs/mockups/nav-notch/`; `src/lib/navPlate.ts`) | 2026-09-10 |
 | **Inert controls look inert**: every control with `aria-disabled="true"` renders at 50% opacity with a `not-allowed` cursor, restored to full on keyboard focus. One rule in `globals.css`, keyed on the attribute. An exception to "colours ship unchanged" | 2026-09-10 |
 
 ## Bug fixes

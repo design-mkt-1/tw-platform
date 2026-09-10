@@ -84,6 +84,7 @@ measured Chrome rounding fix from D2 — keep it). Cards keep `aspect-[114/148]`
 around the Меню button. First thing in that stream: screenshot at 440 and 480, and if the ring
 looks wrong use the `variante` skill to show the owner 2–3 options (stretch as now / fixed-width
 centre notch with stretching sides / scale the whole nav) before coding.
+**Done 2026-09-10:** the owner picked the fixed notch (option A, `docs/mockups/nav-notch/`).
 
 ## Execution — three agents on disjoint files (CLAUDE.md default)
 

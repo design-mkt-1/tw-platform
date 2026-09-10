@@ -6,10 +6,9 @@ found. The previous version of this file was written earlier the same day, befor
 > **Done: [`plan-fluid-phones.md`](plan-fluid-phones.md)** (2026-09-10). The page is fluid on every
 > phone up to `--page-max: 480px`, the hero has five slides with bars that follow the scroll, Back
 > closes the menu and the search, and the audit's owner decisions are built. The result and what
-> is still open are at the end of [`ux-audit-2026-09-10.md`](ux-audit-2026-09-10.md). **Still
-> open:** the nav notch widens above 390 (the ring round the Меню button goes from about 7px a
-> side to 12 at 440 and 16 at 480) and waits on the owner's pick — show it with `variante`.
-> Smaller, also the owner's call: the `/sport` league strip ends at 434 and leaves 46px empty at
+> is still open are at the end of [`ux-audit-2026-09-10.md`](ux-audit-2026-09-10.md). The nav
+> notch is settled: option A in `docs/mockups/nav-notch/`, the notch keeps its shape at every
+> width (`src/lib/navPlate.ts`). **Still open,** each the owner's call: the `/sport` league strip ends at 434 and leaves 46px empty at
 > 480; `● EP` and `1 / Н / 2` in `MatchRow` are still 10px beside the 12px kickoff; the search
 > provider row does not fill 440/480; footer partners wrap 3+4 at 480. Not done: the audit report
 > artifact (https://claude.ai/code/artifact/1b83de4c-e680-4ed3-bffe-96209ea13310) is not updated;
