@@ -2,7 +2,12 @@ import Link from 'next/link'
 import { SCREENS, figmaUrl } from '@/lib/screens'
 
 /**
- * An internal index of the design's eleven frames and the state built for each one.
+ * An internal index of every reviewable state, and the design frame each one belongs to.
+ *
+ * It was an index of the eleven frames until 2026-09-12, when the three category chips got an
+ * address. Those three draw the same frame as `casino-home` with a different chip selected —
+ * the Figma file contains no second casino frame — so they carry `variantOf` and are counted
+ * separately below. A page that called fourteen rows "fourteen frames" would be inventing three.
  *
  * Copy on this page is English, against the Ukrainian-only rule. That rule exists so product copy
  * is never invented or translated away from the design; this page has no design and no player, its
@@ -23,13 +28,14 @@ import { SCREENS, figmaUrl } from '@/lib/screens'
 export const metadata = { title: 'Top-Win — screens' }
 
 const built = SCREENS.filter((s) => s.path)
+const frames = SCREENS.filter((s) => !s.variantOf)
 
 export default function ScreensPage() {
   return (
     <main lang="en" className="mx-auto max-w-2xl px-4 py-8 font-sans text-slate-900">
       <h1 className="text-xl font-bold">Top-Win — screens</h1>
       <p className="mt-1 text-sm text-slate-500">
-        {`${SCREENS.length} frames, ${built.length} with a built state.`}
+        {`${SCREENS.length} reviewable states across ${frames.length} frames, ${built.length} with a built state.`}
       </p>
 
       <ul className="mt-6 space-y-3">
@@ -46,6 +52,12 @@ export default function ScreensPage() {
               <span className="font-mono">{screen.nodeId}</span>
               {' · '}
               <span>390 × {Math.round(screen.figmaHeight)}</span>
+              {screen.variantOf && (
+                <>
+                  {' · '}
+                  <span>variant of {screen.variantOf}, no frame of its own</span>
+                </>
+              )}
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">

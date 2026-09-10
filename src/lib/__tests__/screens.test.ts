@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { SCREENS, figmaUrl } from '../screens'
-import type { AuthMode, PanelId } from '../types'
+import { AUTH_MODES, CATEGORY_IDS, PANELS } from '@/components/UrlStateBridge'
 
 /**
  * Guards the registry and the deduplication it paid for.
@@ -16,15 +16,14 @@ import type { AuthMode, PanelId } from '../types'
 
 const APP_DIR = join(process.cwd(), 'src', 'app')
 
-/**
- * Restated from src/components/UrlStateBridge.tsx:27-28, which keeps AUTH_MODES and PANELS
- * module-private. The weakness is deliberate and worth naming: `satisfies` catches a value that
- * leaves the union in src/lib/types.ts, but it cannot catch the bridge drifting away from these
- * arrays — only exporting them from types.ts and having the bridge import them would do that, and
- * the bridge was out of scope for this change.
+/*
+ * These three arrays were restated here until 2026-09-12, and this file's own comment said why
+ * that was weak: `satisfies` catches a value that has left the union in src/lib/types.ts, but it
+ * cannot catch the bridge drifting away from the copy. They are now imported from the bridge
+ * itself, which is the thing that actually accepts or rejects a parameter at runtime — a row
+ * carrying a value the bridge ignores renders the default page under another name, and that is
+ * exactly the failure the search-suggestions row shipped with for weeks.
  */
-const AUTH_MODES = ['prelogin', 'postlogin', 'vip'] as const satisfies readonly AuthMode[]
-const PANELS = ['menu', 'search'] as const satisfies readonly PanelId[]
 
 /** `/sport?auth=prelogin` → `src/app/sport/page.tsx`. */
 function pageFileFor(path: string): string {
@@ -36,15 +35,32 @@ const withPath = SCREENS.filter((s) => s.path)
 const withoutPath = SCREENS.filter((s) => !s.path)
 
 describe('screens registry', () => {
-  it('carries one row per 390-wide frame in the design', () => {
+  it('carries one row per reviewable state', () => {
     // A guard on the guard: every it.each below would pass vacuously on an empty array.
-    expect(SCREENS).toHaveLength(11)
+    // Eleven 390-wide frames, plus the three category chips the design never drew a frame for.
+    expect(SCREENS).toHaveLength(14)
+    expect(SCREENS.filter((s) => s.variantOf)).toHaveLength(3)
   })
 
-  it('has unique ids and unique node ids', () => {
+  it('has unique ids, and unique node ids among the rows that claim their own frame', () => {
     expect(new Set(SCREENS.map((s) => s.id)).size).toBe(SCREENS.length)
-    expect(new Set(SCREENS.map((s) => s.nodeId)).size).toBe(SCREENS.length)
+
+    // A row that declares `variantOf` reuses its parent's node on purpose: the Figma file draws
+    // one casino frame and the three chip states are the same frame with a different chip
+    // selected. Without this exemption the uniqueness rule would be the thing preventing three
+    // reviewable states from ever being captured.
+    const ownFrame = SCREENS.filter((s) => !s.variantOf)
+    expect(new Set(ownFrame.map((s) => s.nodeId)).size).toBe(ownFrame.length)
   })
+
+  it.each(SCREENS.filter((s) => s.variantOf).map((s) => [s.id, s.variantOf!] as const))(
+    '%s points at a parent row that exists and claims its own frame',
+    (_id, parent) => {
+      const row = SCREENS.find((s) => s.id === parent)
+      expect(row).toBeDefined()
+      expect(row!.variantOf).toBeUndefined()
+    },
+  )
 
   it.each(withPath.map((s) => [s.id, s.path!] as const))('%s resolves to a page that exists', (_id, path) => {
     expect(existsSync(pageFileFor(path))).toBe(true)
@@ -53,9 +69,10 @@ describe('screens registry', () => {
   it.each(withPath.map((s) => [s.id, s.path!] as const))('%s uses only URL-bridge params', (_id, path) => {
     const params = new URLSearchParams(path.split('?')[1] ?? '')
     for (const [key, value] of params) {
-      expect(['auth', 'panel', 'q']).toContain(key)
+      expect(['auth', 'panel', 'q', 'category']).toContain(key)
       if (key === 'auth') expect(AUTH_MODES as readonly string[]).toContain(value)
       if (key === 'panel') expect(PANELS as readonly string[]).toContain(value)
+      if (key === 'category') expect(CATEGORY_IDS as readonly string[]).toContain(value)
       // `q` is free text — any non-empty string selects one of the four search states.
       if (key === 'q') expect(value.length).toBeGreaterThan(0)
     }
@@ -79,5 +96,6 @@ describe('capture scripts', () => {
     expect(source).not.toContain('?auth=')
     expect(source).not.toContain('?panel=')
     expect(source).not.toContain('q=')
+    expect(source).not.toContain('?category=')
   })
 })

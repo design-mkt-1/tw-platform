@@ -21,6 +21,45 @@
     "expectText": ["Реєстрація"]
   },
   {
+    "id": "casino-slots",
+    "name": "Casino home, Слоти chip selected",
+    "figmaName": "Post log",
+    "nodeId": "1:581",
+    "variantOf": "casino-home",
+    "figmaHeight": 5628.7,
+    "path": "/?category=slots",
+    "fullPage": true,
+    "expectText": ["Wild Cash x9990"],
+    "rejectText": ["Реєстрація"],
+    "note": "No second frame exists. The Figma file draws the casino home once, with the Слоти chip's neighbour Популярні selected (src/lib/data.ts:49-56), so this row reuses 1:581 and declares variantOf. Wild Cash x9990 was measured rather than reasoned: loaded at 390x844 on 2026-09-12 and read out of document.body.innerText, it is the one line this state renders that the other three category states do not. It is absent from the default page because Нові Ігри cuts at limit: 6 and Space XY occupies a slot until the chip filters it out."
+  },
+  {
+    "id": "casino-live-casino",
+    "name": "Casino home, лайв Казіно chip selected",
+    "figmaName": "Post log",
+    "nodeId": "1:581",
+    "variantOf": "casino-home",
+    "figmaHeight": 5628.7,
+    "path": "/?category=live-casino",
+    "fullPage": true,
+    "expectText": ["Mini Roulette"],
+    "rejectText": ["Реєстрація"],
+    "note": "No second frame exists; see casino-slots. Mini Roulette is the only game tagged both crash and live-casino, and measuring the four states on 2026-09-12 confirmed it is the one line unique to this one."
+  },
+  {
+    "id": "casino-crash",
+    "name": "Casino home, Краш Ігри chip selected",
+    "figmaName": "Post log",
+    "nodeId": "1:581",
+    "variantOf": "casino-home",
+    "figmaHeight": 5628.7,
+    "path": "/?category=crash",
+    "fullPage": true,
+    "expectText": ["Aviator"],
+    "rejectText": ["Sweet Bonanza", "Mega Roulette", "Реєстрація"],
+    "note": "No second frame exists; see casino-slots. This state has NO unique line, measured — every string it renders is rendered by some other category too — so it is pinned by a pair of rejects instead, and the pair was chosen from measurement rather than from the catalogue. Sweet Bonanza is drawn by популярні and слоти and not here; Mega Roulette is drawn by популярні and лайв Казіно and not here; together they exclude all three neighbours. Aviator carries the other half: a reject-only row passes on a blank page, and Aviator is a crash game this state draws. The obvious pair — Wild Cash x9990 and Mini Roulette — would have been VACUOUS against the default page, which renders neither."
+  },
+  {
     "id": "sport",
     "name": "Sportsbook, logged in",
     "figmaName": "Post log",

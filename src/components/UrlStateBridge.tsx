@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
-import type { AuthMode, PanelId } from '@/lib/types'
+import type { AuthMode, CategoryId, PanelId } from '@/lib/types'
 
 /**
  * Mirrors store state into the query string, and reads it back once on mount.
@@ -15,8 +15,15 @@ import type { AuthMode, PanelId } from '@/lib/types'
  *   ?auth=prelogin | postlogin | vip     which header and menu variant
  *   ?panel=menu | search                 which full-screen sheet is open
  *   ?q=<text>                            the search query, which picks the search state
+ *   ?category=slots | live-casino | crash   which category chip narrows the game grids
  *
- * scripts/review.mjs and scripts/a11y.mjs deep-link against exactly these three names.
+ * scripts/review.mjs and scripts/a11y.mjs deep-link against exactly these four names.
+ *
+ * `category` was added on 2026-09-12 for the same reason as the other three, and it is tooling
+ * rather than design: the Figma file draws no second frame with a different chip selected
+ * (src/lib/data.ts:49-56), so three of the four chips had no address and neither capture script
+ * had ever rendered them. The default `popular` is omitted from the URL exactly as `postlogin`
+ * is, so the plain `/` stays plain.
  *
  * Two rules that keep it from fighting the app:
  *  - the URL is a mirror, never a source. It is read once, on mount, and after that only
@@ -54,8 +61,18 @@ import type { AuthMode, PanelId } from '@/lib/types'
  * left in place — so the `<Link>` still unmounts in the same batch — SPORT navigates and pushes
  * `/sport`. The unmount was innocent.
  */
-const AUTH_MODES: AuthMode[] = ['prelogin', 'postlogin', 'vip']
-const PANELS: PanelId[] = ['menu', 'search']
+/*
+ * Exported, and that is the point of them being here rather than in three places.
+ *
+ * src/lib/__tests__/screens.test.ts restated all three as its own `as const` arrays and said so in
+ * its own comment: `satisfies` catches a value that leaves the union in src/lib/types.ts, but it
+ * cannot catch this file drifting away from the copy. The union is the type; these arrays are the
+ * values the bridge will actually accept, and a registry row that uses a value this file rejects
+ * is a row that renders the default page under another name.
+ */
+export const AUTH_MODES: AuthMode[] = ['prelogin', 'postlogin', 'vip']
+export const PANELS: PanelId[] = ['menu', 'search']
+export const CATEGORY_IDS: CategoryId[] = ['popular', 'slots', 'live-casino', 'crash']
 
 /**
  * The path the last mount read its state from, for the whole document's lifetime.
@@ -75,6 +92,7 @@ export function UrlStateBridge() {
   const auth = useAppStore((s) => s.auth)
   const panel = useAppStore((s) => s.panel)
   const query = useAppStore((s) => s.query)
+  const category = useAppStore((s) => s.activeCategory)
 
   // Read once. The empty dependency list is deliberate: re-running this would overwrite the
   // user's interaction with whatever the URL said when the page loaded.
@@ -99,6 +117,14 @@ export function UrlStateBridge() {
     const urlQuery = params.get('q')
     if (urlQuery) store.setQuery(urlQuery)
 
+    // Before the panel and after the auth mode, because `setCategory` sets `panel: null` as a
+    // side effect (src/store/useAppStore.ts:47) — the chip closes whatever sheet is open, which
+    // is what a chip does. Read after `openPanel` it would close the panel the URL asked for.
+    const urlCategory = params.get('category')
+    if (urlCategory && (CATEGORY_IDS as string[]).includes(urlCategory)) {
+      store.setCategory(urlCategory as CategoryId)
+    }
+
     // Panel last: setQuery does not open anything, and openPanel must not be undone by it.
     const urlPanel = params.get('panel')
     if (urlPanel && (PANELS as string[]).includes(urlPanel)) {
@@ -119,6 +145,11 @@ export function UrlStateBridge() {
     if (query) params.set('q', query)
     else params.delete('q')
 
+    // `popular` is omitted the way `postlogin` is: it is the page as drawn, and writing it would
+    // put a parameter on every URL that says nothing.
+    if (category === 'popular') params.delete('category')
+    else params.set('category', category)
+
     const search = params.toString()
     const next = `${window.location.pathname}${search ? `?${search}` : ''}`
     if (next !== `${window.location.pathname}${window.location.search}`) {
@@ -126,7 +157,7 @@ export function UrlStateBridge() {
       // top. Passing `null` here is what made every menu link dead.
       window.history.replaceState(window.history.state, '', next)
     }
-  }, [auth, panel, query])
+  }, [auth, panel, query, category])
 
   return null
 }

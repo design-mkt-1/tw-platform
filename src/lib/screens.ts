@@ -45,6 +45,26 @@ export interface Screen {
   path: string | null
   /** Page frames are captured full-page; panel frames are not. */
   fullPage: boolean
+  /**
+   * The row this one is a variant of, when the design draws no separate frame for it.
+   *
+   * The three category chips are the case: `src/lib/data.ts:49-56` records that the Figma file
+   * contains exactly one casino frame, with the `popular` chip selected, so `casino-slots` and its
+   * two siblings reuse `nodeId: "1:581"` and point back at `casino-home`. Without this field the
+   * uniqueness check on `nodeId` would be the thing that stopped three reviewable states from ever
+   * being captured — a guard enforcing a rule the design does not have.
+   */
+  variantOf?: string
+  /**
+   * A string the frame must render, and one that would mean a neighbour drew instead.
+   *
+   * Both have been in `screens.json` since 2026-09-11 and neither was declared here; the rows
+   * survived only on the `as Screen[]` cast below, which asserts rather than checks. A misspelled
+   * `expectTest` would have been silently ignored by the interface and silently unused by
+   * `scripts/review.mjs`, and the row would have read as guarded.
+   */
+  expectText?: string[]
+  rejectText?: string[]
   /** Mandatory where `path` is null: what is missing, and why. */
   note?: string
 }

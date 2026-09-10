@@ -127,13 +127,18 @@ export function BottomNavBar() {
         }}
       />
       {/* 391x69 at (-0.5, 42.5): the export carries 0.5px of stroke bleed on every side of the
-          390x68 plate, so it is offset by half a pixel rather than scaled to fit. */}
+          390x68 plate, so it is offset by half a pixel rather than scaled to fit.
+          `max-w-none` is load-bearing, and its absence was a defect until 2026-09-12: Tailwind's
+          preflight sets `img { max-width: 100% }`, so a 391px plate inside a 390px shell resolved
+          to a computed width of exactly 390px — measured, not inferred. The left offset still
+          took its half pixel and the right edge lost one, so the compensation only worked on one
+          side. BonusCarousel.tsx:66 already carried this class for the same reason. */}
       <Icon
         src={NAV_PLATE}
         alt=""
         width={391}
         height={69}
-        className="pointer-events-auto absolute left-[-0.5px] top-[42.5px] h-[69px] w-[391px]"
+        className="pointer-events-auto absolute left-[-0.5px] top-[42.5px] h-[69px] w-[391px] max-w-none"
         priority
       />
 

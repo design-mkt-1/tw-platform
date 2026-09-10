@@ -113,10 +113,15 @@ export function MenuPanel() {
         `min-h-full` rather than `h-full`: the panel is 656 / 742 tall and the sheet is the
         viewport minus the painted nav bar, so on a tall phone the grey has to grow and on the
         design's own 764 frame the content has to scroll. Both fall out of this one class.
-        `border-r` is 1:6817's declared `border-right: 1px solid #D8DDE7` — off-screen at 390,
-        kept because it is the panel's own edge and a wider viewport shows it.
+        The right edge is 1:6817's declared `border-right: 1px solid #D8DDE7`. It is drawn as a
+        pseudo-element rather than as `border-r`, and that is a fix of 2026-09-12 rather than a
+        style preference: a real border is inside the box, so it took one pixel of content width
+        from a panel that is exactly the viewport wide. Every row inside then laid out in 357
+        instead of the design's 358 — measured — and the contact pair below could no longer fit
+        its two drawn 168px buttons with their 8px gap. An edge nobody can see at 390 was
+        narrowing everything behind it.
       */}
-      <div className="flex min-h-full flex-col border-r border-panel bg-menu-panel">
+      <div className="relative flex min-h-full flex-col bg-menu-panel after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-[var(--border-panel)]">
         <PanelHeader onClose={closePanel} />
         {auth === 'prelogin' ? <AuthBand /> : <IdentityBand vip={auth === 'vip'} />}
         <MenuBody onNavigate={closePanel} prelogin={auth === 'prelogin'} />
@@ -475,6 +480,15 @@ function TermsAndLanguageRow({ onNavigate }: { onNavigate: () => void }) {
  * button is a layout the design does not contain. The design itself draws Vip Manager in the
  * logged-out frame too; offering a VIP manager to a visitor with no account is the kind of
  * obvious slip the owner has said to fix.
+ *
+ * Both buttons carry the drawn 168 rather than `flex-1`, and the reason is measured. Until
+ * 2026-09-12 Support came out 168.5 wide and Vip Manager 166.5 — two buttons the design draws
+ * identical, sitting 2px apart. It was not the usual `min-width: auto` trap: adding `min-w-0`
+ * changed nothing. `flex-1` is `flex: 1 1 0%`, and a `flex-basis` of 0 sizes the CONTENT box, so
+ * Support's 1px outline was added on top of an equal share while the filled button had none.
+ * Free space 333 split 166.5 each, plus 2px of border on one of them, is exactly the pair that
+ * was measured. Two fixed widths cannot drift apart that way, and 168 + 8 + 168 = 344 is the
+ * full content row once the panel stopped losing a pixel to its own right border.
  */
 function ContactRow({ onNavigate, prelogin }: { onNavigate: () => void; prelogin: boolean }) {
   return (
@@ -483,9 +497,7 @@ function ContactRow({ onNavigate, prelogin }: { onNavigate: () => void; prelogin
         href="/support"
         prefetch={false}
         onClick={onNavigate}
-        className={`flex h-[38px] items-center justify-center gap-1.5 rounded-sm border border-contact px-5 font-roboto text-sm leading-[18px] text-contact ${
-          prelogin ? 'w-[168px]' : 'flex-1'
-        }`}
+        className="flex h-[38px] w-[168px] items-center justify-center gap-1.5 rounded-sm border border-contact px-5 font-roboto text-sm leading-[18px] text-contact"
       >
         {/* I1:6984;2642:42639 — 16x16, declares `fill="#10B981"`, i.e. `--contact-accent`, the
             same token as the label and the border. */}
@@ -502,7 +514,7 @@ function ContactRow({ onNavigate, prelogin }: { onNavigate: () => void; prelogin
           href="/vip-manager"
           prefetch={false}
           onClick={onNavigate}
-          className="flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-sm bg-contact px-5 font-roboto text-sm leading-[18px] text-on-dark"
+          className="flex h-[38px] w-[168px] items-center justify-center gap-1.5 rounded-sm bg-contact px-5 font-roboto text-sm leading-[18px] text-on-dark"
         >
           {/* 1:6988 — 16x16, declares `fill="white"`, i.e. `--text-on-dark`, the same token as
               the label. It is a WhatsApp mark, not the generic chat bubble the placeholder drew. */}

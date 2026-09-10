@@ -3,6 +3,19 @@
 Rewritten 2026-09-10, at the end of the session that swept the build in a browser and fixed what it
 found. The previous version of this file was written earlier the same day, before any of that.
 
+> **Read [`sweep-2026-09-12.md`](sweep-2026-09-12.md) first.** A seven-worker visual fidelity sweep
+> ran on 2026-09-12 and moved most of what follows. In short: the casino page was spaced 8px too far
+> apart at every section boundary and is now on the design's own 370/276 pitch; the bottom nav plate
+> was losing a pixel to Tailwind's `img { max-width: 100% }`; the menu panel's `border-r` was
+> narrowing every row behind it, which is why its two contact buttons measured 168.5 and 166.5. The
+> three category chips now have URLs, so the registry is 14 rows across 11 frames. **The provider
+> row `1:3762` is the one measured defect still open** — 136 tall against 248, missing the 40x40
+> search button the design draws. Five questions are waiting on the owner there, including whether
+> the search panel's second carousel row goes back in.
+>
+> The accessibility items and the copy decisions below were retired by the owner's scope decision of
+> 2026-09-12: this is a demo of how the design looks, not a product.
+
 ## Where things stand
 
 The demo is built, pushed and deployed.

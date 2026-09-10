@@ -36,6 +36,18 @@ import type { SectionSpec } from '@/lib/types'
  */
 const RENDERED_AT = Date.now()
 
+/**
+ * The three bands the design draws contiguously, split out of the data-driven list.
+ *
+ * They are still SectionSpecs and still ordered by src/lib/sections.ts; only their spacing is
+ * special, and it is special because the design measured that way. Everything below them stays
+ * one row of data per band, which is the property worth protecting — twelve rows that look
+ * identical in the design really are identical in the code.
+ */
+const HERO = SECTIONS.find((s) => s.kind === 'hero')!
+const TICKER = SECTIONS.find((s) => s.kind === 'ticker')!
+const CONTENT = SECTIONS.filter((s) => s !== HERO && s !== TICKER)
+
 function Section({ spec }: { spec: SectionSpec }) {
   switch (spec.kind) {
     case 'hero':
@@ -97,20 +109,35 @@ export default function Home() {
       <UrlStateBridge />
       <Header />
       <MobileShell>
-        <main className="flex flex-col gap-6 bg-page pb-6">
-          {SECTIONS.map((spec) =>
-            spec.kind === 'ticker' ? (
-              // The switcher sits between the hero and the ticker in the design (y 292 to 336),
-              // and it is chrome rather than a section, so it is placed here rather than given a
-              // SectionKind that would have exactly one member.
-              <div key={spec.id} className="flex flex-col gap-6">
-                <CategoryBar />
-                <Section spec={spec} />
-              </div>
-            ) : (
-              <Section key={spec.id} spec={spec} />
-            ),
-          )}
+        {/*
+         * `gap-4`, and the leading band with no gap at all, are both measured rather than chosen.
+         *
+         * The design's own y table (docs/design-inventory/04-casino-rows-c.md:302-318) gives every
+         * content wrapper as 370 tall for a grid and 276 for a tournament card, and every wrapper
+         * carries a 16px top lead-in — `03-casino-rows-b.md:138` lists 16 as the section gap and
+         * the section top pad in the same breath. The content inside those wrappers measures 354
+         * and 260, which is exactly what this build renders, so 354 + 16 = 370 reproduces the
+         * pitch and 354 + 24 does not. Until 2026-09-12 this was `gap-6`, and the extra 8px at
+         * every one of the twelve boundaries is most of why the page measured 5734 against the
+         * frame's 5628.7.
+         *
+         * The first three bands are different and the same table says so: the hero runs 60..292,
+         * the switcher 292..336 and the ticker 336..414, each starting exactly where the last one
+         * ends. No gap between them at all. So they are one flex child of their own, and the 16px
+         * pitch begins below them.
+         */}
+        <main className="flex flex-col gap-4 bg-page pb-6">
+          <div className="flex flex-col">
+            <Section spec={HERO} />
+            {/* Chrome rather than a section: it drives store state instead of rendering content,
+                which is why it has no SectionSpec of its own. */}
+            <CategoryBar />
+            <Section spec={TICKER} />
+          </div>
+
+          {CONTENT.map((spec) => (
+            <Section key={spec.id} spec={spec} />
+          ))}
           <Footer />
         </main>
       </MobileShell>
