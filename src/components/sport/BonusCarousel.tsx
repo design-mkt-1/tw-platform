@@ -47,7 +47,7 @@ function Slide() {
         height={314}
         priority
         unoptimized
-        className="pointer-events-none absolute left-[-149.259px] top-[-110.964px] h-[314.449px] w-[542.3px] max-w-none rotate-[17.94deg]"
+        className="pointer-events-none absolute -left-[calc(var(--dp)*149.259)] -top-[calc(var(--dp)*110.964)] h-[calc(var(--dp)*314.449)] w-[calc(var(--dp)*542.3)] max-w-none rotate-[17.94deg]"
       />
 
       {/*
@@ -63,7 +63,7 @@ function Slide() {
         width={427}
         height={355}
         unoptimized
-        className="pointer-events-none absolute left-[-124px] top-[-84px] h-[355px] w-[427px] max-w-none rotate-90"
+        className="pointer-events-none absolute -left-[calc(var(--dp)*124)] -top-[calc(var(--dp)*84)] h-[calc(var(--dp)*355)] w-[calc(var(--dp)*427)] max-w-none rotate-90"
       />
 
       {/*
@@ -73,7 +73,7 @@ function Slide() {
        * ships, so pinning 124 would clip the string. The measured height, padding, radius,
        * blur and hairline border are all reproduced exactly.
        */}
-      <p className="absolute left-[20.5px] top-[18px] inline-flex h-[20.494px] items-center rounded-pill border-[0.854px] border-on-dark-09 bg-sport-badge px-[13.663px] font-sans text-6xs font-semibold uppercase text-banner-badge backdrop-blur-[8.539px]">
+      <p className="absolute left-[calc(var(--dp)*20.5)] top-[calc(var(--dp)*18)] inline-flex h-[calc(var(--dp)*20.494)] items-center rounded-pill border-[length:calc(var(--dp)*0.854)] border-on-dark-09 bg-sport-badge px-[calc(var(--dp)*13.663)] font-sans text-[length:calc(var(--dp)*10)] font-semibold uppercase leading-[normal] text-banner-badge backdrop-blur-[calc(var(--dp)*8.539)]">
         вітальний бонус
       </p>
 
@@ -87,11 +87,11 @@ function Slide() {
        * unchanged, and the authored 98px box is dropped for the same reason HeroCarousel drops
        * its 131 — it describes a font this build cannot load.
        */}
-      <p className="absolute left-[20.5px] top-[69px] w-max -translate-y-1/2 font-outfit font-black uppercase leading-none tracking-[-1.2293px] text-banner-offer">
-        <span className="text-[29.4px]">225%</span>{' '}
-        <span className="text-[14.7px]">{'ДО '}</span>
+      <p className="absolute left-[calc(var(--dp)*20.5)] top-[calc(var(--dp)*69)] w-max -translate-y-1/2 font-outfit font-black uppercase leading-none -tracking-[calc(var(--dp)*1.2293)] text-banner-offer">
+        <span className="text-[length:calc(var(--dp)*29.4)]">225%</span>{' '}
+        <span className="text-[length:calc(var(--dp)*14.7)]">{'ДО '}</span>
         <br />
-        <span className="text-[29.4px]">15000 ₴</span>
+        <span className="text-[length:calc(var(--dp)*29.4)]">15000 ₴</span>
       </p>
 
       {/*
@@ -100,14 +100,19 @@ function Slide() {
        *
        * `!font-bold` is not decoration: the `cta` variant sets `font-semibold`, Tailwind emits
        * `.font-semibold` after `.font-bold`, so a plain `font-bold` loses the cascade wherever
-       * it sits in the class string. The 28px box ships as drawn; an invisible `after:` layer 8px
-       * above and below makes the target 44 tall (96.5 x 44) without moving a pixel. It stays
-       * inside the 170-tall slide (127 − 8 = 119, 155 + 8 = 163). It does not grow sideways:
-       * review.mjs Guard 2 counts a bleed past the right edge as horizontal overflow.
+       * it sits in the class string. The 28px box ships as drawn; an invisible `after:` layer
+       * extends it to 44 tall at every slide width — `inset-y: 14/340 of the slide − 22px` is
+       * −8px at 340 (96.5 x 44 at 390) and −9.24px at 310 (360), where the drawn box is 25.5.
+       * It stays inside the slide at both (127 − 8 = 119, 155 + 8 = 163 of 170). It does not
+       * grow sideways: review.mjs Guard 2 counts a bleed past the right edge as horizontal
+       * overflow.
+       *
+       * Radius and tracking override the `cta` recipe with `!` so they scale with the slide
+       * like every other drawn px here; at 340 they resolve to the recipe's own 6px / -0.2px.
        */}
       <ButtonLink
         href="/deposit"
-        className="absolute left-[20.5px] top-[127px] h-7 px-4 text-sm uppercase !font-bold after:absolute after:inset-x-0 after:-inset-y-2 after:content-['']"
+        className="absolute left-[calc(var(--dp)*20.5)] top-[calc(var(--dp)*127)] h-[calc(var(--dp)*28)] !rounded-[calc(var(--dp)*6)] px-[calc(var(--dp)*16)] text-[length:calc(var(--dp)*13)] uppercase leading-[normal] !font-bold !-tracking-[calc(var(--dp)*0.2)] after:absolute after:inset-x-0 after:inset-y-[calc(var(--dp)*14-22px)] after:content-['']"
       >
         Депозит
       </ButtonLink>
@@ -117,8 +122,12 @@ function Slide() {
 
 export function BonusCarousel() {
   return (
-    /* 1:6027 is 193 tall around a 172-tall clip (1:6028) — 10.5 above and below. */
-    <section className="flex h-[193px] w-full items-center">
+    /*
+     * 1:6027 is 193 tall around a 172-tall clip (1:6028) — 10.5 above and below — and the clip is
+     * 1px taller than the slide on each side. Both are padding rather than fixed heights so the
+     * band grows with the slide above 390 and still sums to 193 / 172 at 390.
+     */
+    <section className="flex w-full py-[10.5px]">
       {/*
        * `tabIndex` is what makes a scroll container reachable without a pointer. The label is
        * not in the design — the frame is named "Frame 2135557699" — so it is written here and
@@ -127,17 +136,31 @@ export function BonusCarousel() {
        * The trailing 34px is derived: slide 2 starts at x 360 and its snap point is scroll 344,
        * which needs 734px of content to be reachable (16 + 340 + 4 + 340 + 34). A mandatory
        * snap point past the end of the scroll range is how a carousel ends up with an
-       * unreachable second slide.
+       * unreachable second slide. It holds at every width: with the slide at `w`, the scroll
+       * range is 16 + 2w + 4 + 34 − (w + 50) = w + 4, exactly slide 2's snap point.
+       *
+       * `w-full` is load-bearing: the slides are sized in % of this list's content box, so the
+       * list must take the band's width rather than its own content's.
        */}
       <ul
         tabIndex={0}
         aria-label="Акційні пропозиції"
-        className="scrollbar-none flex h-[172px] snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-pl-gutter pl-gutter pr-[34px]"
+        className="scrollbar-none flex w-full snap-x snap-mandatory gap-1 overflow-x-auto scroll-pl-gutter py-px pl-gutter pr-[34px]"
       >
         {[0, 1].map((index) => (
+          /*
+           * 340x170 at 390, fluid above and below: the list's content box is the page minus 16 + 34,
+           * so `100%` is 340 at 390 and every width keeps the 30px peek of slide 2. The slide is
+           * the size container for its artwork, and `--dp` is one design px of it
+           * (`100cqw / 340`): each drawn px inside is `calc(var(--dp) * px)`, exactly the design's
+           * px at 340. It is a variable rather than a literal `calc(100cqw * px / 340)` because the
+           * CSS minifier folds the literal to six digits (`20.5/340` → `6.02941cqw` = 20.49999px)
+           * and layout floors that to the 1/64 grid: 20.484, a measured pixel diff at 390. The
+           * corner radius stays 12: `cqw` on the container itself resolves against an ancestor.
+           */
           <li
             key={index}
-            className="relative h-[170px] w-[340px] shrink-0 snap-start overflow-hidden rounded-slide bg-slide"
+            className="relative aspect-[340/170] w-full shrink-0 snap-start overflow-hidden rounded-slide bg-slide [container-type:inline-size] [--dp:calc(100cqw/340)]"
           >
             <Slide />
           </li>

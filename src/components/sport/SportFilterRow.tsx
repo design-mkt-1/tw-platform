@@ -95,10 +95,12 @@ export function SportFilterRow() {
             />
             {filter.label}
             {/* 1:6337 — 33x21, radius 999, 4px/7px padding. The fill is --surface-track in both
-                states; only the text moves. */}
+                states; only the text moves. The count is 11px in the design and ships at 12
+                (`text-xs`), the owner's 2026-09-10 floor for information-bearing text, so the
+                badge is a little larger than 33x21. */}
             <span
               className={[
-                'shrink-0 rounded-full bg-track px-[7px] py-1 text-5xs',
+                'shrink-0 rounded-full bg-track px-[7px] py-1 text-xs',
                 isActive ? 'text-count-active' : 'text-muted-text',
               ].join(' ')}
             >

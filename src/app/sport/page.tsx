@@ -43,7 +43,7 @@ export default function SportPage() {
       <UrlStateBridge />
       <Header />
       <MobileShell>
-        <main className="flex flex-col bg-page">
+        <main tabIndex={-1} className="flex flex-col bg-page">
           {/*
            * `1:6007` wraps the mode switch and the sports nav as ONE card: `padding-top: 12px`,
            * `border-radius: 24px`, `drop-shadow(0 8px 12px rgba(0,0,0,0.05))`. `PrematchLiveToggle`

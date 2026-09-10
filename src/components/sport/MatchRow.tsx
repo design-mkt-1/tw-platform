@@ -45,9 +45,11 @@ export function MatchRow({ match }: { match: Match }) {
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
         {/* 1:6393 — metadata line, gap 6, centred. */}
         <div className="flex items-center gap-1.5">
-          {/* 1:6394 — Roboto 10, #758098. The design's literal is `Сьогодні, 22:00`; the field is
-              carried as the display string, not as an instant, because nothing formats it. */}
-          <span className="whitespace-nowrap font-roboto text-6xs text-meta">{match.kickoff}</span>
+          {/* 1:6394 — Roboto 10, #758098 in the design; shipped at 12 (`text-xs`) by the owner's
+              decision of 2026-09-10 that information-bearing text is never under 12px. The
+              design's literal is `Сьогодні, 22:00`; the field is carried as the display string,
+              not as an instant, because nothing formats it. */}
+          <span className="whitespace-nowrap font-roboto text-xs text-meta">{match.kickoff}</span>
 
           {/*
            * 1:6395 — `● EP` in Roboto **Bold Italic** 10, #F45B24. The dot is U+25CF inside the

@@ -50,8 +50,9 @@ export const useBetSlip = create<BetSlipState>((set) => ({
  * docking, its trigger or its lifetime (07-sport.md UNKNOWN #7). It docks bottom-right, 16px — the
  * page gutter — above the painted bottom-nav plate, and it is absent until a selection exists.
  *
- * The outer frame is `mx-auto w-full max-w-[390px]` so the button tracks the 390px page column
- * above 390 and the viewport's own gutter below it — a fixed `w-[390px]` put its right edge at
+ * The outer frame is `mx-auto w-full max-w-[var(--page-max)]` — the one page-column cap
+ * (`--page-max`, globals.css, the same value body, the nav and Sheet use) — so the button tracks
+ * the column on a screen wider than it and the viewport's own gutter below it — a fixed `w-[390px]` put its right edge at
  * x 374 on a 375 screen, `pointer-events-none` so the empty band beside it stays
  * transparent to taps, and the same `env(safe-area-inset-bottom)` term the nav is pinned with.
  * `z-30` keeps it under the nav (z-40) and under a Sheet (z-50).
@@ -88,7 +89,7 @@ export function BetSlipFab() {
       <div aria-hidden className="h-[60px]" />
 
       <div
-        className="pointer-events-none fixed inset-x-0 z-30 mx-auto flex w-full max-w-[390px] justify-end px-gutter"
+        className="pointer-events-none fixed inset-x-0 z-30 mx-auto flex w-full max-w-[var(--page-max)] justify-end px-gutter"
         // Inline because Tailwind cannot express the env() term, and this is the same expression
         // MobileShell's spacer and BottomNavBar's `bottom` are built from.
         style={{ bottom: 'calc(var(--nav-bar-h) + env(safe-area-inset-bottom) + 16px)' }}
