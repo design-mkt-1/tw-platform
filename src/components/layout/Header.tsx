@@ -86,8 +86,13 @@ function BalanceChip() {
  *
  * `Пошук` is the design's own word, taken off the search field placeholder `Пошук провайдерів...`
  * (1:7388) — the button itself carries no label anywhere in the file.
+ *
+ * Exported because the provider row's header (1:3781) draws the same 40x40 `#EDF5FF` circle with
+ * the same glyph — docs/tokens.md §`--surface-muted` lists all three nodes under one token. The
+ * design draws that button but not what it opens; the search sheet is titled
+ * `Провідні провайдери`, the same string as the row, so it is the only target in the file that fits.
  */
-function SearchButton({ className }: { className: string }) {
+export function SearchButton({ className }: { className: string }) {
   const openPanel = useAppStore((s) => s.openPanel)
   const panel = useAppStore((s) => s.panel)
 

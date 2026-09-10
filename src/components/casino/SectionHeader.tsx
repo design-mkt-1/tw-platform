@@ -13,6 +13,11 @@ interface SectionHeaderProps {
    * measured at `gap: 4px` rather than 8 — that caller passes `className="gap-1"`.
    */
   children?: ReactNode
+  /**
+   * Defaults to the `gap-2` every pill header measures. It is the default and not a base class
+   * because Tailwind emits `.gap-1` before `.gap-2`, so a caller's `gap-1` appended after a base
+   * `gap-2` lost: measured 2026-09-10, the provider header read `gap: 8px` with both present.
+   */
   className?: string
 }
 
@@ -33,10 +38,10 @@ export function SectionHeader({
   icon,
   seeAllLabel,
   children,
-  className,
+  className = 'gap-2',
 }: SectionHeaderProps) {
   return (
-    <div className={['flex w-full items-center gap-2', className].filter(Boolean).join(' ')}>
+    <div className={`flex w-full items-center ${className}`}>
       <div className="flex h-6 items-center gap-2">
         {icon ? (
           // The #92BDF3 (icon-section) is baked into every exported SVG's own `fill`, so the

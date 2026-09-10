@@ -6,7 +6,7 @@ import { RecentWinsTicker } from '@/components/casino/RecentWinsTicker'
 import { SectionHeader } from '@/components/casino/SectionHeader'
 import { TournamentCard } from '@/components/casino/TournamentCard'
 import { CategoryBar } from '@/components/layout/CategoryBar'
-import { Header } from '@/components/layout/Header'
+import { Header, SearchButton } from '@/components/layout/Header'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { UrlStateBridge } from '@/components/UrlStateBridge'
 import { PROVIDERS, RECENT_WINS, TOURNAMENTS } from '@/lib/data'
@@ -80,7 +80,16 @@ function Section({ spec }: { spec: SectionSpec }) {
       return (
         <section aria-label={spec.title} className="flex flex-col gap-4">
           <div className="px-gutter">
-            <SectionHeader title={spec.title} icon={spec.icon} seeAllLabel={spec.seeAllLabel} />
+            {/*
+             * 1:3776 is the one header measured at 40 tall and `gap: 4px` rather than 24/30 and 8
+             * (02-casino-rows-a.md:79, :160): its right-hand control is the 40x40 round search
+             * button 1:3781, not a see-all pill. Until 2026-09-10 this slot was empty and the
+             * header collapsed to the title's 24 — the row rendered 136 tall against the drawn 248.
+             * The remaining 96 is the second provider track, UNKNOWN #6 in the same inventory.
+             */}
+            <SectionHeader title={spec.title} icon={spec.icon} className="gap-1">
+              <SearchButton className="h-10 w-10" />
+            </SectionHeader>
           </div>
           <ProviderRow providers={PROVIDERS} />
         </section>

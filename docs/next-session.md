@@ -9,9 +9,11 @@ found. The previous version of this file was written earlier the same day, befor
 > was losing a pixel to Tailwind's `img { max-width: 100% }`; the menu panel's `border-r` was
 > narrowing every row behind it, which is why its two contact buttons measured 168.5 and 166.5. The
 > three category chips now have URLs, so the registry is 14 rows across 11 frames. **The provider
-> row `1:3762` is the one measured defect still open** — 136 tall against 248, missing the 40x40
-> search button the design draws. Five questions are waiting on the owner there, including whether
-> the search panel's second carousel row goes back in.
+> row `1:3762` is the one measured defect still open** — now 152 tall against 248. Its 40x40 search
+> button and the 40-tall, 4px-gap header landed on 2026-09-10; the remaining 96 is the second
+> provider track, which `02-casino-rows-a.md` UNKNOWN #6 leaves unresolved in the design itself.
+> Five questions are waiting on the owner there, including whether the search panel's second
+> carousel row goes back in.
 >
 > The accessibility items and the copy decisions below were retired by the owner's scope decision of
 > 2026-09-12: this is a demo of how the design looks, not a product.
@@ -60,6 +62,17 @@ npm test
 npm run build:check
 node scripts/review.mjs <outDir> [baseUrl]
 node scripts/a11y.mjs  <outDir> [baseUrl]
+```
+
+Capture against the export, not `next dev`: the dev overlay adds 14 `nextjs-portal` findings that
+no export contains. `scripts/serve.mjs` serves `out/` under the Pages prefix (it replaced the
+gitignored `.review-tmp/serve.mjs`, which did not travel between machines):
+
+```bash
+GITHUB_PAGES=true npm run build          # with next dev stopped; delete .next afterwards
+node scripts/serve.mjs out 4173
+node scripts/review.mjs .review-tmp/shots http://127.0.0.1:4173/tw-platform
+node scripts/a11y.mjs   .review-tmp/a11y  http://127.0.0.1:4173/tw-platform
 ```
 
 `CLAUDE.md` is the working rules and it is not optional reading. `docs/tokens.md` is the
