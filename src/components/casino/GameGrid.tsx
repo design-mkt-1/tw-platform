@@ -29,7 +29,7 @@ interface GameGridProps {
  * when a filter returns more than 6.
  *
  * At the design's six games the track is 3x114 + 2x8 = 358, exactly the content column, so
- * nothing scrolls; below 390 the cards shrink with the column (GameCard) so it still does not. The overflow is not decoration — it is what a longer row does, and 1:3785
+ * nothing scrolls; at any other width the cards follow the column (GameCard) so it still does not. The overflow is not decoration — it is what a longer row does, and 1:3785
  * (the provider track) proves the design already relies on that behaviour.
  *
  * **The header lives here rather than in page.tsx, and that is the whole reason this is one
@@ -63,23 +63,30 @@ export function GameGrid({ id, rows = 2, title, icon, seeAllLabel }: GameGridPro
       <SectionHeader title={title} icon={icon} seeAllLabel={seeAllLabel} headingId={headingId} />
       <div className="w-full overflow-x-auto scrollbar-none" tabIndex={scrolls ? 0 : undefined}>
         {/*
-         * Every column is a third of the content column less the two 8px gaps, capped at the
-         * design's 114 — 358 at 390 gives 114. Tracks past the third overflow the grid, which is
-         * what the scroller scrolls.
+         * Every column is a third of the content column less the two 8px gaps — 358 at 390 gives
+         * the design's 114, and past 390 the cards grow with the column (aspect 114/148 in
+         * GameCard) rather than leaving a strip on the right. There is no 114 cap: the page itself
+         * is capped by `--page-max`. Tracks past the third overflow the grid, which is what the
+         * scroller scrolls.
          *
          * The `+ 0.01px` is measured, not decoration. Chrome stores `(100% - 16px) / 3` as
          * `33.3333% - 5.33333px`, gets 113.99999 at 390 and floors it to 1/64px: every card came
          * out 113.984 wide and the third ended at 373.95 instead of 374. Nudging past the floor
-         * lets the 114 cap win at 390; below 390 it adds at most 0.03px across three columns,
+         * puts it back on 114 at 390; at any width it adds at most 0.03px across three columns,
          * under what scrollWidth can report.
+         *
+         * A list, because six games are a list (B2-24). Preflight already strips the markers and
+         * the padding, so the <ul> lays out exactly as the <div> it replaced.
          */}
-        <div
-          className={`grid w-full auto-cols-[min(theme(spacing.card-w),calc((100%-16px)/3+0.01px))] grid-flow-col gap-x-2 gap-y-3 ${rows === 2 ? 'grid-rows-2' : 'grid-rows-1'}`}
+        <ul
+          className={`grid w-full auto-cols-[calc((100%-16px)/3+0.01px)] grid-flow-col gap-x-2 gap-y-3 ${rows === 2 ? 'grid-rows-2' : 'grid-rows-1'}`}
         >
           {games.map((game) => (
-            <GameCard key={game.slug} game={game} />
+            <li key={game.slug}>
+              <GameCard game={game} />
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   )

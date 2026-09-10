@@ -146,8 +146,6 @@ export default {
       /** Fixed geometry the design repeats. Every value has a node in docs/tokens.md §5.3. */
       spacing: {
         gutter: '16px', // every section starts at x 16 and is 358 wide
-        'card-w': '114px', // game card, 1:3575
-        'card-h': '148px',
         'nav-bar': 'var(--nav-bar-h)', // the painted plate, 68
         'nav-frame': 'var(--nav-frame-h)', // plate plus the raised button's overhang, 111
       },

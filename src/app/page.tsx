@@ -26,17 +26,6 @@ import type { SectionSpec } from '@/lib/types'
  */
 
 /**
- * One clock for every countdown on the page.
- *
- * Read once here, at module scope, and passed down. Each card reading its own Date.now() would
- * read it at a different instant, so two cards a millisecond apart would render different
- * strings on the server than on the client and React would throw a hydration mismatch — on a
- * page that looks perfectly fine locally, because locally the server and the browser are the
- * same machine within the same second.
- */
-const RENDERED_AT = Date.now()
-
-/**
  * The three bands the design draws contiguously, split out of the data-driven list.
  *
  * They are still SectionSpecs and still ordered by src/lib/sections.ts; only their spacing is
@@ -119,7 +108,7 @@ function Section({ spec }: { spec: SectionSpec }) {
               headingId={`${spec.id}-heading`}
             />
           ) : null}
-          <TournamentCard tournament={tournament} from={RENDERED_AT} />
+          <TournamentCard tournament={tournament} />
         </section>
       )
     }
@@ -149,7 +138,9 @@ export default function Home() {
          * ends. No gap between them at all. So they are one flex child of their own, and the 16px
          * pitch begins below them.
          */}
-        <main className="flex flex-col gap-4 bg-page pb-6">
+        {/* `tabIndex={-1}`: a menu row that changes route moves focus here (B1-18). Focusable by
+            script only — it adds no tab stop. */}
+        <main tabIndex={-1} className="flex flex-col gap-4 bg-page pb-6">
           <div className="flex flex-col">
             <Section spec={HERO} />
             {/* Chrome rather than a section: it drives store state instead of rendering content,

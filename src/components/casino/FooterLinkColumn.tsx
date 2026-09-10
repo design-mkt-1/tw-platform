@@ -11,6 +11,11 @@ import type { FooterLinkColumn as FooterLinkColumnData } from '@/lib/types'
  * width in particular is load-bearing: it is what makes `Політика конфіденційності` wrap to two
  * lines inside its 44px row (1:5958). See 05-casino-footer.md §5.
  *
+ * Past 390 both columns grow in proportion to the row, so the page does not end in a strip. The
+ * row's content box is 354 at 390 (Footer's 374 less `px-2.5`), so `100% * 158 / 354` is exactly
+ * 158 there and `max()` keeps it at 158 below — where both columns shrink as flex items, as they
+ * always did, and the wrap above is untouched at 390.
+ *
  * Row height is 44 — the only element in the whole Figma file that respects a 44px touch target.
  */
 
@@ -19,9 +24,9 @@ type Variant = 'nav' | 'policy'
 const VARIANTS: Record<Variant, { column: string; link: string }> = {
   // Footnote_e heading + Footnote_m rows. Size and colour both arrive from `text-footer-link` on
   // the <nav>; this variant only has to say what differs.
-  nav: { column: 'w-[158px]', link: 'font-medium' },
+  nav: { column: 'w-[max(158px,100%*158/354)]', link: 'font-medium' },
   // Capation1 — one step smaller than the column heading above it, and Regular rather than Medium.
-  policy: { column: 'w-[141px]', link: 'text-footnote font-normal' },
+  policy: { column: 'w-[max(141px,100%*141/354)]', link: 'text-footnote font-normal' },
 }
 
 /**

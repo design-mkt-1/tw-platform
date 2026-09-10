@@ -39,7 +39,7 @@ function gradientFor(slug: string): string {
  * **Width is the grid track's, not a constant.** GameGrid sizes its columns as a third of the
  * content column and the 114:148 aspect gives the height. At 390 the column is 358, so the card
  * is exactly 114 x 148 as drawn; at 375 it is 109 wide instead of cutting the third card 15px
- * short.
+ * short, and at 480 it is 144 x 187 instead of leaving a 90px strip (all measured).
  */
 export function GameCard({ game }: { game: Game }) {
   return (

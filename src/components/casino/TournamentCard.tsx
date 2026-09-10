@@ -9,15 +9,6 @@ import type { Tournament } from '@/lib/types'
 
 interface TournamentCardProps {
   tournament: Tournament
-  /**
-   * The clock the FIRST paint is formatted against, supplied by the caller.
-   *
-   * It is a prop rather than a `Date.now()` inside this component because both the export and the
-   * browser render this markup: a clock read in two places is read at two instants, the two
-   * strings differ, and React throws a hydration mismatch on a card that looked fine locally.
-   * One value in, one string out, on both sides. The live clock takes over after mount.
-   */
-  from: number
 }
 
 /**
@@ -29,14 +20,25 @@ interface TournamentCardProps {
  * from the file's pixel size: the file's aspect is 3.474 against the card's real 3.291, and
  * recomputing the crop from the bitmap reframes the artwork.
  *
+ * Those percentages resolve against the card's width AND height, so the card keeps the drawn
+ * 358/220 aspect as it widens. With the fixed 220 it had until 2026-09-10, a 448-wide card at
+ * 480 stretched the banner to 1221 x 279 — aspect 4.37 against 3.49 at 390 (measured). The
+ * `min-h` keeps 220 below 390, where the text needs it: the name wraps to two 28px lines.
+ *
  * The countdown ticks. The design's deadlines are already past and a static export freezes any
  * build-time clock, so `nextCountdownEnd` rolls a past deadline forward in 24h periods — without
  * it every card reads `00:00:00` forever, which is exactly what shipped in the predecessor
  * project. `<time dateTime>` carries the rolled-forward instant, so the machine-readable value is
  * never a date in the past either.
+ *
+ * **No clock before mount.** The export and the browser both render this markup, at different
+ * instants, so any time printed in the first render is either a hydration mismatch or the build's
+ * instant followed by a jump to the reader's. Until 2026-09-10 it was the second: page.tsx read
+ * `Date.now()` at build time and every card opened on a stale figure. So the first render prints
+ * `--:--:--` — the same string on both sides — and the reader's own clock starts on mount.
  */
-export function TournamentCard({ tournament, from }: TournamentCardProps) {
-  const [now, setNow] = useState(from)
+export function TournamentCard({ tournament }: TournamentCardProps) {
+  const [now, setNow] = useState<number | null>(null)
 
   useEffect(() => {
     const tick = () => setNow(Date.now())
@@ -45,10 +47,13 @@ export function TournamentCard({ tournament, from }: TournamentCardProps) {
     return () => window.clearInterval(id)
   }, [])
 
-  const { hours, minutes, seconds } = formatCountdown(tournament.endsAt, now)
+  const time =
+    now === null
+      ? null
+      : { ...formatCountdown(tournament.endsAt, now), iso: countdownEndIso(tournament.endsAt, now) }
 
   return (
-    <article className="relative h-[220px] w-full overflow-hidden rounded-xl border border-on-dark-08 bg-card-dark">
+    <article className="relative aspect-[358/220] min-h-[220px] w-full overflow-hidden [container-type:inline-size] rounded-xl border border-on-dark-08 bg-card-dark">
       <Icon
         src={TOURNAMENT_ART[tournament.art]}
         alt=""
@@ -57,9 +62,16 @@ export function TournamentCard({ tournament, from }: TournamentCardProps) {
         className="absolute left-[-102.53%] top-[-28.18%] h-[128.21%] w-[273.72%] max-w-none"
       />
 
+      {/*
+        The two text columns are 303 and 190 at 390, where the card's content box (the
+        container, inside the 1px border) is 356. Past 390 they grow as that fraction of it, so
+        480 has no dead strip; `max()` keeps them at 303 / 190 below. Scaling down as well was
+        tried and measured: at 360 the pill came out 277 wide and `Залишилось часу` wrapped onto
+        two lines. At 303 it runs 15px into the padding at 360 and stays on one line, as before.
+      */}
       <div className="absolute inset-0 p-[20px]">
-        <div className="flex h-full w-[303px] flex-col justify-between">
-          <div className="flex w-[190px] flex-col gap-[6px]">
+        <div className="flex h-full w-[max(303px,100cqw*303/356)] flex-col justify-between">
+          <div className="flex w-[max(190px,100cqw*190/356)] flex-col gap-[6px]">
             {/*
               One Figma text node holds two paragraphs — the name and the prize figure — at the
               same 28px Inter Bold. They are two elements here because they are two pieces of
@@ -116,11 +128,13 @@ export function TournamentCard({ tournament, from }: TournamentCardProps) {
               <span className="text-6xs text-white/80">Залишилось часу</span>
               {/* `tabular-nums`: with proportional digits the pill's right edge moved every
                   second as a 1 replaced a 0. */}
+              {/* 12px, not the design's 11 (`text-5xs`): the owner's call of 2026-09-10 for the
+                  countdown alone. */}
               <time
-                dateTime={countdownEndIso(tournament.endsAt, now)}
-                className="text-5xs font-extrabold tabular-nums text-on-dark"
+                dateTime={time?.iso}
+                className="text-xs font-extrabold tabular-nums text-on-dark"
               >
-                {hours}:{minutes}:{seconds}
+                {time ? `${time.hours}:${time.minutes}:${time.seconds}` : '--:--:--'}
               </time>
             </span>
           </div>

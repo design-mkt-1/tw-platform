@@ -1,4 +1,7 @@
+'use client'
+
 import Image from 'next/image'
+import { useState, type UIEvent } from 'react'
 
 import { ButtonLink } from '@/components/primitives/Button'
 import { HERO_CASINO } from '@/lib/assets'
@@ -6,38 +9,56 @@ import { HERO_CASINO } from '@/lib/assets'
 /**
  * The casino hero — node 1:3302.
  *
- * It is a carousel, not a banner: a 718px track inside a 390px clip, slides 340x170 with a 4px
- * gap and a 16px left inset, so the next slide peeks in by exactly 30px (390 − 360).
+ * It is a carousel, not a banner: slides 340x170 at 390 with a 4px gap and a 16px left inset, so
+ * the next slide peeks in by exactly 30px (390 − 360).
  *
- * **Scrolling is CSS, not JavaScript.** `scroll-snap` on a native overflow scroller works with a
- * finger on the first paint, needs no state, no effect and no `'use client'`, and it degrades to
- * a plain scroller under `prefers-reduced-motion` instead of fighting it. A JS carousel here
- * would buy nothing the design asks for.
+ * **Fluid past 390, exact at 390.** A slide is the scroller's content box — the section less the
+ * 16px inset and the 34px trailing pad, 340 at 390 — at the drawn 340/170 aspect. Each slide is
+ * an inline-size container, `--dp` is one design px of it (`100cqw / 340`), and every drawn px
+ * inside is `calc(var(--dp) * <px>)` — the design's own number at 390 and the same proportion at
+ * every other width. It is the pattern BonusCarousel uses. The artwork was already placed in
+ * percentages, so it scales by itself.
  *
- * **Both slides are built from slide A.** The design authors two (`1:3306`, `1:3318`) carrying
- * byte-identical copy at slightly different metrics — B's CTA is 123x28 at 10px uppercase where
- * A's is 130x28 at 12px capitalize, B's badge is 189.906 wide against A's 178, B's title sits at
- * y 64 against A's 58. B reads as an un-normalised duplicate of A rather than a second offer, so
- * A is treated as canonical and rendered twice. Whether slide B should carry a different promo is
- * a question for the owner — inventing a second Ukrainian offer is not something this build does.
+ * The variable is not style: `calc(100cqw * 178 / 340)` written out gets folded to `52.3529cqw`,
+ * which is 177.99999 at 390 and floors to 177.984 — measured here on the badge, and the same fold
+ * made the title's 15px shape 3/64px narrow. `var(--dp)` resolves to exactly 1px at 390.
+ * `leading-[normal]` is what the replaced `text-6xs` / `text-md` / `text-xs` tokens set; an
+ * arbitrary size sets no line-height, and Tailwind's `leading-normal` is 1.5, not `normal`.
+ *
+ * **Scrolling is CSS.** `scroll-snap` on a native overflow scroller works with a finger on the
+ * first paint and degrades to a plain scroller under `prefers-reduced-motion`. The only
+ * JavaScript is one passive scroll listener that tells the indicator which slide is at rest.
+ *
+ * **All five slides are built from slide A.** The design authors two (`1:3306`, `1:3318`)
+ * carrying byte-identical copy at slightly different metrics — B's CTA is 123x28 at 10px
+ * uppercase where A's is 130x28 at 12px capitalize, B's badge is 189.906 wide against A's 178,
+ * B's title sits at y 64 against A's 58. B reads as an un-normalised duplicate of A rather than a
+ * second offer, so A is canonical. The owner asked for five slides on 2026-09-10 and accepted the
+ * one offer repeated — inventing a second Ukrainian offer is not something this build does.
  */
 
 /**
- * Indicator `1:3330` — four bars, not dots: 4px tall, radius 2, 4px gap, right-aligned, widths
- * 40/24/16/8 in `--dot-1`..`--dot-4`.
+ * Indicator `1:3330` — bars, not dots: 4px tall, radius 2, 4px gap, right-aligned, drawn as
+ * widths 40/24/16/8 in `--dot-1`..`--dot-4`.
  *
- * There are four bars over two slides and nothing in the file says which one means "current":
- * the widths shrink monotonically and every bar has a different colour, which is not how an
- * active/inactive pair reads. So this ships static, exactly as drawn, and is hidden from
- * assistive tech — an invented active-bar rule would be a guess painted onto a measurement.
+ * The file draws four static bars over two slides and says nothing about which is "current". The
+ * owner's rule of 2026-09-10: one bar per slide, the active one takes the design's bar 1 and the
+ * others step down through bars 2–4 by distance from it, 3 or more away taking bar 4. So at rest
+ * on slide one the row reads exactly as drawn, plus a fifth bar-4.
+ *
+ * Still `aria-hidden`: the bars are not controls, and the slide a reader is on is already what
+ * the scroller's own position says.
  */
-const INDICATOR_BARS = ['w-10 bg-dot-1', 'w-6 bg-dot-2', 'w-4 bg-dot-3', 'w-2 bg-dot-4']
+const BAR_STYLES = ['w-10 bg-dot-1', 'w-6 bg-dot-2', 'w-4 bg-dot-3', 'w-2 bg-dot-4']
+const SLIDES = [0, 1, 2, 3, 4]
 
 /** Slide A, `1:3306`. Every string below is copied character for character from the design. */
-function Slide() {
+function Slide({ first }: { first: boolean }) {
   return (
     <>
       {/*
+       * Every `calc(var(--dp)*N)` below is the design's N px at 390 — see the file comment.
+       *
        * The artwork is placed at 205.88% x 127.65% with offsets −75.88% / −20.59% against the
        * 340x170 slide — the measured framing (700x217 at −258,−35). `max-w-none` is required:
        * Tailwind's preflight caps every img at `max-width: 100%`, which would clamp the 205.88%
@@ -48,7 +69,7 @@ function Slide() {
         alt=""
         width={700}
         height={217}
-        priority
+        priority={first}
         unoptimized
         className="pointer-events-none absolute left-[-75.88%] top-[-20.59%] h-[127.65%] w-[205.88%] max-w-none"
       />
@@ -80,10 +101,10 @@ function Slide() {
        * declared 0.553px hairline, so the box carries 2px of border where the design counts
        * 1.106. Closing that gap would mean changing the border, which is drawn, so it stays.
        */}
-      <p className="absolute left-[16.5px] top-[18px] w-[178px] whitespace-nowrap rounded-full border-[0.553px] border-promo bg-promo-badge px-1 py-[4.424px] text-center font-outfit text-6xs font-extrabold uppercase tracking-promo text-promo shadow-promo-badge">
-        <span className="text-7xs">{'✦ '}</span>
+      <p className="absolute left-[calc(var(--dp)*16.5)] top-[calc(var(--dp)*18)] w-[calc(var(--dp)*178)] whitespace-nowrap rounded-full border-[0.553px] border-promo bg-promo-badge px-[calc(var(--dp)*4)] py-[calc(var(--dp)*4.424)] text-center font-outfit text-[length:calc(var(--dp)*10)] font-extrabold uppercase leading-[normal] tracking-[calc(var(--dp)*0.5529)] text-promo shadow-promo-badge">
+        <span className="text-[length:calc(var(--dp)*7.741)]">{'✦ '}</span>
         <span>вітальний пакет казіно</span>
-        <span className="text-7xs">{' ✦'}</span>
+        <span className="text-[length:calc(var(--dp)*7.741)]">{' ✦'}</span>
       </p>
 
       {/*
@@ -96,12 +117,12 @@ function Slide() {
        * dropped "+ 250 FS" on top of the gold coin in the artwork. `w-max` plus nowrap reproduces
        * what the design LOOKS like rather than the box it was authored in.
        */}
-      <div className="absolute left-[16.5px] top-[58px] flex w-max flex-col items-start gap-2">
-        <p className="flex gap-0.5 whitespace-nowrap font-outfit text-md font-bold uppercase text-on-dark">
+      <div className="absolute left-[calc(var(--dp)*16.5)] top-[calc(var(--dp)*58)] flex w-max flex-col items-start gap-[calc(var(--dp)*8)]">
+        <p className="flex gap-[calc(var(--dp)*2)] whitespace-nowrap font-outfit text-[length:calc(var(--dp)*15)] font-bold uppercase leading-[normal] text-on-dark">
           <span>₴250.000</span>
           <span>+ 250 fS</span>
         </p>
-        <span className="rounded-wager bg-wager-badge px-[4.424px] py-[1.659px] font-sans text-6xs font-bold uppercase tracking-wager text-promo">
+        <span className="rounded-[calc(var(--dp)*3.318)] bg-wager-badge px-[calc(var(--dp)*4.424)] py-[calc(var(--dp)*1.659)] font-sans text-[length:calc(var(--dp)*10)] font-bold uppercase leading-[normal] tracking-[calc(var(--dp)*0.2765)] text-promo">
           20X WAGER
         </span>
       </div>
@@ -109,8 +130,9 @@ function Slide() {
       {/*
        * CTA 1:3308 — 130x28. The design draws a 28px target, which is under the 44px minimum;
        * growing the paint would move the slide's whole layout, so the paint ships as drawn and
-       * a transparent `after:` extends the target 8px above and below: 28 + 8 + 8 = 44, the
-       * pattern TournamentCard's join button uses. It spans y 113..157 of a 170 slide, so the
+       * a transparent `after:` extends the target above and below by `22px − 14 design px`: 8 + 28
+       * + 8 = 44 at 390, and still 44 at any width as the painted button scales — the pattern
+       * TournamentCard's join button and BonusCarousel use. It spans y 113..157 of a 170 slide, so the
        * slide's `overflow-hidden` does not clip it.
        *
        * `!font-bold` is not decoration. The `cta` variant sets `font-semibold` and this node is
@@ -120,7 +142,7 @@ function Slide() {
        */}
       <ButtonLink
         href="/promo"
-        className="absolute left-[17px] top-[121px] h-[28px] w-[130px] text-xs !font-bold capitalize after:absolute after:inset-x-0 after:-inset-y-2 after:content-['']"
+        className="absolute left-[calc(var(--dp)*17)] top-[calc(var(--dp)*121)] h-[calc(var(--dp)*28)] w-[calc(var(--dp)*130)] text-[length:calc(var(--dp)*12)] !rounded-[calc(var(--dp)*6)] !font-bold capitalize leading-[normal] !-tracking-[calc(var(--dp)*0.2)] after:absolute after:inset-x-0 after:inset-y-[calc(var(--dp)*14-22px)] after:content-['']"
       >
         отримати бонус
       </ButtonLink>
@@ -129,6 +151,19 @@ function Slide() {
 }
 
 export function HeroCarousel() {
+  const [active, setActive] = useState(0)
+
+  // One scroll listener on the track. A scroll event cannot be cancelled, so it never holds the
+  // scroll up. A slide's pitch is its own width plus the 4px gap, read at event time so it is
+  // right at every width. Setting the same index again bails out in React, so a scroll that
+  // stays on one slide re-renders nothing.
+  const onScroll = (event: UIEvent<HTMLUListElement>) => {
+    const track = event.currentTarget
+    const slide = track.firstElementChild as HTMLElement | null
+    if (!slide) return
+    setActive(Math.round(track.scrollLeft / (slide.offsetWidth + 4)))
+  }
+
   return (
     <section className="flex w-full flex-col gap-gutter pb-gutter pt-6">
       {/*
@@ -136,36 +171,44 @@ export function HeroCarousel() {
        * only a finger can move is unusable from a keyboard. The label is not in the design — the
        * frame is named "Frame 2135557699" — so it is written here and flagged for the owner.
        *
-       * The trailing 34px is derived, not measured: slide B starts at x 360 and its snap point is
-       * scroll 344, which needs 734px of content to be reachable (16 + 340 + 4 + 340 + 34). With
-       * only a 16px trailing pad the content is 716 and that snap point sits past the end of the
-       * scroll range — a mandatory snap point the scroller cannot reach is how a carousel ends up
-       * with an unreachable second slide. The design's own 718px track has the same shortfall and
-       * would rest slide B at a 32px inset; this rests it at 16, matching slide A.
+       * The trailing 34px is derived, not measured: the last slide's snap point rests it at the
+       * same 16px inset as the first, which needs the slide plus 34px after it (16 + 340 + 34 =
+       * 390). With only a 16px trailing pad that snap point sits past the end of the scroll range
+       * — a mandatory snap point the scroller cannot reach is how a carousel ends up with an
+       * unreachable last slide. It also makes the content box exactly one slide wide, which is
+       * what `w-full` on each slide relies on.
+       *
+       * `py-px` keeps the drawn 172 track around a 170 slide at 390.
        */}
       <ul
         tabIndex={0}
         aria-label="Акційні пропозиції"
-        className="scrollbar-none flex h-[172px] snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-pl-gutter pl-gutter pr-[34px]"
+        onScroll={onScroll}
+        className="scrollbar-none flex snap-x snap-mandatory items-center gap-1 overflow-x-auto scroll-pl-gutter py-px pl-gutter pr-[34px]"
       >
-        {[0, 1].map((index) => (
+        {SLIDES.map((index) => (
           <li
             key={index}
-            className="relative h-[170px] w-[340px] shrink-0 snap-start overflow-hidden rounded-slide bg-slide"
+            className="relative aspect-[340/170] w-full shrink-0 snap-start overflow-hidden rounded-slide bg-slide [container-type:inline-size] [--dp:calc(100cqw/340)]"
           >
-            <Slide />
+            <Slide first={index === 0} />
           </li>
         ))}
       </ul>
 
       {/*
-       * The bars end at x 358 in the 390 column — that is where the 358-wide, `px-gutter` box
-       * this used to be put them. `pr-8` keeps that edge 32px from the right at every width;
-       * the fixed 358 box sat 8.5..366.5 at 375 and 1..359 at 360, off the column (measured).
+       * The bars end 32px from the right at every width (`pr-8`) — x 358 in the 390 column, where
+       * the design puts them. Width is the only thing that animates, 200ms, and not at all under
+       * reduced motion.
        */}
       <div aria-hidden="true" className="flex w-full justify-end gap-1 pr-8">
-        {INDICATOR_BARS.map((bar) => (
-          <span key={bar} className={`h-1 rounded-hairline ${bar}`} />
+        {SLIDES.map((index) => (
+          <span
+            key={index}
+            className={`h-1 rounded-hairline transition-[width] duration-200 motion-reduce:transition-none ${
+              BAR_STYLES[Math.min(Math.abs(index - active), BAR_STYLES.length - 1)]
+            }`}
+          />
         ))}
       </div>
     </section>
