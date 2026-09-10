@@ -41,6 +41,25 @@ Rules learned here, each from something that went wrong:
   `#080814` as "the app header background". It had measured nodes `1:6594` and `1:6617`, which are
   dead leftover JACKPOT headers pasted on the canvas. Building from that would have produced a
   black header on a white site. Check which node a claim came from.
+- **Brief every number with the node id or file line it came from.** Measured on 2026-09-10 across
+  eleven workers: every brief that named a source survived contact, and five that did not were
+  refuted by the worker running them. Three were the coordinator's own claims — that
+  `SportNavRow` was rendered outside its plate (it was inside), that the sport filter pills all
+  read `310` (already varied to `310 / 84 / 46`), and that `UrlStateBridge` had been cleared of
+  the dead-menu bug (it was the cause). `docs/sweep-2026-09-10.md` records all five and how each
+  was caught. **A worker that contradicts its brief with a measurement is the system working.**
+
+#### Two things about the Orca CLI that cost this session real time
+
+- **`check --types worker_done,escalation,question` does not filter.** Heartbeat batches come back
+  regardless, so `--wait` returns immediately and the caller learns nothing — the same six
+  heartbeats replay for as long as you let them. Every batch has to be acknowledged by its
+  `deliveryId` and the check re-issued in a loop. A small drain loop that acks and repeats until a
+  batch contains something that is not a heartbeat is the only reliable way to block on a result.
+- **`worker-release` on a terminal you have opened in the Orca UI does nothing, and reports `ok`.**
+  The response body carries `state: "retained"`, `reason: "user_takeover"`, `processAction:
+  "none"`. Six of eleven terminals ended that way. They close from the UI, not from the CLI — do
+  not report them as released on the strength of the exit code.
 
 ### 2. Skills that fire without being asked
 
@@ -290,6 +309,10 @@ export has no dev-only mode, nothing in the app links to it, and `robots` is `no
   measured. Its own README lists what is in each file and the two places where a file is known to
   be wrong. They are committed rather than left in a scratch directory precisely because the
   quota makes re-measuring expensive.
+- **`docs/sweep-2026-09-10.md` holds the browser sweep underneath the build** — eleven worker
+  reports verbatim, what each one could not measure and why, and the five coordinator claims the
+  workers refuted. Committed for the same reason as the inventory: a browser session is expensive
+  and reading is free. `docs/next-session.md` is the distilled version to read first.
 
 ## Decisions the owner has taken
 

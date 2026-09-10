@@ -588,6 +588,12 @@ applies neither.
 rated **serious**, so every text row in this table fails the CI gate on its own. The 1.4.11 rows do
 not — axe-core does not test 1.4.11 — so those fail a manual audit instead.
 
+**This section has a reader-facing twin**, built from these exact tables on 2026-09-10 and meant to
+be sent to whoever owns the design:
+<https://claude.ai/code/artifact/a9e0078e-01e0-40c8-9a70-dd312d2c9997>. It renders every failing
+pair in its own real colours, which is the thing a hex in a table cannot do. Change a row here and
+the page needs redeploying, or the two drift and only one of them is in front of the designer.
+
 | Pair | Ratio | Node | Suggested value that keeps the hue |
 | --- | --- | --- | --- |
 | `#71809A` on `#E8F1FC` — inactive category label, 13px | **3.50** | `1:3378`, `1:3384`, `1:3390` | `#5F6C86` → 4.53 |

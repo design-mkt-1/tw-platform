@@ -146,10 +146,29 @@ before spending one:
 The cap that blocked those three icons is per **subtree**: calling `download_assets` on the icon
 frame itself returns the whole node as one flat export and the cap never bites.
 
+## The two deliverables that leave the repo
+
+**The contrast report for the designer:**
+<https://claude.ai/code/artifact/a9e0078e-01e0-40c8-9a70-dd312d2c9997>
+
+Built from `tokens.md` §7 on 2026-09-10: 23 text pairs below AA, 8 interface boundaries below the
+3:1 that WCAG 1.4.11 asks of anything carrying meaning without being text, and 20 pairs that pass.
+Every failing pair is rendered in its own real colours, with the node id it was measured from and a
+replacement value that keeps the hue. It also carries the two questions that are not about colour —
+the three menu rows drawing a chevron with nothing behind it, and the four pairs whose backdrop is a
+photograph and so cannot be computed at all.
+
+**It has not been sent to anyone.** That is an outward-facing action and it is the owner's to take.
+If it needs changing, it is a redeploy of the same URL, not a new page.
+
+**The code tour**, `.tours/new-joiner-top-win.tour` — 15 steps anchored to real file and line, for
+whoever takes the project over. Opens with the CodeTour extension. Every anchor was validated
+programmatically, so a step that fails to open means the file moved, not that the tour was sloppy.
+
 ## What the design itself is missing or wrong
 
 Findings about the Figma file, not defects in the build. They belong in front of whoever owns the
-design, and they are in the contrast report that was delivered with it.
+design, and every one of them is in the contrast report linked above.
 
 - **No legal block in the footer** — no licence number, no regulator logo, no 18+ mark, no
   responsible-gambling line. The support address is `Support@jack-pot.com`, the previous project's
