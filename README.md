@@ -96,6 +96,8 @@ to `/tw-platform` and break the capture scripts, which address the root.
 | `src/lib/search.ts` | One ranker. Its `normalize()` is built from what to remove rather than what to keep, which is the only reason it works on Cyrillic at all |
 | `src/store/useAppStore.ts` | Auth mode, open panel, query. Mirrored into the URL by `src/components/UrlStateBridge.tsx` |
 | `docs/tokens.md` | **Read this before touching a colour.** 84 colours and 59 type steps, each with the Figma node it was measured on |
+| `docs/design-inventory/` | The measurements underneath `tokens.md` — one file per area of the design, plus the asset manifests. A dated record, not a live reference |
+| `docs/next-session.md` | What is done, what is open, and what the design itself is missing |
 | `CLAUDE.md` | How to work in this repo, and every trap already hit |
 
 ## Known deliberate differences from the design

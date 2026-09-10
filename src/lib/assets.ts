@@ -89,12 +89,14 @@ export const SECTION_DIVIDER = withBase('/images/icons/section-divider.svg')
 /* --- menu panel ----------------------------------------------------------- */
 
 /**
- * The eight jackpot-menu row glyphs, the Terms document icon and the row chevron.
+ * Every glyph the jackpot menu draws: eight row icons, the Terms document, the row chevron, and
+ * the six panel-chrome glyphs (avatar, copy, close, More arrow, Support headset, WhatsApp).
  *
- * Downloaded one node at a time. `download_assets` caps a subtree at 20 SVG fragments and its
- * URLs carry no node id, so a single call on the whole panel returns an unattributable pile —
- * the CASINO slot machine alone is 9 fragments and 2 luminance masks. One call per icon costs
- * ten calls and makes attribution free.
+ * ## The eight row icons + Terms + chevron — one `download_assets` call each
+ *
+ * `download_assets` caps a subtree at 20 SVG fragments and its URLs carry no node id, so a single
+ * call on the whole panel returns an unattributable pile — the CASINO slot machine alone is 9
+ * fragments and 2 luminance masks. One call per icon costs ten calls and makes attribution free.
  *
  * Every one arrived with the whole 390px panel behind the glyph: the `#F4F6FA` sidebar, its
  * `#D8DDE7` right border and the `#E8F1FC` row pill. The viewBox hides them, so an `<img>` looks
@@ -103,6 +105,28 @@ export const SECTION_DIVIDER = withBase('/images/icons/section-divider.svg')
  * `<path>`s rather than `<rect>`s, sitting 12..338px outside a 15px box, inside the script's
  * 1000px threshold. It was stripped by hand, along with the `opacity="0.5"` seven of the eight
  * carry — a mask reads group opacity as coverage, so the file must supply shape and nothing else.
+ *
+ * ## The six panel glyphs — the per-node asset URL, not `download_assets`
+ *
+ * These came from the URLs the earlier `get_design_context` pass recorded per node
+ * (`https://www.figma.com/api/mcp/asset/<uuid>.svg`), which cost zero MCP calls and return the
+ * VECTOR LAYER rather than a whole-node render — so five of the six arrived with no panel
+ * furniture at all and needed no stripping. Two of them could not have been fetched any other way:
+ *
+ * - The Support headset is `I1:6984;2642:42639`. `download_assets` validates `nodeId` against
+ *   `^\d+[:-]\d+$`, so an instance-child id cannot be passed to the tool at all. The recorded
+ *   UUID is the only route to that glyph.
+ * - The recorded WhatsApp UUID is NOT the glyph: it is a 190.809x79.8116 sheet of 23 messenger
+ *   brand marks (Slack `#E01E5A`, Zoom `#4A8CFF`, Viber `#904A97`, …) that node `1:6988` clips a
+ *   16x16 window onto. That one needed a real `download_assets` export — the single Figma call
+ *   this pass spent — and it is the ONLY one of the six carrying panel furniture. clean-svg.mjs
+ *   reached two of its five pieces (the `#1E1E1E` canvas rect by fill, the 168x38 `#10B981`
+ *   button rect by rule 3, 168 > 3x16); the two `#F4F6FA` panel paths, the `#D8DDE7` border path
+ *   and its `<mask>` all start at x -235, inside the script's 1000px threshold, and went by hand.
+ *
+ * `moreArrow` points UP in the file (apex at y 7.08, base at y 12.9). The `Arrow` frame carries
+ * `rotate(180)` in Figma, which is also what explains its y=+20 offset inside a 20px parent, so
+ * MenuPanel supplies `rotate-180`. Do not re-export it expecting a down chevron.
  *
  * `chevronDown` is exported but NOT drawn. The design gives SPORT, CASINO and PAYMENTS a
  * collapsed `weui:arrow-filled` and contains no expanded state for any of them, so MenuPanel
@@ -120,6 +144,12 @@ export const MENU_ICONS = {
   profile: withBase('/images/menu/row-profile.svg'),
   terms: withBase('/images/menu/terms-document.svg'),
   chevronDown: withBase('/images/menu/chevron-down.svg'),
+  avatar: withBase('/images/menu/avatar.svg'),
+  copy: withBase('/images/menu/copy.svg'),
+  close: withBase('/images/menu/close.svg'),
+  moreArrow: withBase('/images/menu/more-arrow.svg'),
+  supportHeadset: withBase('/images/menu/support-headset.svg'),
+  whatsapp: withBase('/images/menu/whatsapp.svg'),
 } as const
 
 export type MenuIconName = keyof typeof MENU_ICONS

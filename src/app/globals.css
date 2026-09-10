@@ -87,6 +87,7 @@
   --icon-section: #92bdf3;         /* 1:3426 section flame — same hex as --text-id-label */
   --text-id-label: #92bdf3;        /* 1:6841 "ID:" — separate role, will move separately */
   --icon-menu-row: #1677e8;        /* 1:6861 and seven siblings, declared; painted at 50% */
+  --icon-menu-terms: #7fb4f2;      /* 1:6962 declared stroke; painted at 50% — see tokens.md §3.3 */
   --icon-chevron: #626a7a;         /* 1:6667 weui:arrow-filled */
   --icon-star-active: #1677e8;     /* 1:6024 ★ in Favorites */
   --icon-live: #ff7a45;            /* 1:6013 the Live tab stream icon */

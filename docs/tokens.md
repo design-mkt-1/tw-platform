@@ -172,6 +172,7 @@ are separate tokens on purpose: the roles are independent and one of them will m
 | Token | Value | Measured on | Paints |
 | --- | --- | --- | --- |
 | `--icon-menu-row` | `#1677E8` | `1:6861` and its seven siblings — the **declared `fill`** of the SVG exports | the eight menu row icons, each painted at `opacity: 0.5` |
+| `--icon-menu-terms` | `#7FB4F2` | `1:6962` — the **declared `stroke`** of the SVG export | the Terms document icon, painted at `opacity: 0.5` |
 | `--icon-chevron` | `#626A7A` | `1:6667`, `1:6706`, `1:6749` (pixel; edges ramp `#6B7382`…`#949BAB`) | `weui:arrow-filled` in the menu |
 | `--icon-star-active` | `#1677E8` | `1:6024` | the `★` in the sport Favorites button (a text glyph, 25 px) |
 | `--icon-live` | `#FF7A45` | `1:6013` (pixel, flat) | the Live-tab stream icon |
@@ -202,10 +203,47 @@ PROMOTIONS only and "the other 6 row icons are full opacity". Seven of the eight
 eighth has it baked into its fill. There is no dim/bright distinction between the rows.
 
 The Terms document icon (`1:6962`) is a third case: `stroke="#7FB4F2"` *and* a group at
-`opacity="0.5"`, i.e. the row-icon blue through two 50% steps. It has no token of its own and is
-drawn as `--icon-menu-row` at `opacity: 0.25`, which lands within 3/255 per channel of the declared
-composite (`#BDD6F6` against `#BAD5F6`) — the residual is the difference between the row fill and
-the panel behind it. A dedicated token would be exact; one icon did not seem to earn one.
+`opacity="0.5"`, i.e. the row-icon blue through two 50% steps. It was drawn as `--icon-menu-row` at
+`opacity: 0.25`, which lands within 3/255 per channel of the declared composite (`#BDD6F6` against
+`#BAD5F6`) — the residual is the difference between the row fill `#E8F1FC` the first 50% was baked
+against and the panel `#F4F6FA` the second falls on. **It now has `--icon-menu-terms`, and the
+approximation is gone.**
+
+The token holds `#7FB4F2` — the declared stroke — and the component supplies the remaining
+`opacity: 0.5`, exactly as `--icon-menu-row` holds `#1677E8` and the row supplies its 0.5. Blending
+by hand confirms it: `(0x7F+0xF4)/2 = 0xBA`, `(0xB4+0xF6)/2 = 0xD5`, `(0xF2+0xFA)/2 = 0xF6` →
+**`#BAD5F6`**, the declared composite to the byte. Storing `#BAD5F6` directly would have been one
+fewer step and wrong for the same reason `#7FB4F2` was wrong as `--icon-menu-row`: it bakes in a
+background, so it stops being correct the moment the icon moves off `#F4F6FA`.
+
+### The six panel-chrome glyphs — declared paints
+
+Exported after the eight row icons, from the per-node asset URLs rather than `download_assets`
+(`src/lib/assets.ts` records why; two of the six had no other route). Five declare exactly the
+token they are painted with:
+
+| Glyph | Node | Declared | Painted with | Agrees |
+| --- | --- | --- | --- | --- |
+| Avatar person | `1:6828` | `stroke="white"` | `--text-primary` `#102A67` | **no — see below** |
+| Copy button | `1:6844` | `fill="#191970"` | `--text-navy` | yes, exactly |
+| Close `x` | `1:6822` | `stroke="#3B82F6"` | `--text-label` | yes, exactly |
+| "More" arrow | `1:6850` | `fill="#FF8101"` | `--text-more` | yes, exactly |
+| Support headset | `I1:6984;2642:42639` | `fill="#10B981"` | `--contact-accent` | yes, exactly |
+| WhatsApp mark | `1:6988` | `fill="white"` | `--text-on-dark` | yes, exactly |
+
+**The avatar is the one place in this repo where the design's declared colour is deliberately not
+shipped.** `1:6828` declares `stroke="white"`; white on the `#DDE2ED` avatar circle (`--avatar-bg`,
+node `1:6826`) measures **1.35:1**, a faint outline rather than a figure. The owner compared the
+declared white against the live render side by side on 2026-09-10 and chose `--text-primary`, which
+is what the site already showed. That decision came from the comparison, not from the file — it is
+the one documented exception to §7's "the design's colours ship unchanged", and it is recorded here
+and at the call site in `MenuPanel.tsx` so it is findable rather than quietly complied with. Do not
+"correct" it back to white on the strength of the export alone.
+
+The `1:6850` arrow points **up** in the file (path apex at y 7.08, base at y 12.9). The `Arrow`
+frame carries `rotate(180)` in Figma, which is also what explains the `y=+20` offset the earlier
+pass read inside a 20px-tall parent: a rotated node's bounding box, not a mislaid layer. The export
+is the pre-rotation art, so `MenuPanel.tsx` reapplies `rotate-180`.
 
 The chevron `weui:arrow-filled` (`1:6866`) declares `fill="#626A7A"`, confirming `--icon-chevron`
 exactly as the pixel pass read it. That one needed no correction.

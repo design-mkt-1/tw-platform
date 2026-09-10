@@ -81,6 +81,7 @@ export default {
         'icon-section': 'var(--icon-section)',
         'id-label': 'var(--text-id-label)',
         'icon-menu-row': 'var(--icon-menu-row)',
+        'icon-menu-terms': 'var(--icon-menu-terms)',
         'icon-chevron': 'var(--icon-chevron)',
         'star-active': 'var(--icon-star-active)',
         live: 'var(--icon-live)',

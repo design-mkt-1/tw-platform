@@ -33,65 +33,19 @@ import { useAppStore } from '@/store/useAppStore'
  */
 
 /* --- glyphs ---------------------------------------------------------------- *
- * STILL PLACEHOLDERS: the avatar user (1:6828), the copy icon (1:6844), the close x (1:6822),
- * the "More" arrow (1:6850) and the two contact icons. Those six were not exported — their
- * Figma URLs are listed in the inventory's 24-gap-menu-type.md §7 and expire 7 days from
- * 2026-09-10. They are drawn inline so the panel is not full of holes, and they take their
- * colour from `currentColor` so swapping in the real exports changes markup only, never a
- * colour.
+ * NOTHING IN THIS PANEL IS A PLACEHOLDER ANY MORE. Every glyph is the Figma export, in
+ * MENU_ICONS, painted as a CSS mask (see `maskStyle`). The UK flag never was one either: it is
+ * the footer's own asset, reused.
  *
- * The eight row icons and the Terms document icon are NO LONGER placeholders — they are the
- * real exports, in MENU_ICONS, painted as masks (see `maskStyle`). The UK flag never was one:
- * it is the footer's own asset, reused.
+ * The six that landed last — avatar 1:6828, copy 1:6844, close 1:6822, More arrow 1:6850,
+ * Support headset I1:6984;2642:42639, WhatsApp 1:6988 — arrived from the per-node asset URLs
+ * rather than from `download_assets`; assets.ts records why, including the two that had no other
+ * route. Five of the six declare exactly the token they are painted with. The avatar does not,
+ * and that one exception is documented at its call site and in docs/tokens.md §3.3.
  *
- * `profile` stays in this list because it draws the 24px AVATAR glyph, which is node 1:6828 and
- * a different asset from the 15px PROFILE row icon that now comes out of MENU_ICONS.
+ * The AVATAR glyph (24px, node 1:6828) is a different asset from the PROFILE row icon (15px,
+ * node 1:6952), which is why MENU_ICONS carries both.
  */
-const GLYPHS = {
-  profile: (
-    <>
-      <circle cx="12" cy="8" r="3.2" />
-      <path d="M5 19.5c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5" />
-    </>
-  ),
-  headset: (
-    <>
-      <path d="M4.5 14v-2a7.5 7.5 0 0 1 15 0v2" />
-      <rect x="2.5" y="12.5" width="4.5" height="6.5" rx="2.25" />
-      <rect x="17" y="12.5" width="4.5" height="6.5" rx="2.25" />
-    </>
-  ),
-  chat: <path d="M12 3a9 9 0 0 0-7.7 13.7L3 21l4.4-1.3A9 9 0 1 0 12 3Z" />,
-  copy: (
-    <>
-      <rect x="8" y="8" width="12" height="13" rx="2" />
-      <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
-    </>
-  ),
-  close: <path d="m6 6 12 12M18 6 6 18" />,
-  chevronDown: <path d="m6 9 6 6 6-6" />,
-} as const
-
-type GlyphName = keyof typeof GLYPHS
-
-function Glyph({ name, size, className }: { name: GlyphName; size: number; className?: string }) {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`shrink-0 ${className ?? ''}`}
-    >
-      {GLYPHS[name]}
-    </svg>
-  )
-}
 
 /**
  * Only the shape comes from the file; `background-color` paints it.
@@ -177,14 +131,19 @@ function PanelHeader({ onClose }: { onClose: () => void }) {
     <header className="flex h-[60px] shrink-0 items-center justify-between bg-surface px-gutter">
       <Icon src={LOGO} alt="Top-Win" width={111} height={20} />
       {/* 1:6821 — 40x40, radius 100 (a circle at this size), fill #EFF6FF, 1px #BFDBFE border
-          that no pixel pass could separate from the fill, 14x14 glyph in #3B82F6. */}
+          that no pixel pass could separate from the fill. 1:6822 is 14x14 and declares
+          `stroke="#3B82F6"`, which is `--text-label` exactly. */}
       <button
         type="button"
         aria-label="Закрити"
         onClick={onClose}
-        className="flex h-10 w-10 items-center justify-center rounded-pill border border-chip bg-chip-link text-label transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
+        className="flex h-10 w-10 items-center justify-center rounded-pill border border-chip bg-chip-link transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
       >
-        <Glyph name="close" size={14} />
+        <span
+          aria-hidden="true"
+          style={maskStyle(MENU_ICONS.close)}
+          className="h-[14px] w-[14px] shrink-0 bg-label"
+        />
       </button>
     </header>
   )
@@ -229,9 +188,23 @@ function IdentityBand({ vip }: { vip: boolean }) {
       {/* 1:6825 — 358x52, gap 12. The declared `py: 16` cannot be true of a 52px row holding a
           48px avatar; `items-center` reproduces the measured y of 74 in a section at 72. */}
       <div className="flex h-[52px] items-center gap-3">
-        {/* 1:6826 — 48x48 wrapper, radius 24, #DDE2ED, holding a 24x24 user glyph. */}
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-avatar text-primary">
-          <Glyph name="profile" size={24} />
+        {/*
+          1:6826 — 48x48 wrapper, radius 24, #DDE2ED, holding the 24x24 user glyph 1:6828.
+
+          **The one place in this repo where the design's declared colour is deliberately not
+          shipped.** 1:6828 declares `stroke="white"`, which on #DDE2ED is 1.35:1 — a faint
+          outline, not a figure. The owner compared the two side by side against the live render
+          on 2026-09-10 and chose `--text-primary`, which is what the site already shows. That
+          decision came from the comparison, not from the file. Recorded in docs/tokens.md §3.3
+          so it is findable rather than quietly complied with; do not "correct" it back to white
+          on the strength of the export.
+        */}
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-avatar">
+          <span
+            aria-hidden="true"
+            style={maskStyle(MENU_ICONS.avatar)}
+            className="h-6 w-6 shrink-0 bg-primary"
+          />
         </div>
 
         {/* 1:6830 — flex column, gap 4. `min-w-0` is what lets the username's ellipsis fire. */}
@@ -290,14 +263,22 @@ function IdField() {
         the #DFE5F0 the pixel pass read. The design draws no "copied" confirmation, so this
         writes to the clipboard and says nothing — inventing a toast would be inventing a
         component. Recorded in the return value.
+
+        The glyph 1:6844 is 14.3008 x 16.0013, not square, and declares `fill="#191970"` — the
+        file's own named `Navy` style, i.e. `--text-navy` exactly. The box is its drawn size so
+        the mask needs no letterboxing.
       */}
       <button
         type="button"
         aria-label={`Копіювати ID ${USER.id}`}
         onClick={() => navigator.clipboard?.writeText(USER.id)}
-        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-sm bg-copy-btn text-navy transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
+        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-sm bg-copy-btn transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
       >
-        <Glyph name="copy" size={16} />
+        <span
+          aria-hidden="true"
+          style={maskStyle(MENU_ICONS.copy)}
+          className="h-4 w-[14.3px] shrink-0 bg-navy"
+        />
       </button>
     </div>
   )
@@ -315,11 +296,22 @@ function IdField() {
  * CONTENT, not only in the layer name, by a codepoint dump of the node. It renders identically
  * to `More` and breaks any exact-match i18n key, search or test that types Latin, so the Latin
  * form ships and the Figma node needs correcting.
+ *
+ * `rotate-180` is not decoration. The exported arrow 1:6850 points UP — its path apex is at
+ * y 7.08 and its base at y 12.9 — because the `Arrow` frame carries `rotate(180)` in Figma.
+ * That transform is also what explains the frame's y=+20 offset inside a 20px-tall parent: it is
+ * a rotated node's bounding box, not a mislaid layer. The export is the pre-rotation art, so the
+ * rotation has to be reapplied here or the chevron points the wrong way. Its declared
+ * `fill="#FF8101"` is `--text-more` exactly, the same token the label already uses.
  */
 function MoreToggle() {
   return (
     <p className="mt-2 flex h-5 items-center justify-center gap-1 font-roboto text-xs font-bold leading-4 text-more">
-      <Glyph name="chevronDown" size={20} />
+      <span
+        aria-hidden="true"
+        style={maskStyle(MENU_ICONS.moreArrow)}
+        className="h-5 w-5 shrink-0 rotate-180 bg-more"
+      />
       More
     </p>
   )
@@ -414,17 +406,20 @@ function TermsAndLanguageRow({ onNavigate }: { onNavigate: () => void }) {
         className="flex flex-1 items-center justify-center gap-[10px] text-primary"
       >
         {/*
-          1:6962 is the row-icon blue through TWO 50% steps: `stroke="#7FB4F2"`, which is
-          `--icon-menu-row` already blended 50% into the row fill, inside a group at
-          `opacity="0.5"`. It has no token of its own, so it is drawn as the paint at 0.25.
-          That lands on #BDD6F6 against the design's #BAD5F6 — 3/255 on one channel, the
-          difference between the #E8F1FC the blend was baked against and the #F4F6FA behind
-          this row. A dedicated token would be exact; one icon did not earn one.
+          1:6962 declares `stroke="#7FB4F2"` inside a group at `opacity="0.5"` — the row-icon
+          blue through two 50% steps, the first of them baked against the row fill #E8F1FC and
+          the second falling on the panel #F4F6FA behind this row. That is why it never reduced
+          to `--icon-menu-row` at 0.25: 0.25 lands on #BDD6F6 and the design draws #BAD5F6.
+
+          `--icon-menu-terms` now holds the declared stroke and the remaining 0.5 lives here,
+          which reproduces #BAD5F6 exactly. The token holds the PAINT, not the composite, for the
+          reason docs/tokens.md §3.3 gives for `--icon-menu-row`: a baked-in composite stops being
+          correct the moment the background under it changes.
         */}
         <span
           aria-hidden="true"
           style={maskStyle(MENU_ICONS.terms)}
-          className="h-[22px] w-[22px] shrink-0 bg-icon-menu-row opacity-25"
+          className="h-[22px] w-[22px] shrink-0 bg-icon-menu-terms opacity-50"
         />
         <span className="font-roboto text-menu-row font-medium uppercase">Terms of Use</span>
       </Link>
@@ -480,7 +475,13 @@ function ContactRow({ onNavigate, prelogin }: { onNavigate: () => void; prelogin
           prelogin ? 'w-[168px]' : 'flex-1'
         }`}
       >
-        <Glyph name="headset" size={16} />
+        {/* I1:6984;2642:42639 — 16x16, declares `fill="#10B981"`, i.e. `--contact-accent`, the
+            same token as the label and the border. */}
+        <span
+          aria-hidden="true"
+          style={maskStyle(MENU_ICONS.supportHeadset)}
+          className="h-4 w-4 shrink-0 bg-contact"
+        />
         Support
       </Link>
 
@@ -491,7 +492,13 @@ function ContactRow({ onNavigate, prelogin }: { onNavigate: () => void; prelogin
           onClick={onNavigate}
           className="flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-sm bg-contact px-5 font-roboto text-sm leading-[18px] text-on-dark"
         >
-          <Glyph name="chat" size={16} />
+          {/* 1:6988 — 16x16, declares `fill="white"`, i.e. `--text-on-dark`, the same token as
+              the label. It is a WhatsApp mark, not the generic chat bubble the placeholder drew. */}
+          <span
+            aria-hidden="true"
+            style={maskStyle(MENU_ICONS.whatsapp)}
+            className="h-4 w-4 shrink-0 bg-on-dark"
+          />
           Vip Manager
         </Link>
       )}

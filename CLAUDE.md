@@ -249,6 +249,11 @@ scripts need changing with them.
 - `docs/tokens.md` is the only bridge between the design and the code. The file carries six
   variables against roughly forty raw values, so the palette is hard-coded from measurement. An
   eslint rule rejects raw hex under `src/components/`.
+- **`docs/design-inventory/` holds the measurements underneath it** — 25 files, one per area,
+  plus the asset manifests. Read them before spending a Figma call on something that was already
+  measured. Its own README lists what is in each file and the two places where a file is known to
+  be wrong. They are committed rather than left in a scratch directory precisely because the
+  quota makes re-measuring expensive.
 
 ## Decisions the owner has taken
 
