@@ -171,7 +171,7 @@ are separate tokens on purpose: the roles are independent and one of them will m
 
 | Token | Value | Measured on | Paints |
 | --- | --- | --- | --- |
-| `--icon-menu-row` | `#7FB4F2` | `1:6862` and its seven siblings (pixel) | the eight menu row icons |
+| `--icon-menu-row` | `#1677E8` | `1:6861` and its seven siblings — the **declared `fill`** of the SVG exports | the eight menu row icons, each painted at `opacity: 0.5` |
 | `--icon-chevron` | `#626A7A` | `1:6667`, `1:6706`, `1:6749` (pixel; edges ramp `#6B7382`…`#949BAB`) | `weui:arrow-filled` in the menu |
 | `--icon-star-active` | `#1677E8` | `1:6024` | the `★` in the sport Favorites button (a text glyph, 25 px) |
 | `--icon-live` | `#FF7A45` | `1:6013` (pixel, flat) | the Live-tab stream icon |
@@ -184,6 +184,31 @@ are separate tokens on purpose: the roles are independent and one of them will m
 | `--grad-promo-badge` | `linear-gradient(to right, rgba(255,140,0,0.15), rgba(255,69,0,0.15))` | `1:3310`, `1:3322` | hero promo badge |
 | `--grad-flag-active` | `linear-gradient(118.99639858552104deg, #1E40AF 5.5841%, #3B82F6 99.924%)` | `1:5970` | the selected language flag ring in the footer |
 | `--grad-nav-plate-stroke` | `linear-gradient(to top, transparent, #FFFFFF)`, 1 px | `1:6490` (second path in the export) | a 1 px rim, opaque white along the bar's top edge, fully transparent by its bottom edge. Follows the notch too |
+
+`--icon-menu-row` **was `#7FB4F2`** until the eight row icons were finally exported. That value was
+not a bad sample — it is exactly what the design renders, and it is exactly what the app still
+renders. It was the *composite*, not the paint: seven of the eight glyphs declare `fill="#1677E8"`
+inside a group at `opacity="0.5"`, and `#1677E8` at 50% over the row fill `#E8F1FC` is `#7FB4F2` in
+all three channels, to the byte. The pixel pass sampled the result of a blend and recorded it as the
+source. The eighth, REFERRAL (`1:6911`), carries no opacity group and declares `fill="#7FB4F2"`
+outright — the same 50% pre-composited by hand in Figma, which is why the two disagree at all.
+
+So the token now holds the paint and the component holds the 0.5. Nothing about the rendered colour
+changed. What changed is that the token is now a value that survives being put on a different
+background, which `#7FB4F2` was not.
+
+The same export pass corrects `24-gap-menu-type.md` §5, which recorded `opacity: 0.5` on CASINO and
+PROMOTIONS only and "the other 6 row icons are full opacity". Seven of the eight declare it; the
+eighth has it baked into its fill. There is no dim/bright distinction between the rows.
+
+The Terms document icon (`1:6962`) is a third case: `stroke="#7FB4F2"` *and* a group at
+`opacity="0.5"`, i.e. the row-icon blue through two 50% steps. It has no token of its own and is
+drawn as `--icon-menu-row` at `opacity: 0.25`, which lands within 3/255 per channel of the declared
+composite (`#BDD6F6` against `#BAD5F6`) — the residual is the difference between the row fill and
+the panel behind it. A dedicated token would be exact; one icon did not seem to earn one.
+
+The chevron `weui:arrow-filled` (`1:6866`) declares `fill="#626A7A"`, confirming `--icon-chevron`
+exactly as the pixel pass read it. That one needed no correction.
 
 The four carousel-indicator hexes are stock Tailwind values (blue-900, blue-500, orange-500,
 orange-200) and appear as a set in two unrelated places — `1:3330` (casino hero, right-aligned) and

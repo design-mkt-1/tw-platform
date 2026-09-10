@@ -86,6 +86,44 @@ export type SectionIconName = keyof typeof SECTION_ICONS
 /** The dashed rule between a section title and its right-hand control. */
 export const SECTION_DIVIDER = withBase('/images/icons/section-divider.svg')
 
+/* --- menu panel ----------------------------------------------------------- */
+
+/**
+ * The eight jackpot-menu row glyphs, the Terms document icon and the row chevron.
+ *
+ * Downloaded one node at a time. `download_assets` caps a subtree at 20 SVG fragments and its
+ * URLs carry no node id, so a single call on the whole panel returns an unattributable pile —
+ * the CASINO slot machine alone is 9 fragments and 2 luminance masks. One call per icon costs
+ * ten calls and makes attribution free.
+ *
+ * Every one arrived with the whole 390px panel behind the glyph: the `#F4F6FA` sidebar, its
+ * `#D8DDE7` right border and the `#E8F1FC` row pill. The viewBox hides them, so an `<img>` looks
+ * right — but MenuPanel paints these as CSS masks, and an opaque rect covering the box masks to
+ * a solid square, not to an icon. scripts/clean-svg.mjs cannot reach that furniture: it is
+ * `<path>`s rather than `<rect>`s, sitting 12..338px outside a 15px box, inside the script's
+ * 1000px threshold. It was stripped by hand, along with the `opacity="0.5"` seven of the eight
+ * carry — a mask reads group opacity as coverage, so the file must supply shape and nothing else.
+ *
+ * `chevronDown` is exported but NOT drawn. The design gives SPORT, CASINO and PAYMENTS a
+ * collapsed `weui:arrow-filled` and contains no expanded state for any of them, so MenuPanel
+ * ships the rows as links with no chevron (its own comment explains why). The file is kept
+ * because re-exporting it costs a Figma call and the decision may be revisited.
+ */
+export const MENU_ICONS = {
+  sport: withBase('/images/menu/row-sport.svg'),
+  casino: withBase('/images/menu/row-casino.svg'),
+  referral: withBase('/images/menu/row-referral.svg'),
+  bonuses: withBase('/images/menu/row-bonuses.svg'),
+  promotions: withBase('/images/menu/row-promotions.svg'),
+  cashback: withBase('/images/menu/row-cashback.svg'),
+  payments: withBase('/images/menu/row-payments.svg'),
+  profile: withBase('/images/menu/row-profile.svg'),
+  terms: withBase('/images/menu/terms-document.svg'),
+  chevronDown: withBase('/images/menu/chevron-down.svg'),
+} as const
+
+export type MenuIconName = keyof typeof MENU_ICONS
+
 /* --- artwork -------------------------------------------------------------- */
 
 /**

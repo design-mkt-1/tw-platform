@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/primitives/Button'
 import { Icon } from '@/components/primitives/Icon'
 import { Sheet } from '@/components/primitives/Sheet'
-import { LANGUAGE_FLAGS, LOGO } from '@/lib/assets'
+import { LANGUAGE_FLAGS, LOGO, MENU_ICONS, type MenuIconName } from '@/lib/assets'
 import { USER } from '@/lib/data'
 import { useAppStore } from '@/store/useAppStore'
 
@@ -33,65 +33,25 @@ import { useAppStore } from '@/store/useAppStore'
  */
 
 /* --- glyphs ---------------------------------------------------------------- *
- * PLACEHOLDERS. The design's 18 menu assets (soccer-ball, slots, human, bonuses, promotions,
- * vip crown, bank, profile, the copy icon, the avatar user, the doc and the two contact icons)
- * were never exported: their Figma URLs are listed in the inventory's 24-gap-menu-type.md §7
- * and expire 7 days from 2026-09-10, and src/lib/assets.ts — which is the only place an asset
- * path may be declared, and is owned by nobody in this run — carries no menu entry at all.
- * These are drawn inline so the panel is not eight empty rows, and they take their colour from
- * `currentColor` so swapping in the real exports changes markup only, never a colour.
- * The UK flag is NOT a placeholder: it is the footer's own asset, reused.
+ * STILL PLACEHOLDERS: the avatar user (1:6828), the copy icon (1:6844), the close x (1:6822),
+ * the "More" arrow (1:6850) and the two contact icons. Those six were not exported — their
+ * Figma URLs are listed in the inventory's 24-gap-menu-type.md §7 and expire 7 days from
+ * 2026-09-10. They are drawn inline so the panel is not full of holes, and they take their
+ * colour from `currentColor` so swapping in the real exports changes markup only, never a
+ * colour.
+ *
+ * The eight row icons and the Terms document icon are NO LONGER placeholders — they are the
+ * real exports, in MENU_ICONS, painted as masks (see `maskStyle`). The UK flag never was one:
+ * it is the footer's own asset, reused.
+ *
+ * `profile` stays in this list because it draws the 24px AVATAR glyph, which is node 1:6828 and
+ * a different asset from the 15px PROFILE row icon that now comes out of MENU_ICONS.
  */
 const GLYPHS = {
-  sport: (
-    <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="m12 7 4.6 3.3-1.8 5.4H9.2L7.4 10.3z" />
-    </>
-  ),
-  casino: (
-    <>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M9 5v14M15 5v14" />
-    </>
-  ),
-  referral: (
-    <>
-      <circle cx="9" cy="8" r="3" />
-      <path d="M3 19c0-3.3 2.7-5 6-5s6 1.7 6 5" />
-      <path d="M16 6.5a3 3 0 0 1 0 5.6M17 14.5c2.4.6 4 2.2 4 4.5" />
-    </>
-  ),
-  bonuses: (
-    <>
-      <rect x="3" y="9" width="18" height="11" rx="2" />
-      <path d="M3 13h18M12 9v11" />
-      <path d="M12 9C10 9 8 8.5 8 6.8A2.3 2.3 0 0 1 12 5.6a2.3 2.3 0 0 1 4 1.2C16 8.5 14 9 12 9Z" />
-    </>
-  ),
-  promotions: (
-    <>
-      <path d="M20.5 12 12 20.5 3.5 12 12 3.5z" />
-      <path d="m14.8 9.2-5.6 5.6M9.4 9.4h.01M14.6 14.6h.01" />
-    </>
-  ),
-  cashback: <path d="M4 18h16M4 18 3 8l5 3.5L12 5l4 6.5L21 8l-1 10" />,
-  payments: (
-    <>
-      <rect x="3" y="6" width="18" height="13" rx="2.5" />
-      <path d="M3 10.5h18M16.5 14.8h.01" />
-    </>
-  ),
   profile: (
     <>
       <circle cx="12" cy="8" r="3.2" />
       <path d="M5 19.5c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5" />
-    </>
-  ),
-  terms: (
-    <>
-      <rect x="5" y="3" width="14" height="18" rx="2" />
-      <path d="M9 8h6M9 12h6M9 16h4" />
     </>
   ),
   headset: (
@@ -133,6 +93,28 @@ function Glyph({ name, size, className }: { name: GlyphName; size: number; class
   )
 }
 
+/**
+ * Only the shape comes from the file; `background-color` paints it.
+ *
+ * The exports have `#1677E8` baked in, so an `<img>` could never follow a token, a state or a
+ * theme — and this panel needs it to, because the same blue is the row icons at 50% and the
+ * Terms doc at 25%. SportFilterRow.tsx solves the identical problem the identical way for the
+ * sport pills, where the icons ship pre-coloured for the state they were exported from. Two
+ * copies of ten lines; worth lifting into src/lib the moment a third component needs it.
+ */
+function maskStyle(src: string) {
+  return {
+    maskImage: `url(${src})`,
+    WebkitMaskImage: `url(${src})`,
+    maskSize: 'contain',
+    WebkitMaskSize: 'contain',
+    maskRepeat: 'no-repeat',
+    WebkitMaskRepeat: 'no-repeat',
+    maskPosition: 'center',
+    WebkitMaskPosition: 'center',
+  } as const
+}
+
 /* --- rows ------------------------------------------------------------------ *
  * Source strings are the Figma layer names, character for character — `sport`, `Casino`,
  * `MY Bonuses`, `promotions`. Every row carries Figma text-case UPPER, i.e. a transform, while
@@ -149,20 +131,18 @@ function Glyph({ name, size, className }: { name: GlyphName; size: number; class
 interface MenuRow {
   label: string
   href: string
-  glyph: GlyphName
-  /** 1:6871 and 1:6922 declare `opacity: 0.5`; the other six row icons are full opacity. */
-  dim?: boolean
+  icon: MenuIconName
 }
 
 const ROWS: MenuRow[] = [
-  { label: 'sport', href: '/sport', glyph: 'sport' },
-  { label: 'Casino', href: '/', glyph: 'casino', dim: true },
-  { label: 'Referral program', href: '/referral', glyph: 'referral' },
-  { label: 'MY Bonuses', href: '/bonuses', glyph: 'bonuses' },
-  { label: 'promotions', href: '/promotions', glyph: 'promotions', dim: true },
-  { label: 'cashback', href: '/cashback', glyph: 'cashback' },
-  { label: 'payments', href: '/payments', glyph: 'payments' },
-  { label: 'Profile', href: '/profile', glyph: 'profile' },
+  { label: 'sport', href: '/sport', icon: 'sport' },
+  { label: 'Casino', href: '/', icon: 'casino' },
+  { label: 'Referral program', href: '/referral', icon: 'referral' },
+  { label: 'MY Bonuses', href: '/bonuses', icon: 'bonuses' },
+  { label: 'promotions', href: '/promotions', icon: 'promotions' },
+  { label: 'cashback', href: '/cashback', icon: 'cashback' },
+  { label: 'payments', href: '/payments', icon: 'payments' },
+  { label: 'Profile', href: '/profile', icon: 'profile' },
 ]
 
 /** The only two routes this demo has; every other href in the design is dead by design. */
@@ -381,7 +361,13 @@ function MenuBody({ onNavigate, prelogin }: { onNavigate: () => void; prelogin: 
 
 /**
  * One menu row — 1:6857 and its seven siblings. 44 tall, radius 8, #E8F1FC, px 12, gap 10,
- * a 15x15 icon in #7FB4F2 and a Roboto Medium 13/20 label rendered ALL CAPS.
+ * a 15x15 icon and a Roboto Medium 13/20 label rendered ALL CAPS.
+ *
+ * **All eight icons are one colour at one opacity**, which the export pass settled and the
+ * earlier inventory had wrong. Seven declare `fill="#1677E8"` inside a group at `opacity="0.5"`;
+ * REFERRAL declares `fill="#7FB4F2"` with no opacity group, which is that same blue already
+ * blended 50% into the row fill. There is no dim row and no bright row. `--icon-menu-row` is now
+ * the paint `#1677E8` and the 0.5 lives here — see docs/tokens.md §3.3.
  *
  * All eight are built at 44. Rows 1, 2 and 7 declare a 46px child inside a 44px container that
  * Figma does not clip, so the child overflows by 2px — confirmed as a file bug, not a design.
@@ -399,10 +385,10 @@ function Row({ row, onNavigate }: { row: MenuRow; onNavigate: () => void }) {
       onClick={onNavigate}
       className="flex h-11 items-center gap-[10px] rounded-md bg-tint px-3 transition-transform duration-100 active:scale-[0.99] motion-reduce:active:scale-100"
     >
-      <Glyph
-        name={row.glyph}
-        size={15}
-        className={`text-icon-menu-row ${row.dim ? 'opacity-50' : ''}`}
+      <span
+        aria-hidden="true"
+        style={maskStyle(MENU_ICONS[row.icon])}
+        className="h-[15px] w-[15px] shrink-0 bg-icon-menu-row opacity-50"
       />
       <span className="font-roboto text-menu-row font-medium uppercase text-primary">
         {row.label}
@@ -421,14 +407,25 @@ function Row({ row, onNavigate }: { row: MenuRow; onNavigate: () => void }) {
 function TermsAndLanguageRow({ onNavigate }: { onNavigate: () => void }) {
   return (
     <div className="flex h-[46px] items-center px-3">
-      {/* 1:6962 declares opacity 0.5 on the doc icon, the same as two of the row icons. */}
       <Link
         href="/terms"
         prefetch={false}
         onClick={onNavigate}
         className="flex flex-1 items-center justify-center gap-[10px] text-primary"
       >
-        <Glyph name="terms" size={22} className="opacity-50" />
+        {/*
+          1:6962 is the row-icon blue through TWO 50% steps: `stroke="#7FB4F2"`, which is
+          `--icon-menu-row` already blended 50% into the row fill, inside a group at
+          `opacity="0.5"`. It has no token of its own, so it is drawn as the paint at 0.25.
+          That lands on #BDD6F6 against the design's #BAD5F6 — 3/255 on one channel, the
+          difference between the #E8F1FC the blend was baked against and the #F4F6FA behind
+          this row. A dedicated token would be exact; one icon did not earn one.
+        */}
+        <span
+          aria-hidden="true"
+          style={maskStyle(MENU_ICONS.terms)}
+          className="h-[22px] w-[22px] shrink-0 bg-icon-menu-row opacity-25"
+        />
         <span className="font-roboto text-menu-row font-medium uppercase">Terms of Use</span>
       </Link>
 
