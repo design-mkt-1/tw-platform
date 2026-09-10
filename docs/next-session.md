@@ -3,9 +3,12 @@
 Rewritten 2026-09-10, at the end of the session that swept the build in a browser and fixed what it
 found. The previous version of this file was written earlier the same day, before any of that.
 
-> **Next up: [`plan-fluid-phones.md`](plan-fluid-phones.md).** Approved by the owner on 2026-09-10,
-> not started: fluid layout on every phone width (the 390 cap leaves 25px empty each side on a
-> 440 iPhone), plus eleven owner decisions from the audit. It is self-contained.
+> **Done: [`plan-fluid-phones.md`](plan-fluid-phones.md)** (2026-09-10). The page is fluid on every
+> phone up to `--page-max: 480px`, the hero has five slides with bars that follow the scroll, Back
+> closes the menu and the search, and the audit's owner decisions are built. The result and what
+> is still open are at the end of [`ux-audit-2026-09-10.md`](ux-audit-2026-09-10.md). **Still
+> open:** the nav notch widens above 390 (the ring round the Меню button goes from about 7px a
+> side to 12 at 440 and 16 at 480) and waits on the owner's pick.
 >
 > **Also read [`ux-audit-2026-09-10.md`](ux-audit-2026-09-10.md).** A full UI/UX audit ran later on
 > 2026-09-10, from the code and in Chrome at 360, 375, 390, 430 and desktop. It made the layout

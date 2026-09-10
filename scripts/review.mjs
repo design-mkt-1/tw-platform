@@ -34,11 +34,13 @@ mkdirSync(OUT, { recursive: true })
 const SCREENS = JSON.parse(readFileSync(new URL('../src/data/screens.json', import.meta.url), 'utf8'))
 
 /*
- * The one width the design has. The Figma file contains no desktop frame, no tablet frame and no
- * breakpoint, so every shot is 390 wide. The predecessor's list was two thirds desktop; carrying
- * that over would have produced ten captures of a layout that was never designed.
+ * 390 is the one width the design draws: the Figma file has no desktop frame, no tablet frame and
+ * no breakpoint. 440 is the widest current phone (iPhone Pro Max), and the page is fluid up to
+ * --page-max (globals.css). Until 2026-09-10 the guards ran at 390 only, which is how a page
+ * capped at a centred 390 column shipped to a 440 phone with 25px of empty page on each side.
+ * Every guard runs at both widths; 440 shots carry a `-440` suffix.
  */
-const WIDTH = 390
+const WIDTHS = [390, 440]
 const HEIGHT = 844
 
 const browser = await chromium.launch({ channel: 'chrome' })
@@ -515,8 +517,8 @@ async function shot(name, screen, { width, height, url, steps, full = false }) {
       if (full) await settleLazyImages(page)
       await page.screenshot({ path: `${OUT}/${name}.${suffix}.png`, fullPage: full })
       entry.wrongFrame = await scanCopy(page, screen)
-      // Horizontal overflow is a mobile bug, so only the 390 states are measured for it.
-      if (width <= 390) {
+      // Every width review.mjs shoots is a phone width, so every one is measured.
+      {
         Object.assign(
           entry,
           await page.evaluate(() => ({
@@ -554,13 +556,15 @@ async function shot(name, screen, { width, height, url, steps, full = false }) {
  * before those parameters existed, a capture called "the balance panel" was only ever a capture
  * of the default page.
  */
-for (const screen of SCREENS.filter((s) => s.path)) {
-  await shot(screen.id, screen, {
-    width: WIDTH,
-    height: HEIGHT,
-    full: screen.fullPage,
-    url: ROOT + screen.path,
-  })
+for (const width of WIDTHS) {
+  for (const screen of SCREENS.filter((s) => s.path)) {
+    await shot(width === 390 ? screen.id : `${screen.id}-${width}`, screen, {
+      width,
+      height: HEIGHT,
+      full: screen.fullPage,
+      url: ROOT + screen.path,
+    })
+  }
 }
 
 await browser.close()

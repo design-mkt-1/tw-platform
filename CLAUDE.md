@@ -4,9 +4,14 @@ Top-Win: a mobile demo of a casino plus sportsbook, built from Figma file
 `s2CqwGqe0O0FcALhBNlTRe`, page `0:1 "New Platform"`. Next.js 15 + Tailwind v3, static export to
 `out/`, Vitest for tests. Ukrainian copy, hryvnia, light theme.
 
-**Mobile only, and that is not a preference.** Every one of the design's eleven frames is 390 wide.
-There is no desktop frame, no tablet frame and no breakpoint anywhere in the file, so
-`tailwind.config.ts` declares none either. A `mobile:` variant here would be a lie.
+**Mobile only, and fluid on every phone.** Every one of the design's eleven frames is 390 wide,
+and there is no desktop frame, no tablet frame and no breakpoint anywhere in the file, so
+`tailwind.config.ts` declares none either. The page is fluid from the narrowest phone up to
+`--page-max` (480px, `src/app/globals.css`), which covers every current phone — the owner's iPhone
+is 440 — and above that it is a centred phone column. **At 390 every drawn pixel is the design's.**
+Fixed-size artwork (hero and bonus slides, tournament card) scales by container units:
+`calc(100cqw * <px> / <design width>)` resolves to the design px at 390. A desktop version is a
+later project; when it comes, `--page-max` is the one value it starts from.
 
 Jackpot is a **different project** and lives in its own repo. Nothing from it belongs here. This
 checkout carried a copy of it until 2026-09-10 because commit `5e61622` ported it in; all 211 of
@@ -327,6 +332,15 @@ Recorded so nobody re-opens them without a reason.
 | Ukrainian only. No language switcher, even though the nav component carries ua/ru/en variants | 2026-09-10 |
 | Every finished piece is pushed to `main` as it lands, rather than held for a complete build | 2026-09-10 |
 | **This is a demo of how the Figma design looks on a live site, not a working product.** Effort goes on the front end and on appearance. Not everything has to function. Build what the Figma file draws; anything it does not draw is built only when the owner asks, or after asking and being answered | 2026-09-12 |
+| **Fluid on every phone**, capped at `--page-max: 480px`; desktop comes later, after mobile is right | 2026-09-10 |
+| Hero: 5 slides (repeating the one offer is fine), indicator bars follow the scroll | 2026-09-10 |
+| `Всі (120)` keeps the literal; `Лайв` stays (not `Лайф`); `Купон` stays inert; `Drop & Wins` stays as dealt | 2026-09-10 |
+| Countdown starts correct (no jump from build time) and stays live | 2026-09-10 |
+| Phone Back closes an open menu / search instead of leaving the site | 2026-09-10 |
+| Copy-ID: the icon becomes a check for 1.5s, no new text. The check glyph is not in the design; it is drawn to match `copy.svg` | 2026-09-10 |
+| Menu `More` and `ENGLISH` are inert controls | 2026-09-10 |
+| Small type: 12px only for the information-bearing ones — kickoff time, countdown, sport filter counts | 2026-09-10 |
+| Search field gets a blue border on focus, in every search frame | 2026-09-10 |
 | **Inert controls look inert**: every control with `aria-disabled="true"` renders at 50% opacity with a `not-allowed` cursor, restored to full on keyboard focus. One rule in `globals.css`, keyed on the attribute. An exception to "colours ship unchanged" | 2026-09-10 |
 
 ## Bug fixes
