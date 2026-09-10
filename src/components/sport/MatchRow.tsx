@@ -57,12 +57,16 @@ export function MatchRow({ match }: { match: Match }) {
            * styled in two pieces without splitting it, so `channel` carries the whole string and
            * this prints it unaltered.
            *
+           * Shipped at 12 (`text-xs`) like the kickoff beside it, owner's decision of 2026-09-10
+           * (option B in docs/mockups/fluid-leftovers): at 10 it read as a different line. The
+           * `1 / Н / 2` labels over the odds stay at the design's 10.
+           *
            * Presence is the switch, not `match.isLive`. The design puts the marker on all four of
            * its rows and draws no non-marked row at all (07-sport.md §14), so nothing in the file
            * ties it to a live flag; a row without the marker is simply a row with no channel.
            */}
           {match.channel ? (
-            <span className="whitespace-nowrap font-roboto text-6xs font-bold italic text-hot">
+            <span className="whitespace-nowrap font-roboto text-xs font-bold italic text-hot">
               {match.channel}
             </span>
           ) : null}

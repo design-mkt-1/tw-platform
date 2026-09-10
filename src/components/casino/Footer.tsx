@@ -145,7 +145,10 @@ export function Footer() {
         </ul>
       </section>
 
-      {/* Block 2 — partners, 1:5697. Three per row, the seventh centring alone on row three. */}
+      {/* Block 2 — partners, 1:5697. Three per row, the seventh centring alone on row three.
+          `max-w-[400px]` holds that at every width: at 480 four logos fit on row two (438 wide) and
+          the block regrouped as 3 + 4 (owner's decision of 2026-09-10, option A in
+          docs/mockups/fluid-leftovers). Row one's three need 342. */}
       <section
         aria-labelledby="footer-partners-heading"
         className="flex w-full flex-col items-center gap-6 px-2"
@@ -157,7 +160,7 @@ export function Footer() {
           {PARTNERS_HEADING}
         </h2>
 
-        <ul className="flex w-full flex-wrap items-center justify-center gap-4">
+        <ul className="flex w-full max-w-[400px] flex-wrap items-center justify-center gap-4">
           {FOOTER.partners.map((name) => {
             const logo = PARTNERS[name]
             return (

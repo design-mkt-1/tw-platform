@@ -342,6 +342,7 @@ Recorded so nobody re-opens them without a reason.
 | Small type: 12px only for the information-bearing ones — kickoff time, countdown, sport filter counts | 2026-09-10 |
 | Search field gets a blue border on focus, in every search frame | 2026-09-10 |
 | **The nav notch keeps its shape at every width.** Only the plate's flat runs grow or shrink, so the ring round Меню stays 7.7 + 6.7px (option A of `docs/mockups/nav-notch/`; `src/lib/navPlate.ts`) | 2026-09-10 |
+| Above 390: ten league tiles so the strip always runs off the edge; `● EP` at 12px (`1 / Н / 2` stay 10); provider cells share the row when the five fit; footer partners always 3 + 3 + 1 (`docs/mockups/fluid-leftovers/`) | 2026-09-10 |
 | **Inert controls look inert**: every control with `aria-disabled="true"` renders at 50% opacity with a `not-allowed` cursor, restored to full on keyboard focus. One rule in `globals.css`, keyed on the attribute. An exception to "colours ship unchanged" | 2026-09-10 |
 
 ## Bug fixes

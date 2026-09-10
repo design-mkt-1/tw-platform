@@ -8,9 +8,9 @@ found. The previous version of this file was written earlier the same day, befor
 > closes the menu and the search, and the audit's owner decisions are built. The result and what
 > is still open are at the end of [`ux-audit-2026-09-10.md`](ux-audit-2026-09-10.md). The nav
 > notch is settled: option A in `docs/mockups/nav-notch/`, the notch keeps its shape at every
-> width (`src/lib/navPlate.ts`). **Still open,** each the owner's call: the `/sport` league strip ends at 434 and leaves 46px empty at
-> 480; `● EP` and `1 / Н / 2` in `MatchRow` are still 10px beside the 12px kickoff; the search
-> provider row does not fill 440/480; footer partners wrap 3+4 at 480. Not done: the audit report
+> width (`src/lib/navPlate.ts`). The four small
+> leftovers are settled too (`docs/mockups/fluid-leftovers/`, option picked for each): ten league
+> tiles, `● EP` at 12px, provider cells that share the row, partners held at 3 + 3 + 1. Not done: the audit report
 > artifact (https://claude.ai/code/artifact/1b83de4c-e680-4ed3-bffe-96209ea13310) is not updated;
 > focus-to-`<main>` after a menu row to a dead route (PROFILE) is unverified; a reload with
 > `?panel=` leaves one Back that does nothing visible (`ponytail:` note in `useAppStore.ts`).

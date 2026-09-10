@@ -12,15 +12,23 @@ import { CHEVRON_RIGHT, LEAGUE_BADGE, SPORT_ICONS } from '@/lib/assets'
  * must differ" inference was wrong. **Varied league logos are not obtainable from this Figma
  * file**; they have to be sourced by hand or the strip has to come from a different design.
  *
- * The strip overflows on purpose: content ends at x 434 against a 390 viewport, so 44px sits off
+ * The strip overflows on purpose: content ends at x 430 against a 390 viewport, so 40px sits off
  * the right edge with no wrap container.
  *
  * Header width is 360, not the usual 358 — measured at (16,0) with the chip's right edge landing
  * on 376. That is where the 14px right inset comes from.
  */
 
-/** 1:6090 and its seven siblings: 44x44 tile, radius 10, a 26x26 logo inset 9px all round. */
-const TILE_COUNT = 8
+/**
+ * 1:6090 and its seven siblings: 44x44 tile, radius 10, a 26x26 logo inset 9px all round.
+ *
+ * Ten, not the design's eight (owner's decision of 2026-09-10, option A in
+ * docs/mockups/fluid-leftovers). With eight the strip ran off the edge only up to 430 and at 480
+ * stopped 50px short of it; ten keep it running off the edge at every width up to --page-max
+ * (content ends at 526), and the two extra tiles sit past the edge at 390, so nothing visible there
+ * changes.
+ */
+const TILE_COUNT = 10
 
 export function LeagueStrip() {
   return (

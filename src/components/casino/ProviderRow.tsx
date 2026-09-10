@@ -18,6 +18,10 @@ import type { Provider } from '@/lib/types'
  * declares the track `w-[420px]` with five 80px children and no padding — an over-declared fixed
  * width, so the width here is content-driven and the 420 is dropped.
  *
+ * Each cell is `flex: 1 0 80px`: 80 wherever the five overflow, as at 390, and an equal share of
+ * the row wherever they fit — at 480 the search panel's row had 48px of nothing on the right
+ * (owner's decision of 2026-09-10, option A in docs/mockups/fluid-leftovers). The circle stays 72.
+ *
  * `tabIndex={0}` is not decoration: a scroll container that only responds to touch and mouse is
  * an axe `scrollable-region-focusable` violation at serious level, which fails
  * `scripts/a11y.mjs` and therefore the deploy.
@@ -28,7 +32,7 @@ export function ProviderRow({ providers }: { providers: Provider[] }) {
       {providers.map((provider) => (
         <li
           key={provider.id}
-          className="flex h-[96px] w-[80px] shrink-0 items-center justify-center"
+          className="flex h-[96px] flex-[1_0_80px] items-center justify-center"
         >
           <span className="flex size-[72px] shrink-0 items-center justify-center rounded-full bg-surface shadow-provider">
             {/* The logo is the brand name, so it carries it as text rather than being decorative. */}
