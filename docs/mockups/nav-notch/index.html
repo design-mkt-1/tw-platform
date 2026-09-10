@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Top-Win — bara de jos peste 390</title>
+<style>
+  @font-face { font-family: Roboto; font-weight: 100 900; src: url(roboto-cyr.woff2) format("woff2"); }
+  :root {
+    --bg-page: #f7faff; --navy: #191970; --on-dark: #ffffff; --nav-active: #ffb095; --hot: #f45b24;
+    --ink: #191970; --muted: #5b5f86; --line: #dfe5f2; --ok: #0a7a3d;
+  }
+  * { box-sizing: border-box; }
+  html { scrollbar-width: none; }
+  body { margin: 0; background: var(--bg-page); color: var(--ink); font: 15px/1.45 system-ui, sans-serif; }
+  main { max-width: 520px; margin: 0 auto; padding-block: 20px 60px; padding-inline: 16px; }
+  h1 { font-size: 21px; margin: 0 0 8px; line-height: 1.25; }
+  h2 { font-size: 18px; margin: 0; }
+  ol { margin: 8px 0 0; padding-left: 20px; color: var(--muted); }
+  section { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tag { font: 700 11px/1 system-ui; letter-spacing: .04em; padding: 5px 7px; border-radius: 6px; background: #e7ebf6; color: var(--navy); }
+  .tag.rec { background: var(--ok); color: #fff; }
+  .why { margin: 6px 0 10px; }
+  .gain { margin: 10px 0 0; color: var(--muted); }
+  .w { font: 600 12px/1 system-ui; color: var(--muted); margin: 14px 0 6px; display: flex; justify-content: space-between; gap: 8px; }
+  .m { font: 12px/1.3 ui-monospace, Consolas, monospace; color: var(--ink); margin-top: 4px; }
+  .fit { overflow: hidden; border-radius: 10px; }
+  .stage { position: relative; height: 170px; background: var(--bg-page); overflow: hidden; transform-origin: 0 0; }
+  .tiles { position: absolute; left: 16px; right: 16px; top: 8px; display: flex; gap: 8px; }
+  .tiles img { flex: 1; min-width: 0; aspect-ratio: 114 / 148; border-radius: 15px; object-fit: cover; display: block; }
+  /* Full-bleed, so a 440 render is 1:1 on a 440 phone. */
+  [data-mode], .bleed { margin-inline: -16px; }
+  [data-mode] .w, [data-mode] .m, .bleed .w { padding-inline: 16px; }
+  .fit, img.shot { border-radius: 0; }
+  img.shot { display: block; width: 100%; height: auto; border-radius: 10px; }
+
+  /* The nav, rebuilt from BottomNavBar.tsx with its own numbers. */
+  .nav { position: absolute; bottom: 0; height: 111px; font-family: Roboto, sans-serif; }
+  .plate { position: absolute; left: -0.5px; top: 42.5px; height: 69px; overflow: visible; }
+  .groups { position: absolute; left: 7px; right: 7px; top: 55px; height: 41px; display: flex; justify-content: space-between; }
+  .grp { display: flex; width: calc((100% - 96px) / 2); }
+  .tab { position: relative; width: 50%; height: 41px; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--on-dark); }
+  .tab.on { color: var(--nav-active); }
+  .glyph { height: 24px; background: currentColor; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
+  .lbl { font-size: 12px; line-height: 14.143px; font-weight: 500; white-space: nowrap; }
+  .dot { position: absolute; left: calc(50% - 2px); top: 44px; width: 4px; height: 4px; border-radius: 50%; background: var(--hot); }
+  .btn { position: absolute; top: 3px; width: 63.653px; height: 93px; }
+  .glow { position: absolute; left: -30.12px; top: -0.83px; width: 123.891px; height: 131.535px; background: url(img/nav-center-button.svg) 0 0 / 100% 100% no-repeat; }
+  .burger { position: absolute; left: 21.72px; top: 20px; width: 20px; height: 18px; }
+  .btn .lbl { position: absolute; left: 0; top: 78px; width: 100%; text-align: center; color: var(--on-dark); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Bara de jos pe telefoane mai late de 390</h1>
+  <p>Butonul portocaliu <b>Меню</b> stă într-o scobitură din bară. În Figma, între buton și marginea scobiturii rămâne un inel subțire de ~7px. Acum bara se întinde cu telefonul, scobitura se lărgește odată cu ea, iar butonul rămâne la fel de mare. Așa că inelul se lărgește și el.</p>
+  <ol>
+    <li><b>ACUM</b>: pozele de pe site-ul publicat, la 390, 440 și 480.</li>
+    <li><b>A, B, C</b>: trei feluri de a o rezolva, desenate cu piesele reale ale barei.</li>
+    <li>Fiecare e arătată la 390, 440 (iPhone-ul tău) și 480. Lățimile care nu încap pe ecran sunt micșorate, iar procentul e scris lângă ele.</li>
+    <li>Alegi în chat, apoi scriu codul.</li>
+  </ol>
+
+  <section>
+    <div class="head"><span class="tag">ACUM</span><h2>Bara se întinde toată</h2></div>
+    <p class="why">La 390 inelul are 7px, exact ca în design. La 480 ajunge la 16px, iar scobitura arată largă și goală.</p>
+    <div class="bleed">
+      <div class="w"><span>390 · poză reală</span></div><img class="shot" src="img/acum-390.png" alt="Bara de jos la 390, pe site" style="max-width:390px">
+      <div class="w"><span>440 · poză reală</span></div><img class="shot" src="img/acum-440.png" alt="Bara de jos la 440, pe site" style="max-width:440px">
+      <div class="w"><span>480 · poză reală</span></div><img class="shot" src="img/acum-480.png" alt="Bara de jos la 480, pe site" style="max-width:480px">
+    </div>
+    <div data-mode="stretch"></div>
+  </section>
+
+  <section>
+    <div class="head"><span class="tag">A</span><span class="tag rec">RECOMANDAT</span><h2>Scobitura rămâne fixă</h2></div>
+    <p class="why">Se lungesc doar părțile drepte ale barei. Scobitura păstrează forma din Figma, deci inelul rămâne de 7px pe orice telefon.</p>
+    <div data-mode="fixed"></div>
+    <p class="gain"><b>Câștigi:</b> la orice lățime, bara arată ca în design. Înălțimea, butonul și textele rămân neschimbate. <b>Pierzi:</b> nimic vizibil. În cod, bara se desenează din trei bucăți în loc de un singur desen întins.</p>
+  </section>
+
+  <section>
+    <div class="head"><span class="tag">B</span><h2>Toată bara crește proporțional</h2></div>
+    <p class="why">Bara se mărește ca o poză: butonul, iconițele, textele și înălțimea cresc toate cu același procent.</p>
+    <div data-mode="scale"></div>
+    <p class="gain"><b>Câștigi:</b> proporțiile din design, identice la orice lățime. <b>Pierzi:</b> bara devine mai înaltă și acoperă mai mult din pagină, iar textele din ea ies mai mari decât restul paginii, care nu crește așa.</p>
+  </section>
+
+  <section>
+    <div class="head"><span class="tag">C</span><h2>Bara rămâne de 390, pe mijloc</h2></div>
+    <p class="why">Pagina crește, bara nu. Peste 390 rămâne fâșie liberă în stânga și în dreapta ei.</p>
+    <div data-mode="cap"></div>
+    <p class="gain"><b>Câștigi:</b> exact bara din Figma, pixel cu pixel, fără niciun desen nou. <b>Pierzi:</b> la 480 bara plutește cu 45px goi pe fiecare parte și nu mai ajunge până la marginile ecranului.</p>
+  </section>
+
+  <p class="gain" style="margin-top:28px">Cifrele de sub fiecare desen sunt măsurate în browserul tău, pe desenul randat: butonul prin poziția lui reală, iar marginea scobiturii din forma barei la lățimea respectivă. Fundalul arată trei cartonașe reale de joc din aplicație.</p>
+</main>
+
+<script>
+// The plate path from public/images/nav/nav-bar-plate.svg (391x69 box, 0.5px stroke bleed).
+// Parts: L = left flat part, N = notch, R = right flat part and corners.
+const P = [
+  ['M',[378,.5],'R'],['C',[384.903,.500086,390.5,6.09649,390.5,13],'R'],['V',[56.5]],
+  ['C',[390.5,63.1274,385.127,68.5,378.5,68.5],'R'],['H',[12.5],'L'],
+  ['C',[5.87258,68.5,.5,63.1274,.5,56.5],'L'],['V',[13]],['C',[.5,6.09644,6.09644,.5,13,.5],'L'],
+  ['H',[148.809],'N'],['C',[151.759,.5,154.606,1.58671,156.805,3.55258],'N'],['L',[177.243,21.8184],'N'],
+  ['C',[183.055,27.0128,192.024,27.0576,197.893,21.9219],'N'],['L',[218.977,3.46981],'N'],
+  ['C',[221.164,1.5553,223.973,.5,226.88,.5],'N'],['H',[378],'R'],['Z',[]],
+]
+const NOTCH_L = 148.809, NOTCH_R = 226.88
+
+// W = frame width. mode 'stretch': every x scales (today). 'fixed': notch keeps its shape and rides
+// the same 48.169% line the button already uses; corners move with the right edge.
+function platePath(W, mode) {
+  const sx = (W + 1) / 391, dx = 0.48169 * (W - 390), dr = W - 390
+  const mx = (x, part) => mode === 'stretch' ? x * sx : part === 'N' ? x + dx : part === 'R' ? x + dr : x
+  return P.map(([cmd, a, part]) => {
+    if (cmd === 'V' || cmd === 'Z') return cmd + a.join(' ')
+    const xs = cmd === 'H' ? a.map(x => mx(x, part)) : a.map((v, i) => i % 2 ? v : mx(v, part))
+    return cmd + xs.map(n => +n.toFixed(3)).join(' ')
+  }).join('')
+}
+function notchEdges(W, mode) {
+  if (mode === 'stretch') { const s = (W + 1) / 391; return [NOTCH_L * s - .5, NOTCH_R * s - .5] }
+  const dx = 0.48169 * (W - 390); return [NOTCH_L + dx - .5, NOTCH_R + dx - .5]
+}
+
+const TABS = [['Казіно','tab-casino',24,true],['Спорт','tab-sport',24],['Лайв казіно','tab-live-casino',19],['Промо','tab-promo',24]]
+const tab = ([label, icon, w, on]) =>
+  `<div class="tab${on ? ' on' : ''}"><span class="glyph" style="width:${w}px;-webkit-mask-image:url(img/${icon}.svg);mask-image:url(img/${icon}.svg)"></span><span class="lbl">${label}</span>${on ? '<span class="dot"></span>' : ''}</div>`
+
+let uid = 0
+function nav(W, mode) {
+  const id = 'g' + uid++
+  return `<div class="nav" style="left:0;width:${W}px">
+    <svg class="plate" width="${W + 1}" height="69" viewBox="0 0 ${W + 1} 69">
+      <defs><linearGradient id="${id}" x1="0" y1="68.5" x2="0" y2=".5" gradientUnits="userSpaceOnUse"><stop stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
+      <path d="${platePath(W, mode)}" fill="#191970" fill-opacity=".8" stroke="url(#${id})" stroke-width="1"/>
+    </svg>
+    <div class="groups"><div class="grp">${TABS.slice(0,2).map(tab).join('')}</div><div class="grp" style="justify-content:flex-end">${TABS.slice(2).map(tab).join('')}</div></div>
+    <div class="btn" style="left:calc(48.169% - 31.859px)"><span class="glow"></span><img class="burger" src="img/nav-menu-burger.svg" alt=""><span class="lbl">Меню</span></div>
+  </div>`
+}
+
+const tiles = '<div class="tiles"><img src="img/gates-of-olympus-1000.webp" alt=""><img src="img/big-bass-amazon-extreme.webp" alt=""><img src="img/yeti-quest.webp" alt=""></div>'
+
+function stage(W, mode) {
+  let inner
+  if (mode === 'scale') {
+    const k = W / 390
+    inner = `<div style="position:absolute;left:0;bottom:0;width:390px;height:111px;transform:scale(${k});transform-origin:0 100%">${nav(390, 'fixed').replace('class="nav" style="left:0', 'class="nav" style="left:0;bottom:0')}</div>`
+  } else if (mode === 'cap') {
+    inner = nav(Math.min(W, 390), 'fixed').replace('left:0', `left:${(W - Math.min(W, 390)) / 2}px`)
+  } else inner = nav(W, mode)
+  return `<div class="stage" data-w="${W}" style="width:${W}px">${tiles}${inner}</div>`
+}
+
+function measure(st, W, mode, s) {
+  const b = st.querySelector('.btn').getBoundingClientRect(), o = st.getBoundingClientRect()
+  const plate = st.querySelector('.plate').getBoundingClientRect()
+  const bl = (b.left - o.left) / s, bw = b.width / s
+  let [nl, nr] = notchEdges(W, mode === 'stretch' ? 'stretch' : 'fixed')
+  if (mode === 'scale') { const k = W / 390; [nl, nr] = notchEdges(390, 'fixed').map(x => x * k) }
+  if (mode === 'cap') { const off = (W - Math.min(W, 390)) / 2; [nl, nr] = notchEdges(Math.min(W, 390), 'fixed').map(x => x + off) }
+  const f = n => n.toFixed(1)
+  return `inel ${f(bl - nl)} + ${f(nr - bl - bw)} px · buton ${f(bw)} px lat · bară ${f((plate.height / s) - 1)} px înaltă`
+}
+
+function render() {
+  document.querySelectorAll('[data-mode]').forEach(host => {
+    const mode = host.dataset.mode
+    const avail = host.clientWidth
+    host.innerHTML = (mode === 'stretch' ? '<div class="w"><span>desenat din aceleași piese, pentru comparație</span></div>' : '') +
+      [390, 440, 480].map(W => {
+        const s = Math.min(1, avail / W)
+        return `<div class="w"><span>${W}px</span><span>${s < 1 ? 'micșorat la ' + Math.round(s * 100) + '%' : 'mărime reală'}</span></div>
+          <div class="fit" style="height:${170 * s}px">${stage(W, mode).replace('class="stage"', `class="stage" style="transform:scale(${s})"`).replace(`style="width:${W}px"`, '')}</div>
+          <div class="m" data-m></div>`
+      }).join('')
+    host.querySelectorAll('.stage').forEach((st, i) => {
+      const W = [390, 440, 480][i]; st.style.width = W + 'px'
+      const s = Math.min(1, avail / W)
+      st.parentElement.nextElementSibling.textContent = measure(st, W, mode, s)
+    })
+  })
+}
+document.fonts.ready.then(render)
+let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(render, 150) })
+</script>
+</body>
+</html>
