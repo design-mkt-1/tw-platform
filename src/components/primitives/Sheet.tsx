@@ -51,7 +51,8 @@ interface SheetProps {
    * Stop the sheet above the bottom navigation instead of covering it.
    *
    * Opt-in, because only the menu wants it. The design draws the menu with the nav bar lit and
-   * the Menu tab active beneath the panel, and the panel filling everything above it. The
+   * on top of the panel (BottomNavBar lifts itself above this sheet while the menu is open), and
+   * the panel filling everything above it. The
    * search has no design at all for its relationship to the nav, so it covers it.
    */
   clearsNavBar?: boolean
@@ -114,9 +115,11 @@ export function Sheet({ open, onClose, label, children, clearsNavBar, className 
   if (!open) return null
   if (typeof document === 'undefined') return null
 
+  // `mx-auto max-w-[390px]`: the page is a centred 390 column above 390 (globals.css, body), and
+  // a fixed box escapes that column, so the sheet centres itself the same way the nav does.
   return createPortal(
     <div
-      className={`fixed inset-x-0 top-0 z-50 ${clearsNavBar ? 'bottom-[calc(var(--nav-bar-h)+env(safe-area-inset-bottom))]' : 'bottom-0'}`}
+      className={`fixed inset-x-0 top-0 z-50 mx-auto max-w-[390px] ${clearsNavBar ? 'bottom-[calc(var(--nav-bar-h)+env(safe-area-inset-bottom))]' : 'bottom-0'}`}
     >
       <div
         ref={surfaceRef}

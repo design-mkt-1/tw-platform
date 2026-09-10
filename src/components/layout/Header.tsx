@@ -32,7 +32,13 @@ export function Header() {
     <header className="flex h-[60px] items-center bg-header px-gutter">
       {/* 1:3291 / 1:583 — 358 wide, symmetric 16px gutters. */}
       <div className={`flex w-full items-center justify-between ${isPrelogin ? 'h-9' : 'h-10'}`}>
-        <Icon src={LOGO} alt="Top-Win" width={111} height={20} priority />
+        {/* The page's one <h1>: axe reported `page-has-heading-one` on every state, because no
+            page had one. The logo already names the site, so it becomes the heading rather than a
+            new string being invented. `flex` keeps the box at the image's 20px instead of a line
+            box's strut, so nothing moves. */}
+        <h1 className="flex">
+          <Icon src={LOGO} alt="Top-Win" width={111} height={20} priority />
+        </h1>
         {isPrelogin ? <AuthButtons /> : <BalanceChip />}
       </div>
     </header>
@@ -91,6 +97,13 @@ function BalanceChip() {
  * the same glyph — docs/tokens.md §`--surface-muted` lists all three nodes under one token. The
  * design draws that button but not what it opens; the search sheet is titled
  * `Провідні провайдери`, the same string as the row, so it is the only target in the file that fits.
+ *
+ * The drawn box is 36 or 40; the `after` is a transparent target that grows it to 44 x 44 (48 x
+ * 48 post-login) without moving a pixel. It grows up, down and LEFT only: every caller puts this
+ * button flush against the right edge of its row, and a target bleeding past that edge counts as
+ * horizontal overflow of the row in review.mjs Guard 2. Leftward it takes 8px, exactly the gap to
+ * the neighbour in both header variants. That needed the crop moved off the button onto an inner
+ * span: `overflow: hidden` on the button would clip its own `::after` and the target with it.
  */
 export function SearchButton({ className }: { className: string }) {
   const openPanel = useAppStore((s) => s.openPanel)
@@ -107,9 +120,11 @@ export function SearchButton({ className }: { className: string }) {
       aria-haspopup="dialog"
       aria-expanded={panel === 'search'}
       onClick={() => openPanel('search')}
-      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted ${className}`}
+      className={`relative flex shrink-0 rounded-full bg-muted transition-transform duration-100 after:absolute after:-inset-y-1 after:-left-2 after:right-0 after:content-[''] active:scale-[0.97] motion-reduce:active:scale-100 ${className}`}
     >
-      <Icon src={SEARCH_ICON} alt="" width={40} height={40} className="max-w-none shrink-0" />
+      <span className="flex size-full items-center justify-center overflow-hidden rounded-full">
+        <Icon src={SEARCH_ICON} alt="" width={40} height={40} className="max-w-none shrink-0" />
+      </span>
     </button>
   )
 }

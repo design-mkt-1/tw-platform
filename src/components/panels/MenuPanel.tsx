@@ -20,7 +20,9 @@ import { useAppStore } from '@/store/useAppStore'
  *
  * It renders inside Sheet with `clearsNavBar`, which is measured rather than chosen: the panel
  * stops at y 656 / 742 in a 764 / 847 frame and the navbar instance sits ON TOP of it, fully
- * lit, in its "Меню" active state. No scrim, no dimming, no overlay of any kind.
+ * lit. No scrim, no dimming, no overlay of any kind. The nav instance there (1:6815) is the
+ * component's ordinary Sport-active variant, not a "Меню active" state — read off its pixels on
+ * 2026-09-10 — so BottomNavBar lifts itself above this sheet and changes nothing else.
  *
  * Two things the design does NOT contain, recorded so nobody adds them back from memory:
  * there is no balance figure in any of the three panels (avatar, optional VIP pill, username
@@ -108,7 +110,7 @@ export function MenuPanel() {
   const closePanel = useAppStore((s) => s.closePanel)
 
   return (
-    <Sheet open={panel === 'menu'} onClose={closePanel} label="Меню" clearsNavBar>
+    <Sheet open={panel === 'menu'} onClose={closePanel} label="Меню" clearsNavBar className="scrollbar-none">
       {/*
         `min-h-full` rather than `h-full`: the panel is 656 / 742 tall and the sheet is the
         viewport minus the painted nav bar, so on a tall phone the grey has to grow and on the
@@ -120,8 +122,15 @@ export function MenuPanel() {
         instead of the design's 358 — measured — and the contact pair below could no longer fit
         its two drawn 168px buttons with their 8px gap. An edge nobody can see at 390 was
         narrowing everything behind it.
+
+        `pb-[calc(var(--nav-frame-h)-var(--nav-bar-h))]` (43px): since 2026-09-10 the nav sits on
+        top of this sheet, as 1:6641 draws it, and its raised Меню button rises 43px above the
+        plate the sheet stops at. On a phone shorter than the design the panel scrolls, and
+        without this band the last row stopped under that button — measured at 360x780, Support
+        at y 648-686 against the button's top at 672, at full scroll. `scrollbar-none` keeps
+        the few pixels this adds at 844 from painting a desktop scrollbar into review shots.
       */}
-      <div className="relative flex min-h-full flex-col bg-menu-panel after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-[var(--border-panel)]">
+      <div className="relative flex min-h-full flex-col bg-menu-panel pb-[calc(var(--nav-frame-h)-var(--nav-bar-h))] after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-[var(--border-panel)]">
         <PanelHeader onClose={closePanel} />
         {auth === 'prelogin' ? <AuthBand /> : <IdentityBand vip={auth === 'vip'} />}
         <MenuBody onNavigate={closePanel} prelogin={auth === 'prelogin'} />
@@ -130,10 +139,16 @@ export function MenuPanel() {
   )
 }
 
-/** 1:6643 — 390x60, white, 16px gutter, logo left and the close circle right. */
+/**
+ * 1:6643 — 390x60, white, 16px gutter, logo left and the close circle right.
+ *
+ * A `<div>`, not a `<header>`: the page's own Header is already the banner landmark, and a second
+ * one inside the dialog was axe's `landmark-no-duplicate-banner` + `landmark-unique` on all three
+ * menu states.
+ */
 function PanelHeader({ onClose }: { onClose: () => void }) {
   return (
-    <header className="flex h-[60px] shrink-0 items-center justify-between bg-surface px-gutter">
+    <div className="flex h-[60px] shrink-0 items-center justify-between bg-surface px-gutter">
       <Icon src={LOGO} alt="Top-Win" width={111} height={20} />
       {/* 1:6821 — 40x40, radius 100 (a circle at this size), fill #EFF6FF, 1px #BFDBFE border
           that no pixel pass could separate from the fill. 1:6822 is 14x14 and declares
@@ -150,7 +165,7 @@ function PanelHeader({ onClose }: { onClose: () => void }) {
           className="h-[14px] w-[14px] shrink-0 bg-label"
         />
       </button>
-    </header>
+    </div>
   )
 }
 
@@ -265,7 +280,9 @@ function VipBadge() {
  *
  * The copy button is 34x34, which is below the 44px hit target and is one of the four the
  * design draws that way (docs/tokens.md §8). It is left at its drawn size; the padding around
- * it is the field's, so growing the target would move the field.
+ * it is the field's, so growing the paint would move the field. The target grows instead: a
+ * transparent `after` 5px up and down and 10px to the left makes it 44 x 44 without moving a
+ * pixel. Not to the right — a bleed there reads as horizontal overflow in review.mjs Guard 2.
  */
 function IdField() {
   return (
@@ -289,7 +306,7 @@ function IdField() {
         type="button"
         aria-label={`Копіювати ID ${USER.id}`}
         onClick={() => navigator.clipboard?.writeText(USER.id)}
-        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-sm bg-copy-btn transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
+        className="relative flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-sm bg-copy-btn after:absolute after:-inset-y-[5px] after:-left-[10px] after:right-0 after:content-[''] transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
       >
         <span
           aria-hidden="true"
@@ -420,7 +437,7 @@ function TermsAndLanguageRow({ onNavigate }: { onNavigate: () => void }) {
         href="/terms"
         prefetch={false}
         onClick={onNavigate}
-        className="flex flex-1 items-center justify-center gap-[10px] text-primary"
+        className="flex flex-1 items-center justify-center gap-[10px] text-primary transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
       >
         {/*
           1:6962 declares `stroke="#7FB4F2"` inside a group at `opacity="0.5"` — the row-icon
@@ -497,7 +514,7 @@ function ContactRow({ onNavigate, prelogin }: { onNavigate: () => void; prelogin
         href="/support"
         prefetch={false}
         onClick={onNavigate}
-        className="flex h-[38px] w-[168px] items-center justify-center gap-1.5 rounded-sm border border-contact px-5 font-roboto text-sm leading-[18px] text-contact"
+        className="flex h-[38px] w-[168px] items-center justify-center gap-1.5 rounded-sm border border-contact px-5 font-roboto text-sm leading-[18px] text-contact transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
       >
         {/* I1:6984;2642:42639 — 16x16, declares `fill="#10B981"`, i.e. `--contact-accent`, the
             same token as the label and the border. */}
@@ -514,7 +531,7 @@ function ContactRow({ onNavigate, prelogin }: { onNavigate: () => void; prelogin
           href="/vip-manager"
           prefetch={false}
           onClick={onNavigate}
-          className="flex h-[38px] w-[168px] items-center justify-center gap-1.5 rounded-sm bg-contact px-5 font-roboto text-sm leading-[18px] text-on-dark"
+          className="flex h-[38px] w-[168px] items-center justify-center gap-1.5 rounded-sm bg-contact px-5 font-roboto text-sm leading-[18px] text-on-dark transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
         >
           {/* 1:6988 — 16x16, declares `fill="white"`, i.e. `--text-on-dark`, the same token as
               the label. It is a WhatsApp mark, not the generic chat bubble the placeholder drew. */}

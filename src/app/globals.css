@@ -148,15 +148,23 @@
 @layer base {
   html {
     background-color: var(--bg-page);
+    /* The bottom nav is fixed, so the browser's "scroll the focused control into view" stops as
+       soon as the control is inside the viewport — including the 111px the nav frame covers.
+       Measured 2026-09-10 at 390x844: Tab put `Всі (120)` at y 777-807 under a plate starting at
+       776, and seven odds cells on /sport the same way. Padding the scrollport by the whole frame
+       (the raised button included) keeps a focused control above it. */
+    scroll-padding-bottom: calc(var(--nav-frame-h) + env(safe-area-inset-bottom));
   }
 
   body {
     background-color: var(--bg-page);
     color: var(--text-primary);
-    /* The design is 390 wide with no breakpoint anywhere in the file. Centre it rather than
-       stretch it, so a desktop browser shows the phone layout instead of a stretched one. */
+    /* The design is 390 wide with no breakpoint anywhere in the file. Below 390 the page is
+       fluid; above it the 390 column is centred, so a desktop browser or a 430 phone shows the
+       phone layout rather than a stretched one. Until 2026-09-10 this said `max-width: 100%`,
+       which centres nothing — body measured 1897 wide on a 1912 desktop. */
     margin-inline: auto;
-    max-width: 100%;
+    max-width: 390px;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -166,6 +174,15 @@
     outline: 2px solid var(--text-label);
     outline-offset: 2px;
     border-radius: 4px;
+  }
+
+  /* The ring above is #3B82F6, which measures 2.27:1 on the nav plate (#45468D composite). Inside
+     the nav it becomes two tones: the white outline reads on the plate, and the blue shadow in the
+     2px offset gap reads on the page behind the raised button's upper half, which sits over
+     content rather than over the plate. */
+  [data-bottom-nav] :focus-visible {
+    outline-color: var(--text-on-dark);
+    box-shadow: 0 0 0 2px var(--text-label);
   }
 }
 

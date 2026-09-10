@@ -5,8 +5,8 @@ import type { ComponentProps, ReactNode } from 'react'
  * Every pressable rectangle in the design, in four skins measured off real nodes.
  *
  * `prefetch={false}` is hard-coded in the link branch, before the spread. This demo has three
- * routes — `/`, `/sport` and not-found — and the design carries twenty-eight other hrefs, all
- * dead. Next prefetches every <Link> by default, so each dead href fires a background request
+ * routes — `/`, `/sport` and not-found — and the design carries 20 other distinct hrefs, all
+ * dead, rendered as 25 link instances (counted in the browser on 2026-09-10). Next prefetches every <Link> by default, so each dead href fires a background request
  * for a page that does not exist: the page looks perfect and 404s silently underneath. In the
  * predecessor project that bug was found and fixed three separate times, each time only where
  * it had been noticed. Putting it here fixes the class, and a caller that one day links

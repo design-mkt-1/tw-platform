@@ -103,6 +103,10 @@ export function CategoryBar() {
                 // 121 x 36 with the row centred; the design's fourth chip hugs wider than 121
                 // when its content demands it, which `min-w` reproduces.
                 'flex h-9 min-w-[121px] shrink-0 items-center justify-center rounded-chip px-2',
+                // The chip is 36 tall; the `after` grows the target to 44 into the track's own 4px
+                // padding, so it stays inside the scroller and moves no pixel. Chips are flush, so
+                // only the vertical axis has room to grow.
+                "relative after:absolute after:inset-x-0 after:-inset-y-1 after:content-['']",
                 'text-chip font-medium capitalize',
                 // The icon-to-label gap really is 8 on the active chip and 6 on the others.
                 isActive

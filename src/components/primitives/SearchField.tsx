@@ -11,7 +11,7 @@
  * is 1px), `0 4px 8px rgba(59,130,246,0.1)`, `px 12`, `gap 12`. Placeholder and typed value are
  * the same Inter Medium 14 and differ only in colour — `#94A3B8` against `#102A67`. The caret is
  * `#3B82F6`, which is `caret-label` rather than a drawn 2 x 16 rectangle: the design's caret is
- * a screenshot of a real one.
+ * a screenshot of a real one. The size ships at 16, not 14 — see the input's own note.
  *
  * The form wrapper is what makes Enter commit. A bare input would need a keydown handler and
  * would give a phone keyboard no search key; `<form>` plus `enterKeyHint` gets both for free.
@@ -66,6 +66,9 @@ export function SearchField({ value, onChange, onSubmit, placeholder, onClose }:
         event.preventDefault()
         onSubmit(value)
       }}
+      // No focus border: Sheet focuses this input on open, so a focus colour would repaint the
+      // field in every search frame, and the design's focused field (it draws the caret) keeps
+      // #BFDBFE. The caret is the focus cue. Recorded as an owner question, ux-audit B4-11.
       className="flex h-12 items-center gap-3 rounded-xl border-2 border-chip bg-surface px-3 shadow-field"
     >
       <SearchGlyph className="size-5 shrink-0 text-label" />
@@ -81,7 +84,11 @@ export function SearchField({ value, onChange, onSubmit, placeholder, onClose }:
         // `type="search"` is deliberately not used: Chrome adds its own clear button, which
         // would sit next to the design's, and its Escape-clears behaviour would swallow the
         // Escape that closes the sheet.
-        className="min-w-0 flex-1 bg-transparent text-base font-medium text-primary caret-label outline-none placeholder:text-placeholder"
+        //
+        // 16px, not the design's 14 (`text-base` in this theme): iOS Safari zooms the page on
+        // focus into any input below 16px and does not zoom back. A deliberate departure from
+        // 1:7388 — not observed on a device here, there is no iOS device in this setup.
+        className="min-w-0 flex-1 bg-transparent text-[16px] font-medium text-primary caret-label outline-none placeholder:text-placeholder"
       />
 
       {onClose ? (

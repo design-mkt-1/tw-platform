@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname, useRouter } from 'next/navigation'
 import { useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { ProviderRow } from '@/components/casino/ProviderRow'
 import { Icon } from '@/components/primitives/Icon'
@@ -110,6 +111,8 @@ export function SearchOverlay() {
   const commitQuery = useAppStore((s) => s.commitQuery)
   const closePanel = useAppStore((s) => s.closePanel)
   const setCategory = useAppStore((s) => s.setCategory)
+  const pathname = usePathname()
+  const router = useRouter()
 
   const fieldRef = useRef<HTMLDivElement>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
@@ -194,6 +197,12 @@ export function SearchOverlay() {
     // setCategory closes the panel but leaves the query; clearing it is what closePanel would
     // have done, and it is what makes the next open start clean.
     setQuery('')
+    // The category bar exists only on `/`. Picked anywhere else — measured on /sport, 2026-09-10 —
+    // the panel closed, the URL became `/sport?category=slots`, and nothing on screen changed. So
+    // the pick takes the player to the page it changes. The store survives client navigation, and
+    // the bridge `/` mounts treats a path change as a navigation: it closes panels and leaves
+    // `activeCategory` alone, then writes it back as `?category=`.
+    if (pathname !== '/') router.push('/')
   }
 
   return (
