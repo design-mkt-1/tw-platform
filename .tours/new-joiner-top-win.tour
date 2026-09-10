@@ -1,0 +1,93 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "Top-Win — taking it over",
+  "description": "Fourteen stops for whoever inherits this build: how a Figma frame becomes a page, where the six load-bearing decisions live, and how to prove a change works before shipping it. Read CLAUDE.md alongside this — the tour shows the code, that file says why.",
+  "steps": [
+    {
+      "directory": "src",
+      "title": "1 · The whole app is here",
+      "description": "Situation: a Next.js 15 App Router project that produces a **static export** — `out/`, no server, no API routes, no `next/image` optimisation, no middleware. Mechanism: `app/` holds two real routes (`/` and `/sport`) plus a not-found; `components/` splits into `layout`, `casino`, `sport`, `panels`, `primitives`; `lib/` holds the data-to-types bridge and the small pure helpers; `data/` holds the JSON the pages map over; `store/` is one Zustand store.\n\nImplication: everything you would normally solve on the server has to be solved at build time or in the browser here.\n\nGotcha: **mobile only, and it is not a preference.** All eleven Figma frames are 390 wide, `tailwind.config.ts` declares no breakpoint, and a `md:` anywhere in this repo would be describing a design that does not exist."
+    },
+    {
+      "file": "src/app/layout.tsx",
+      "line": 25,
+      "title": "2 · Two fonts stand in for six",
+      "description": "Situation: the root layout loads Inter and Roboto and nothing else. Mechanism: `next/font/google` self-hosts both, which is why the deployed site makes zero third-party requests.\n\nImplication: the design names six families, and **three of them cannot render the copy assigned to them** — Outfit and Archivo Narrow ship no Cyrillic subset, and Big Shoulders Display is not in Next's catalogue under that name. Every string assigned to those three is Ukrainian, so Figma itself was already falling back when it rendered those frames. Inter is not a shortcut; it is closer to what the design actually looked like on screen than Outfit would be.\n\nGotcha: wherever a Figma box was fitted to Outfit's narrower metrics, the same string in Inter is wider. The hero title's 131px box was the first casualty and is now `w-max` with nowrap. Expect more of these, and read the comment above this line before changing a font."
+    },
+    {
+      "file": "src/app/page.tsx",
+      "line": 95,
+      "title": "3 · The casino home is a loop, not a layout",
+      "description": "Situation: the whole 5628px page is `SECTIONS.map(...)` with a `switch` on each section's `kind`. Mechanism: three kinds — `game-grid`, `tournament`, and the bespoke ones — each wrapped in a `<section aria-label={spec.title}>`.\n\nImplication: adding or reordering a section is a data edit, not a JSX edit. And because every section carries an `aria-label`, the capture script can report *which* section overflowed rather than just that something did.\n\nGotcha: `<UrlStateBridge />` is mounted **per page**, not in the layout. A new route that forgets to import it silently loses every `?panel=` and `?auth=` address, and nothing fails — the page just stops being reviewable."
+    },
+    {
+      "file": "src/lib/sections.ts",
+      "line": 29,
+      "title": "4 · Each section carries the Figma node it came from",
+      "description": "Situation: `SECTIONS` is the ordered list of everything on the casino home, and every entry has a `figmaNodeId`. Mechanism: the id is not decoration — it is how you check a measurement. If a spacing looks wrong, you open that node and read it rather than arguing about it.\n\nImplication: this file is the closest thing to a spec. The comments in it record decisions, not intentions: which icon was recovered from where, which title is Latin in the source and not a transliteration slip.\n\nGotcha: `title: 'Megaways'` and `title: 'Drop & Wins'` really are Latin in a Ukrainian design. That was checked against the rendered string, not guessed from a layer name."
+    },
+    {
+      "file": "src/lib/assets.ts",
+      "line": 22,
+      "title": "5 · Why every image path goes through one function",
+      "description": "Situation: `withBase()` prefixes `NEXT_PUBLIC_BASE_PATH` and throws on any path that is not absolute. Mechanism: on GitHub Pages the site lives at `/tw-platform/`, and Next applies `basePath` to links and to its own bundles — **but not to an image `src`**. That single asymmetry is the entire reason this helper exists.\n\nImplication: write `/images/foo.svg` directly anywhere and it will work perfectly on your machine and 404 on the client's link. Nothing local reproduces it.\n\nGotcha: `src/lib/__tests__/assets.test.ts` walks this module's whole namespace, so a new export is picked up with no registration — and it fails **both ways**: a referenced file missing from disk, and a file on disk that nothing references. If you delete an icon from a map, delete the file too."
+    },
+    {
+      "file": "src/components/primitives/Button.tsx",
+      "line": 63,
+      "title": "6 · One `prefetch={false}`, placed where it cannot be forgotten",
+      "description": "Situation: the link branch hard-codes `prefetch={false}` **before** the prop spread, so a caller can still override it deliberately but cannot omit it by accident. Mechanism: Next prefetches every `<Link>` in view. This design has 28 dead hrefs, so the default would fire 28 background requests for pages that will never exist.\n\nImplication: this is the house pattern, stated in `CLAUDE.md` as **fix the class, not the instance**. In the predecessor project the same bug was fixed three separate times, each time only where somebody happened to notice it.\n\nGotcha: read the comment above this function before adding another link component. A second link primitive without this line reopens the bug quietly."
+    },
+    {
+      "file": "src/components/UrlStateBridge.tsx",
+      "line": 30,
+      "title": "7 · Every reviewable state has an address",
+      "description": "Situation: this component mirrors three pieces of store state into the query string — `auth` (`prelogin|postlogin|vip`), `panel` (`menu|search`), and `q`. Mechanism: it reads them once on mount, whitelist-checked, and writes them back on every change.\n\nImplication: this is what makes the design reviewable. A designer can be sent a link to the VIP menu; both capture scripts drive all eleven states through these three names. `CLAUDE.md` puts it plainly: *a state nobody can link to is a state nobody can review.*\n\nGotcha: it uses `history.replaceState`, never `pushState`, and registers no `popstate` listener — otherwise leaving the site would take eleven presses of Back. The cost is that Back with a panel open leaves the site instead of closing the panel. That is a known, recorded trade-off, not an oversight."
+    },
+    {
+      "file": "src/store/useAppStore.ts",
+      "line": 41,
+      "title": "8 · `openPanel` sets, it does not merge",
+      "description": "Situation: one Zustand store holds `auth`, `panel`, `query` and `recent`. Mechanism: `openPanel` assigns `panel` outright, so opening one panel closes the other by construction; `closePanel` clears the query at the same time, so a closed search panel cannot leave a stale `?q=` in the URL.\n\nImplication: two modal sheets open at once means two focus traps fighting over the keyboard, and neither wins. This one-line choice is the thing that prevents it.\n\nGotcha: `recent` is store-only — no URL reaches it. That is why one of the four search states the design draws has never been captured. See step 11."
+    },
+    {
+      "file": "src/components/primitives/Sheet.tsx",
+      "line": 67,
+      "title": "9 · The focus trap both panels share",
+      "description": "Situation: `Sheet` is the only open/close primitive in the build. On open it remembers what had focus, moves focus to the first focusable element inside, traps Tab in both directions, closes on Escape, and puts focus back on the opener.\n\nMechanism: it re-queries the focusable list on **every** keypress rather than caching it, so a control that unmounts mid-cycle does not strand the ring.\n\nImplication: none of this is tested by axe. Automated accessibility tooling checks names, roles and contrast; keyboard behaviour is invisible to it. If you build another overlay, use this component rather than a second trap.\n\nGotcha: there is still one hole it cannot cover. When a control removes *itself* — a search chip whose row disappears once the query runs — focus drops to `<body>`, and from `<body>` the next Tab escapes the trap entirely. `SearchOverlay` moves focus back to the field by hand for exactly that case."
+    },
+    {
+      "file": "src/lib/format.ts",
+      "line": 27,
+      "title": "10 · The only place in `src` that touches `Intl`",
+      "description": "Situation: hryvnia amounts, the masked username and the tournament countdown all format here. Mechanism: the number formatters are module-level constants, built once.\n\nImplication: a currency string that renders one way on the build machine and another way in the browser is a hydration mismatch — React discards the server HTML and the number visibly changes after load. That shipped once, on the header balance. It is fixed in **one** place because there is only one place; the CI build runs on Ubuntu's ICU and the client may be on any browser's.\n\nGotcha: `countdown` deliberately rolls a past deadline forward in 24-hour periods instead of freezing at zero. A static export has no server to refresh the data, so without that the demo would show a dead clock the day after it was built."
+    },
+    {
+      "file": "src/lib/screens.ts",
+      "pattern": "export const SCREENS",
+      "title": "11 · The frame registry — and the frame nobody can reach",
+      "description": "Situation: one row per Figma frame — its node id, its layer name as Figma really holds it, and the app URL that reaches it. `/dev/screens` renders it as a page, and both capture scripts read the same JSON.\n\nMechanism: `path: null` marks a frame the build cannot address.\n\nImplication: the registry exists to make absence visible. Eleven frames, ten reachable. The eleventh is `1:7363`, the *recent searches* state: it needs `recent.length > 0`, `recent` lives only in the store, and the bridge carries `auth`, `panel` and `q` — so no URL produces it, and it has never been screenshotted or scanned.\n\nGotcha: the page is published in the export because a static export has no dev-only mode. Nothing links to it, and `robots` is `noindex` for every route — but it is on the public URL, so do not put anything in it you would not send the client."
+    },
+    {
+      "file": "scripts/review.mjs",
+      "pattern": "JSON.parse(readFileSync",
+      "title": "12 · How a visual change is proven",
+      "description": "Situation: `review.mjs` drives every state in the registry, in both motion modes, at 390×844, and records page errors, console errors, document width and any section that overflows. `a11y.mjs` runs axe-core over the same list.\n\nMechanism: both read `src/data/screens.json`. Add a state there and both scripts pick it up; there is no second list to keep in sync, and a test fails if anybody re-hardcodes one.\n\nImplication: **do not report a UI change as working on the strength of the diff.** Two defects here were invisible in the code and obvious in the browser — a hydration mismatch on the balance, and a hero title wrapping onto the artwork. A third was found by grepping for who mounts a component, because the answer was nobody.\n\nGotcha: `a11y.mjs` currently reports ~191 serious findings and every one of them is `color-contrast`, which the owner has decided ships unchanged. So a green run of these scripts means *no new class of problem*, not *no problems*."
+    },
+    {
+      "file": "scripts/assert-app.mjs",
+      "line": 16,
+      "title": "13 · The guard that exists because of one wasted afternoon",
+      "description": "Situation: after every navigation, this checks the page title contains `Top-Win` and stops with the port to look at if it does not.\n\nMechanism: three lines, run on every capture.\n\nImplication: a dev server for a different project was holding port 3000, so this app bound 3001 and said so in a line nobody read. The first screenshot of the \"Top-Win casino home\" was a screenshot of a different product — dark, English, GBP — captured with zero errors and saved under a Top-Win filename. Nothing in a filename, an exit code or a log distinguishes those two runs.\n\nGotcha: if a capture script refuses, read what it says rather than pointing it somewhere else. Removing this check does not fix the problem it reports."
+    },
+    {
+      "directory": "docs/design-inventory",
+      "title": "14 · Where the numbers came from",
+      "description": "Situation: 25 measurement files plus seven asset manifests, one per area of the design, with node ids throughout. `docs/tokens.md` is the distilled version to read first; these are the raw record behind it.\n\nMechanism: they are committed rather than left in a scratch directory because the Figma API call quota is real and ran out once mid-run. Re-measuring is expensive; reading is free.\n\nImplication: before spending a Figma call, look here. The README lists what is in each file, the two places a file is known to be wrong, and three questions these files record as unknown that have since been answered.\n\nGotcha: the recorded asset URLs expire about seven days after they were minted. Try one anyway — one section icon was recovered with a plain `curl` and no API call at all — but never assume a URL is still live, and never assume a recorded asset is the glyph its name claims. One recorded \"WhatsApp icon\" turned out to be a 190×79 sheet of 23 different messenger brand marks, clipped to a 16×16 window."
+    },
+    {
+      "title": "Where to start work",
+      "description": "You can now trace any pixel back to the node it was measured from, and any state to the URL that reaches it.\n\nThe shortest useful first task: run `npm run dev`, open `/dev/screens`, and click through all eleven rows. That is the whole product in about two minutes, and the one row marked *no built state* is the only piece of the design that has never been reviewed.\n\nBefore any push, run the gate in `CLAUDE.md` — typecheck, lint, tests, build, accessibility report — in that order. A push to `main` deploys to the link the client opens, so \"pushed\" and \"live\" are the same event here."
+    }
+  ]
+}

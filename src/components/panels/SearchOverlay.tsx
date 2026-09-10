@@ -138,11 +138,20 @@ export function SearchOverlay() {
    * this panel, not about the control. Keydown bubbles, so the wrapper sees it.
    *
    * "First result" is whatever the current state put first — a suggestion row, a popular chip
-   * or a recent query. All three are buttons, so one selector covers every state.
+   * or a recent query. All three are buttons.
+   *
+   * `[tabindex="0"]` is the fourth case and it is the whole of the `empty` state. A first-time
+   * player has no recent queries, so `popular` never draws, and the only thing under the field
+   * is the provider carousel — which is a `<ul tabIndex={0}>` (ProviderRow makes it focusable
+   * because a scroll container that answers only to touch is an axe `scrollable-region-focusable`
+   * violation, and that fails the deploy). Without this, ArrowDown in the empty state matched
+   * nothing and did nothing. The carousel is the right landing place rather than a fallback: the
+   * panel's own header calls it Провідні провайдери, so the providers ARE this panel's results.
+   * `querySelector` returns document order, so a chip or a suggestion still wins where one exists.
    */
   function onFieldKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key !== 'ArrowDown') return
-    const first = resultsRef.current?.querySelector<HTMLElement>('button, a[href]')
+    const first = resultsRef.current?.querySelector<HTMLElement>('button, a[href], [tabindex="0"]')
     if (!first) return
     event.preventDefault()
     first.focus()

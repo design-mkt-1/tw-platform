@@ -16,6 +16,12 @@
 # next.js
 /.next/
 /out/
+# Any build pointed somewhere else by NEXT_DIST_DIR. `npm run build:check` uses `.next-build`
+# so it cannot collide with a running dev server, and a parallel run gives each worker its own.
+# None of them was ignored until 2026-09-10, so a `git add -A` would have committed 30 MB of build.
+/.next-*/
+# scripts/review.mjs serves the export from here while it captures.
+/.review-tmp/
 
 # production
 /build

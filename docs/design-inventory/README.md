@@ -56,3 +56,31 @@ recorded it as the paint.
 
 Both corrections are in `../tokens.md`. They are left standing in the files above rather than
 edited out, because the point of a dated record is that it says what was known at the time.
+
+## Three things these files record as unknown that are now known
+
+Same rule: the files below are left as they were written. The answers live here.
+
+**The three section icons that "could not be exported" can be.**
+`manifest-casino-icons.md` lists `megaways`, `wheel-fortune` and the 20px `Must-play slots` as
+missing, because `download_assets` caps a subtree at 20 SVG fragments and the header group's mask
+stacks consume the cap before every icon is reached. The cap is per **subtree**, so calling
+`download_assets` on the icon *frame itself* returns the whole node as one flat export and the cap
+never bites. Two calls recovered two of them; the third cost nothing at all — see below. All three
+now ship as `public/images/icons/section-{megaways,wheel-fortune,must-play-slots}.svg`, and the
+three sections that had fallen back to the `popular` glyph carry their own again.
+
+**The 20px `Must-play slots` icon and the 16px chip are the same drawing.**
+`manifest-casino-icons.md` flagged this as unresolved: *"I did not render both and compare, so treat
+them as possibly different glyphs."* Both were exported and compared. The four path ids are
+identical — `path2815`, `path2819`, `path2823`, `path2829` — so it is one glyph at two sizes in two
+paints: 20×20 `#92BDF3` in a section header, 16×16 `#71809A` in a category chip. Both files are
+needed; neither is a duplicate of the other.
+
+**A recorded asset URL is worth trying before spending a Figma call.**
+`03-casino-rows-b.md` §6 opens with *"URLs expire ~7 days from this pass"*, and the handover in
+`../next-session.md` treats them as gone. On 2026-09-10 they were still resolving, and the
+`megaways` icon was recovered from the URL recorded at `03-casino-rows-b.md:263` with a plain
+`curl` and no MCP call. There are 238 such URLs across this directory. The expiry is real, so this
+will stop working — but "try the recorded URL first" costs nothing and the quota costs a great
+deal, so it is the right order to attempt them in.

@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@/components/primitives/Button'
+import { Button, INERT } from '@/components/primitives/Button'
 import { Icon } from '@/components/primitives/Icon'
 import { DEPOSIT_PLUS, LOGO, SEARCH_ICON } from '@/lib/assets'
 import { USER } from '@/lib/data'
@@ -44,12 +44,12 @@ function AuthButtons() {
   return (
     <div className="flex items-center gap-2">
       {/* 1:3295 / 1:3296 */}
-      <Button variant="muted" className="h-9 w-[60px] text-sm capitalize">
+      <Button variant="muted" aria-disabled="true" className={`h-9 w-[60px] text-sm capitalize ${INERT}`}>
         Увійти
       </Button>
       {/* 1:3297 / 1:3298. The design writes `Реєстарція` (а and р transposed); the owner's
           decision is that the typo is corrected on the way in. */}
-      <Button variant="cta" className="h-9 w-[86px] text-sm capitalize">
+      <Button variant="cta" aria-disabled="true" className={`h-9 w-[86px] text-sm capitalize ${INERT}`}>
         Реєстрація
       </Button>
       <SearchButton className="h-9 w-9" />
@@ -89,11 +89,18 @@ function BalanceChip() {
  */
 function SearchButton({ className }: { className: string }) {
   const openPanel = useAppStore((s) => s.openPanel)
+  const panel = useAppStore((s) => s.panel)
 
   return (
     <button
       type="button"
       aria-label="Пошук"
+      // Both buttons in this build open a `role="dialog"` sheet, and until 2026-09-10 only the
+      // Menu button said so. A screen reader announced this one as a plain button, so nothing
+      // warned that pressing it would move focus into an overlay. Kept identical to
+      // BottomNavBar's raised button rather than invented here.
+      aria-haspopup="dialog"
+      aria-expanded={panel === 'search'}
       onClick={() => openPanel('search')}
       className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted ${className}`}
     >

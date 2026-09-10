@@ -66,6 +66,14 @@ export function TournamentCard({ tournament, from }: TournamentCardProps) {
               data; the shared type lives on the wrapper so they still render as one block.
               The string is stored mixed-case and capitalised in CSS, so a locale that does not
               uppercase the same way is not baked into the data.
+
+              `title` therefore holds the NAME ONLY. It used to be the raw Figma string,
+              `"СПІН-ЧЕЛЕНДЖ\n2000"`, with the prize left inside it — so the same 2000 was
+              printed twice, once from the title and once from `prizeMinor`. At 190px that is
+              `СПІН-` / `ЧЕЛЕНДЖ` / `2000` from the h3 plus a fourth line from the prize: 136px
+              of type where 1:5232 measures 102 (04-casino-rows-c.md §3.1), which pushed the join
+              pill to y 2801 against a card bottom of 2796 and clipped it off under
+              `overflow-hidden`. Do not put a figure back into `title`.
             */}
             <div className="text-4xl font-bold uppercase tracking-title text-tournament-title">
               <h3>{tournament.title}</h3>

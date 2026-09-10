@@ -9,14 +9,18 @@ import { SPORT_ICONS } from '@/lib/assets'
  * The Прематч / Лайв segmented control and the rounded card it lives in — node 1:6007.
  *
  * `1:6007` is 390x152 and holds TWO things in Figma: the mode track (1:6008 → 1:6009) and the
- * sports navigation row (1:6016). That is why this component takes `children`: the caller
- * renders `<PrematchLiveToggle><SportNavRow /></PrematchLiveToggle>` so both sit inside the one
- * radius-24 / shadow-container plate the design draws. Rendering them as siblings still works —
- * the plate simply wraps the track alone — but it is not what 1:6007 is.
+ * sports navigation row (1:6016). This `<section>` IS `1:6007` — the one radius-24 /
+ * shadow-container plate the design draws — so the nav row has to come through as `children`:
+ * `<PrematchLiveToggle><SportNavRow /></PrematchLiveToggle>`. `children` is required for that
+ * reason. Rendering the two as siblings inside a wrapper of their own does NOT work: it nests a
+ * second plate inside this one, paints `shadow-container` twice and adds a third `pt-3` that
+ * shifts the track — and every band below it — 12px down. That is what shipped until it was
+ * measured at y 96.
  *
  * Padding is doubled on purpose and both halves are measured: 1:6007 carries `padding-top: 12px`
- * and 1:6008 carries `padding: 12px 16px 0`. Track top lands at absolute y 84 = 60 + 12 + 12.
- * 1:6007 has no padding-bottom; the nav row's own 76px closes the 152.
+ * and 1:6008 carries `padding: 12px 16px 0`. Those are the only two, and the track top lands at
+ * absolute y 84 = 60 + 12 + 12. 1:6007 has no padding-bottom; the nav row's own 76px closes the
+ * 152.
  *
  * The container declares no background. The `--bg-page` seen inside it at y 60..83 and 136..151
  * is the page showing through (23-gap-sport-chrome.md §5), so nothing is painted here.
@@ -31,7 +35,7 @@ const MODES = [
 
 type ModeId = (typeof MODES)[number]['id']
 
-export function PrematchLiveToggle({ children }: { children?: ReactNode }) {
+export function PrematchLiveToggle({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<ModeId>('prematch')
 
   return (

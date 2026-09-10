@@ -56,6 +56,12 @@ export const useBetSlip = create<BetSlipState>((set) => ({
  *
  * There is no selection count anywhere in the design — just the ticket and the word `Купон` — so
  * none is drawn or announced. That is a gap in the design, not a simplification here.
+ *
+ * **It has no destination, and that is a known open question rather than an oversight.** The Figma
+ * file draws no bet-slip panel, sheet or route for `Купон` to open — 1:6484 is the only node about
+ * the slip in the whole page — so inventing one would invent a screen. Until the owner says what
+ * it opens, the button carries no `onClick`. Flagged, not quietly shipped: a control that looks
+ * pressable and does nothing is exactly the defect class MobileShell's comment records.
  */
 export function BetSlipFab() {
   const count = useBetSlip((state) => Object.keys(state.selections).length)
@@ -63,24 +69,40 @@ export function BetSlipFab() {
   if (count === 0) return null
 
   return (
-    <div
-      className="pointer-events-none fixed inset-x-0 z-30 mx-auto flex w-[390px] justify-end px-gutter"
-      // Inline because Tailwind cannot express the env() term, and this is the same expression
-      // MobileShell's spacer and BottomNavBar's `bottom` are built from.
-      style={{ bottom: 'calc(var(--nav-bar-h) + env(safe-area-inset-bottom) + 16px)' }}
-    >
-      <button
-        type="button"
-        // 16 + 20 + 8 + 44 + 16 = 104 and h-11 = 44, so the measured box falls out of the padding
-        // rather than being pinned. The pressed state is Button's invented `active:scale`, so this
-        // presses like every other control in the build.
-        className="pointer-events-auto inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full bg-hot px-4 shadow-fab transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
+    <>
+      {/*
+       * A floating button over a scrolling list covers whatever is under it, and at the bottom of
+       * the document that is not recoverable by scrolling. Measured at 390x844: with the page
+       * scrolled to its end, the last fixture's `Н` and `2` cells sit at y 722..764 while the FAB
+       * holds y 716..760 — `elementFromPoint` at both cell centres returned the FAB, so two odds
+       * cells were unreachable for as long as a selection existed.
+       *
+       * This is 44 (the button) + 16 (its gap above the nav plate) of extra document, present only
+       * while the FAB is, so the list can always be scrolled clear of it. It sits in normal flow
+       * next to the fixed frame rather than as page padding, because only this component knows
+       * whether the button is up.
+       */}
+      <div aria-hidden className="h-[60px]" />
+
+      <div
+        className="pointer-events-none fixed inset-x-0 z-30 mx-auto flex w-[390px] justify-end px-gutter"
+        // Inline because Tailwind cannot express the env() term, and this is the same expression
+        // MobileShell's spacer and BottomNavBar's `bottom` are built from.
+        style={{ bottom: 'calc(var(--nav-bar-h) + env(safe-area-inset-bottom) + 16px)' }}
       >
-        <Icon src={SPORT_ICONS.betslip} alt="" width={20} height={20} className="h-5 w-5" />
-        {/* 1:6487 — Inter Regular 15, white. 3.30:1 on this fill: a recorded failure, shipped as
-            drawn per the owner's decision on colours (docs/tokens.md §7.1). */}
-        <span className="font-sans text-md text-on-dark">Купон</span>
-      </button>
-    </div>
+        <button
+          type="button"
+          // 16 + 20 + 8 + 44 + 16 = 104 and h-11 = 44, so the measured box falls out of the padding
+          // rather than being pinned. The pressed state is Button's invented `active:scale`, so
+          // this presses like every other control in the build.
+          className="pointer-events-auto inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full bg-hot px-4 shadow-fab transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
+        >
+          <Icon src={SPORT_ICONS.betslip} alt="" width={20} height={20} className="h-5 w-5" />
+          {/* 1:6487 — Inter Regular 15, white. 3.30:1 on this fill: a recorded failure, shipped as
+              drawn per the owner's decision on colours (docs/tokens.md §7.1). */}
+          <span className="font-sans text-md text-on-dark">Купон</span>
+        </button>
+      </div>
+    </>
   )
 }

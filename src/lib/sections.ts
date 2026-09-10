@@ -88,12 +88,12 @@ export const SECTIONS: SectionSpec[] = [
     figmaNodeId: '1:4140',
   },
   {
-    // Icon `Must-play slots` `1:4490` exports as 9 mask fragments and was not recovered;
-    // falls back to `popular`. Recorded in docs/tokens.md and in assets.ts.
+    // Icon `Must-play slots` `1:4490`. Exporting the frame itself flattens the 9 mask fragments
+    // into one file; the 20px header glyph is a different paint from the 16px chip, so both ship.
     id: 'must-play',
     kind: 'game-grid',
     title: 'Варто спробувати',
-    icon: 'popular',
+    icon: 'mustPlaySlots',
     seeAllLabel: SEE_ALL,
     filter: { provider: '3-oaks', limit: GRID_LIMIT },
     rows: GRID_ROWS,
@@ -108,11 +108,12 @@ export const SECTIONS: SectionSpec[] = [
     figmaNodeId: '1:4545',
   },
   {
-    // `megaways` icon `1:4864` was not recovered; falls back to `popular`.
+    // `megaways` icon `1:4864` — recovered from the URL recorded in
+    // docs/design-inventory/03-casino-rows-b.md, which still resolved. No Figma call was spent.
     id: 'megaways',
     kind: 'game-grid',
     title: 'Megaways',
-    icon: 'popular',
+    icon: 'megaways',
     seeAllLabel: SEE_ALL,
     filter: { provider: 'pragmatic', category: 'slots', limit: GRID_LIMIT },
     rows: GRID_ROWS,
@@ -149,12 +150,12 @@ export const SECTIONS: SectionSpec[] = [
   },
   {
     // `1:5417` wraps two things: this section (`1:5418`) and the footer (`1:5607`). The node id
-    // here is the section, not the wrapper. Its `wheel-fortune` icon was not recovered; falls
-    // back to `popular`.
+    // here is the section, not the wrapper. Its icon is `1:5567` `wheel-fortune_18604065 2` — the
+    // one visible frame; the other two copies in that header are `hidden="true"`.
     id: 'wheel',
     kind: 'tournament',
     title: 'Колесо',
-    icon: 'popular',
+    icon: 'wheelFortune',
     tournamentId: 'wheel',
     figmaNodeId: '1:5418',
   },

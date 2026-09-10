@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom'
 /**
  * The full-screen panel both the menu and the search use.
  *
- * Four behaviours, each of them a bug this project has already shipped once.
+ * Three behaviours, each of them a bug this project has already shipped once.
  *
  * 1. **Focus is trapped inside.** Without it, Tab walks out of the dialog and onto the page
  *    underneath, which is still there, still focusable, and invisible behind the scrim.
@@ -15,18 +15,31 @@ import { createPortal } from 'react-dom'
  *    the menu and closes it should be standing where they started, not at the top of the
  *    document.
  *
- * 3. **A backdrop click also restores focus — and that needs one extra line.** Both paths call
- *    opener.focus(). The click path used to fail anyway, and the cause was not a missed
- *    restoration: after the handler runs, the browser performs the uncancelled default action
- *    of `mousedown`, which is to focus the nearest focusable ancestor of whatever was pressed.
- *    That target is the backdrop — not focusable, and detached by then — so focus falls to
- *    <body> and overwrites a restoration that had already succeeded. `keydown` has no such
- *    default action, which is the entire difference between the two paths. Hence the
- *    preventDefault below, and it must stay inside the `target === currentTarget` guard, or
- *    clicking into a field inside the sheet would stop focusing it.
- *
- * 4. **The page behind does not scroll.** Otherwise a finger dragging over the scrim scrolls
+ * 3. **The page behind does not scroll.** Otherwise a finger dragging over the scrim scrolls
  *    the catalogue underneath, and closing the sheet leaves the page somewhere else.
+ *
+ * ## There is no tap-outside dismissal, because there is no outside
+ *
+ * This used to carry a fourth behaviour: an `onMouseDown` on the wrapper, guarded by
+ * `target === currentTarget`, that closed the sheet on a backdrop tap. It was removed on
+ * 2026-09-10 after being measured rather than read. Sampling every 2px over the whole wrapper
+ * with `document.elementFromPoint` at 390x844:
+ *
+ *   menu   — 0 points out of 390 x 776 where the wrapper is the top element
+ *   search — 105 points, every one of them inside the four 24px rounded corners
+ *
+ * The menu could not be dismissed that way at all, and the search only by an accidental tap on
+ * a corner sliver. Neither is an affordance. The design draws no scrim, no dimming and no
+ * exposed page for either panel (MenuPanel's own note records this for the menu; the search has
+ * no frame relating it to anything), so a backdrop dismissal would be inventing a region, and
+ * making it visible would mean inventing a scrim colour. Both panels have an explicit close
+ * control and both answer Escape, and a route change now closes them via UrlStateBridge.
+ *
+ * The one thing worth keeping from that code, because it cost a debugging session: a handler on
+ * `mousedown` that closes a dialog must `preventDefault()`, or the browser's uncancelled default
+ * action focuses the nearest focusable ancestor of the press target — the detached backdrop, so
+ * <body> — and overwrites a focus restoration that had already succeeded. `keydown` has no such
+ * default action, which is the entire difference between the Escape path and the click path.
  */
 interface SheetProps {
   open: boolean
@@ -104,12 +117,6 @@ export function Sheet({ open, onClose, label, children, clearsNavBar, className 
   return createPortal(
     <div
       className={`fixed inset-x-0 top-0 z-50 ${clearsNavBar ? 'bottom-[calc(var(--nav-bar-h)+env(safe-area-inset-bottom))]' : 'bottom-0'}`}
-      onMouseDown={(event) => {
-        if (event.target !== event.currentTarget) return
-        // See note 3 above. Without this the browser refocuses <body> after we restore.
-        event.preventDefault()
-        onClose()
-      }}
     >
       <div
         ref={surfaceRef}

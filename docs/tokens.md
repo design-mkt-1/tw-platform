@@ -625,6 +625,7 @@ not — axe-core does not test 1.4.11 — so those fail a manual audit instead.
 | `#7FB4F2` menu row icons on `#E8F1FC` | **1.90** | `1:6862` + 7 siblings | `#3C6FB0` → 4.50 |
 | `#FFFFFF` burger glyph on the light stop of `--grad-nav-button` | **2.50** at `#FE8200`, **3.42** at `#FE4800` | `1:6520` on `1:6518` | The glyph sits across both stops. Darkening the top stop to about `#E86A00` clears 3:1 across the whole run |
 | `#DCEBFF` section-header divider on `#F7FAFF` | ~1.15 | `1:5051` and twelve siblings | Decorative, carries no information. No action needed; recorded so nobody "fixes" it |
+| `#3B82F6` **focus ring** on the composited nav plate `#45468D` | **2.30** | not a design node — `globals.css:165-167` | **This row is ours, not the design's.** The file draws no focus state anywhere (§8), so the build supplied one: `outline: 2px solid var(--text-label)`, offset 2. Against `--bg-page` `#F7FAFF` it is 3.51 and passes. Against the navigation bar — where five controls sit on every screen — it is 2.30. It needs a second value for dark surfaces, or a light outer halo. Added 2026-09-10 |
 
 ### 7.3 Passes
 

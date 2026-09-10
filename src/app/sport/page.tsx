@@ -1,3 +1,4 @@
+import { BetSlipFab } from '@/components/sport/BetSlipFab'
 import { BonusCarousel } from '@/components/sport/BonusCarousel'
 import { LeagueCard } from '@/components/sport/LeagueCard'
 import { LeagueStrip } from '@/components/sport/LeagueStrip'
@@ -30,9 +31,12 @@ import { LEAGUES } from '@/lib/data'
  *   495  60   `1:6333`  sport filters
  *   555  466  `1:6366`  "Майбутні Події" + the league cards
  *
- * Not built, deliberately: the bet-slip FAB `1:6484` sits at canvas (3528, 313) as a standalone
- * frame that no page frame instantiates, so the design states nothing about where it docks or
- * when it appears. Guessing a corner for it would be inventing a measurement.
+ * The bet-slip FAB `1:6484` is mounted here, docked bottom-right — and that corner is **this
+ * build's decision, not a measurement**. `1:6484` sits at canvas (3528, 313) as a standalone frame
+ * that no page frame instantiates, so the file states nothing about where it docks, what triggers
+ * it or how long it stays (07-sport.md UNKNOWN #7). Owner's decision of 2026-09-10: mount it
+ * anyway, bottom-right, present only while a selection exists. Recorded as a decision so nobody
+ * later reads the corner as something Figma specified.
  */
 export default function SportPage() {
   return (
@@ -42,18 +46,19 @@ export default function SportPage() {
       <MobileShell>
         <main className="flex flex-col bg-page">
           {/*
-           * `1:6007` wraps the mode switch and the sports nav as one card: `padding-top: 12px`,
-           * `border-radius: 24px`, `drop-shadow(0 8px 12px rgba(0,0,0,0.05))`. It is drawn here
-           * rather than inside either child because it is the parent of both.
+           * `1:6007` wraps the mode switch and the sports nav as ONE card: `padding-top: 12px`,
+           * `border-radius: 24px`, `drop-shadow(0 8px 12px rgba(0,0,0,0.05))`. `PrematchLiveToggle`
+           * *is* that card and takes the nav row as its child, so the plate and its shadow are
+           * drawn exactly once. A second wrapper here used to nest one plate inside another: the
+           * shadow painted twice and the extra `pt-3` pushed the track to y 96 instead of y 84.
            *
            * It has no fill of its own — ten pixel samples across five bands of `1:5994` returned
            * flat `--bg-page`, so the shadow is cast by the children's own alpha, exactly as Figma
-           * renders it. The 12px top padding is the container's; each child brings its own.
+           * renders it. The 12px top padding is `1:6007`'s; the mode track brings `1:6008`'s.
            */}
-          <div className="rounded-xl pt-3 shadow-container">
-            <PrematchLiveToggle />
+          <PrematchLiveToggle>
             <SportNavRow />
-          </div>
+          </PrematchLiveToggle>
 
           <BonusCarousel />
           <LeagueStrip />
@@ -72,6 +77,11 @@ export default function SportPage() {
             </div>
           </section>
         </main>
+
+        {/* Inside MobileShell so it shares the shell's stacking order: `z-30` puts it under the
+            bottom nav (z-40) and under either panel (z-50). It is `fixed`, so where it sits in
+            the tree changes nothing but that. */}
+        <BetSlipFab />
       </MobileShell>
     </>
   )

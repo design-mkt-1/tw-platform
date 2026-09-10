@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Button } from '@/components/primitives/Button'
+import { Button, INERT } from '@/components/primitives/Button'
 import { Icon } from '@/components/primitives/Icon'
 import { Sheet } from '@/components/primitives/Sheet'
 import { LANGUAGE_FLAGS, LOGO, MENU_ICONS, type MenuIconName } from '@/lib/assets'
@@ -160,11 +160,19 @@ function AuthBand() {
   return (
     <div className="flex shrink-0 gap-2 bg-surface px-gutter py-3">
       {/* 1:6651 — radius 8, #EDF5FF. Its declared `py: 6.606` is a Figma centring artefact. */}
-      <Button variant="muted" className="h-[38px] flex-1 text-sm capitalize">
+      <Button
+        variant="muted"
+        aria-disabled="true"
+        className={`h-[38px] flex-1 text-sm capitalize ${INERT}`}
+      >
         Увійти
       </Button>
       {/* 1:6653 — radius 6, the CTA gradient, drop-shadow rgba(255,69,0,0.33) + inset highlight. */}
-      <Button variant="cta" className="h-[38px] flex-1 text-sm capitalize">
+      <Button
+        variant="cta"
+        aria-disabled="true"
+        className={`h-[38px] flex-1 text-sm capitalize ${INERT}`}
+      >
         Реєстрація
       </Button>
     </div>
@@ -218,7 +226,11 @@ function IdentityBand({ vip }: { vip: boolean }) {
             drop-shadow(0 4px 6px rgba(198,144,61,0.25)), i.e. #C6903D at 25% on a green button.
             That is declared Figma data, not a transcription slip, and it ships as drawn. The
             `deposit` variant carries the glow; radius 8 overrides the variant's 6. */}
-        <Button variant="deposit" className="h-[38px] w-[113px] shrink-0 rounded-md px-6 text-xs">
+        <Button
+          variant="deposit"
+          aria-disabled="true"
+          className={`h-[38px] w-[113px] shrink-0 rounded-md px-6 text-xs ${INERT}`}
+        >
           DEPOSIT
         </Button>
       </div>

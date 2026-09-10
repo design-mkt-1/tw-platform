@@ -1,0 +1,124 @@
+[
+  {
+    "id": "casino-home",
+    "name": "Casino home, logged in",
+    "figmaName": "Post log",
+    "nodeId": "1:581",
+    "figmaHeight": 5628.7,
+    "path": "/",
+    "fullPage": true,
+    "rejectText": ["Реєстрація"],
+    "note": "Реєстрація is the marker that separates the two auth frames: it is drawn by the logged-out header and by nothing else on this page. Measured against the 2026-09-11 export."
+  },
+  {
+    "id": "casino-home-prelogin",
+    "name": "Casino home, logged out",
+    "figmaName": "Pre log",
+    "nodeId": "1:3289",
+    "figmaHeight": 5628.7,
+    "path": "/?auth=prelogin",
+    "fullPage": true,
+    "expectText": ["Реєстрація"]
+  },
+  {
+    "id": "sport",
+    "name": "Sportsbook, logged in",
+    "figmaName": "Post log",
+    "nodeId": "1:88",
+    "figmaHeight": 1021,
+    "path": "/sport",
+    "fullPage": true,
+    "rejectText": ["Реєстрація"]
+  },
+  {
+    "id": "sport-prelogin",
+    "name": "Sportsbook, logged out",
+    "figmaName": "Prelog log",
+    "nodeId": "1:5994",
+    "figmaHeight": 1021,
+    "path": "/sport?auth=prelogin",
+    "fullPage": true,
+    "expectText": ["Реєстрація"],
+    "note": "Login changes the header and nothing else: the sportsbook body is node-for-node identical to 1:88 (docs/design-inventory/07-sport.md:34)."
+  },
+  {
+    "id": "menu-postlogin",
+    "name": "Menu, logged in",
+    "figmaName": "jackpot-menu postlog ",
+    "nodeId": "1:7015",
+    "figmaHeight": 847,
+    "path": "/?panel=menu",
+    "fullPage": false,
+    "rejectText": ["Реєстрація", "★"],
+    "note": "The Figma layer name ends in a space. Quoted on /dev/screens so the space is visible. The two rejects are what separate this frame from its two neighbours: Реєстрація is drawn only by the logged-out panel and ★ only by the VIP pill 1:6832. Note what is NOT used — the string VIP, which is in all three panels, because every one of them lists a Vip Manager link (MenuPanel.tsx:468). A marker chosen by reading the frame names rather than the rendered text would have picked it."
+  },
+  {
+    "id": "menu-prelogin",
+    "name": "Menu, logged out",
+    "figmaName": "jackpot-menu postlog",
+    "nodeId": "1:6641",
+    "figmaHeight": 764,
+    "path": "/?auth=prelogin&panel=menu",
+    "fullPage": false,
+    "expectText": ["Реєстрація"],
+    "rejectText": ["★"],
+    "note": "Figma names this frame postlog; the label lies. Its content is the logged-out panel — two auth buttons, no avatar, no ID, no VIP badge (src/components/panels/MenuPanel.tsx:18, docs/design-inventory/08-menus.md:43)."
+  },
+  {
+    "id": "menu-vip",
+    "name": "Menu, logged in as VIP",
+    "figmaName": "jackpot-menu postlog VIP",
+    "nodeId": "1:6816",
+    "figmaHeight": 847,
+    "path": "/?auth=vip&panel=menu",
+    "fullPage": false,
+    "expectText": ["★"],
+    "rejectText": ["Реєстрація"],
+    "note": "Differs from 1:7015 by one node: the orange VIP pill 1:6832 above the username. The header is identical. That one node is the whole difference, so ★ — the pill's own text node, MenuPanel.tsx:251 — is the only thing that proves this row captured the VIP frame and not its twin."
+  },
+  {
+    "id": "search-popular",
+    "name": "Search, empty field with history",
+    "figmaName": "mob main - State 1",
+    "nodeId": "1:7363",
+    "figmaHeight": 508,
+    "path": null,
+    "fullPage": false,
+    "note": "NO URL REACHES THIS FRAME, so it has never been screenshotted or axe-swept. It needs recent.length > 0: src/store/useAppStore.ts:37 starts recent as [], UrlStateBridge.tsx:46-47 calls setQuery, and setQuery (useAppStore.ts:49) never touches recent — only commitQuery does, and only an interaction calls it. So the Нещодавні запити list is drawn in Figma and unreviewable in the build. A state nobody can link to is a state nobody can review."
+  },
+  {
+    "id": "search-empty",
+    "name": "Search, empty field with no history",
+    "figmaName": "mob main - State 2",
+    "nodeId": "1:7595",
+    "figmaHeight": 336,
+    "path": "/?panel=search",
+    "fullPage": false,
+    "rejectText": ["Відповідні пропозиції", "Провайдерів не знайдено", "Нещодавні запити", "Популярні запити"],
+    "note": "Opening the panel with an empty recent list renders the empty state, which is this frame — not 1:7363. Captured under the name search-resting until 2026-09-10; renamed because that name pointed at the wrong frame. This row carries rejects and NO expectText, and that gap is measured rather than an oversight: the empty frame is the only one of the four whose content is entirely shared with the others. Its header Провідні провайдери is also drawn on the casino home behind it, and the one string unique to it — the field placeholder Пошук провайдерів... — is an attribute, which no text check reads. So this row proves it is not its three neighbours; it cannot prove the panel opened at all."
+  },
+  {
+    "id": "search-suggestions",
+    "name": "Search, query with matches",
+    "figmaName": "mob main - State 3",
+    "nodeId": "1:7806",
+    "figmaHeight": 496,
+    "path": "/?panel=search&q=prag",
+    "fullPage": false,
+    "expectText": ["Відповідні пропозиції"],
+    "rejectText": ["Провайдерів не знайдено"],
+    "note": "prag matches Pragmatic, the first of the five providers this panel searches. Verified in a browser against the static export on 2026-09-11: the panel draws ВІДПОВІДНІ ПРОПОЗИЦІЇ with one row, Pragmatic / 20 ігор / СЛОТИ. Until then the query was bon, and bon matched NOTHING — the panel searches providers, not games (SearchOverlay.tsx:123), and no provider among Pragmatic, 3 Oaks Gaming, BGaming, Nolimit City and Spribe contains it. So this row rendered Провайдерів не знайдено and was the same frame as search-no-results below it, and two of the design's four search states had never been screenshotted or axe-swept. The note that shipped with bon reasoned at length about whether to probe in Latin or Cyrillic and never checked whether the query returned a single hit; expectText below is what makes that impossible to repeat."
+  },
+  {
+    "id": "search-no-results",
+    "name": "Search, query with no matches",
+    "figmaName": "mob main - State not found",
+    "nodeId": "1:7214",
+    "figmaHeight": 571,
+    "path": "/?panel=search&q=%D0%BA%D1%81%D0%B7%D1%89",
+    "fullPage": false,
+    "expectText": ["Провайдерів не знайдено"],
+    "rejectText": ["Відповідні пропозиції"],
+    "note": "The query is ксзщ, percent-encoded exactly as it goes on the wire. It matches nothing and is Cyrillic on purpose: it is the home row on a Ukrainian keyboard, so it is a string a player could actually produce, and it proves the search survives Cyrillic input at all — the defect src/lib/search.ts was rewritten to fix."
+  }
+]

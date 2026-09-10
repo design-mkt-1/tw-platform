@@ -19,6 +19,17 @@ import { useAppStore } from '@/store/useAppStore'
  * That fill is 1.23:1 against the track it sits on (docs/tokens.md §6), and the shadow carrying
  * the rest of the signal does not survive high-contrast mode or grayscale. What is left is the
  * label colour and `aria-selected`, so the tab semantics here are not decoration.
+ *
+ * Until 2026-09-10 that last sentence was false: `activeCategory` was read nowhere outside this
+ * file, so all four chips drew the same 51 articles and `aria-selected` announced a switch that
+ * never happened. The chip now narrows every game row on the page — see `gamesInCategory` in
+ * src/lib/data.ts for the rule and why `Популярне` narrows nothing.
+ *
+ * The chips keep `role="tab"` because they now do what a tab does: exactly one is selected and
+ * selecting another changes the content below. They control eight separate rows rather than one
+ * swapped panel, so no `tabpanel` and no `aria-controls` exists to point at — recorded as a
+ * deviation from the ARIA tabs pattern rather than papered over by labelling `<main>` a panel,
+ * which would claim the hero, the ticker and the footer change too. They do not.
  */
 
 /**
@@ -39,8 +50,7 @@ export function CategoryBar() {
   const trackRef = useRef<HTMLDivElement>(null)
 
   // Left/Right move selection and focus together, which is the tab pattern users expect and is
-  // also the only way to reach the chips that start off-screen without a pointer — focusing one
-  // scrolls it into view.
+  // also the only way to reach the chips that start off-screen without a pointer.
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
     if (step === 0) return
@@ -49,7 +59,23 @@ export function CategoryBar() {
     const current = CATEGORIES.findIndex((category) => category.id === activeCategory)
     const next = (current + step + CATEGORIES.length) % CATEGORIES.length
     setCategory(CATEGORIES[next].id)
-    trackRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus()
+
+    // The track is 502 wide in a 390 frame, so chips 3 and 4 begin outside the viewport and
+    // `focus()` alone left `scrollLeft` at 0 — a focused control the user cannot see, which is a
+    // keyboard trap in practice. `preventScroll` keeps the browser's own scroll out of it and
+    // `inline: 'nearest'` moves the track by the least amount that puts the chip on screen;
+    // `block: 'nearest'` leaves the page's vertical position alone when the bar is already visible.
+    //
+    // Only when the chip is actually clipped, though: `nearest` aligns to the scroller's padding
+    // box, so calling it on a chip that is already fully visible still slid the track by the
+    // 20px gutter on the very first ArrowRight. Measured — a jump with nothing to fix.
+    const chip = trackRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]
+    chip?.focus({ preventScroll: true })
+    const chipBox = chip?.getBoundingClientRect()
+    const viewBox = trackRef.current?.parentElement?.getBoundingClientRect()
+    if (chipBox && viewBox && (chipBox.left < viewBox.left || chipBox.right > viewBox.right)) {
+      chip?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    }
   }
 
   return (

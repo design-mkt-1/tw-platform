@@ -53,10 +53,36 @@ function Slide() {
         className="pointer-events-none absolute left-[-75.88%] top-[-20.59%] h-[127.65%] w-[205.88%] max-w-none"
       />
 
-      {/* Promo badge 1:3310. Stored lowercase, rendered uppercase — see docs/tokens.md §4.4. */}
-      <p className="absolute left-[16.5px] top-[18px] w-[178px] rounded-full border-[0.553px] border-promo bg-promo-badge px-1 py-[4.424px] text-center font-outfit font-extrabold uppercase tracking-promo text-promo shadow-promo-badge">
+      {/*
+       * Promo badge 1:3310. Stored lowercase, rendered uppercase — see docs/tokens.md §4.4.
+       *
+       * `whitespace-nowrap` is the same fix the title below carries, for the same reason. The
+       * badge is authored 178 wide, which leaves a 168px content box after `px-1` and the
+       * 0.553px border; the three spans need 169.98px on one line in Inter, measured with the
+       * element forced to nowrap. Two pixels short, so it wrapped — and what wrapped was the
+       * trailing `✦`, which landed at (102.06, 58.42), on top of the `250.000 + 250 FS`
+       * headline, turning a 178x21.847 badge into 178x58.84.
+       *
+       * The 178 stays. Nothing here is `w-max`, because unlike the title this box is a drawn
+       * surface: it has a fill, a border, a radius and a shadow, so its width is design and not
+       * just a text bound. The 1.98px shortfall is absorbed by the padding instead — the text
+       * is centred, so it takes 0.99px off each 4px pad and never reaches the border.
+       *
+       * `text-6xs` moved from the middle span onto the `<p>`, and that is the second half of the
+       * same bug. The 10px is the node's own size and the two `✦` runs are the exception, so the
+       * `<p>` carrying it is what the file says. It also matters to the box: with no size of its
+       * own the paragraph inherited the page's 16px/24px, and a block's line box is at least as
+       * tall as that strut whatever its inline children measure. So even unwrapped the badge came
+       * out 34.84 tall against the drawn 21.847 — 24 for the strut instead of 12 for the text.
+       *
+       * Measured after the change: 178 x 22.84, one line box of 12. The remaining 0.89 against
+       * Figma's 21.847 is not the type, it is the border — Chrome uses a whole pixel for a
+       * declared 0.553px hairline, so the box carries 2px of border where the design counts
+       * 1.106. Closing that gap would mean changing the border, which is drawn, so it stays.
+       */}
+      <p className="absolute left-[16.5px] top-[18px] w-[178px] whitespace-nowrap rounded-full border-[0.553px] border-promo bg-promo-badge px-1 py-[4.424px] text-center font-outfit text-6xs font-extrabold uppercase tracking-promo text-promo shadow-promo-badge">
         <span className="text-7xs">{'✦ '}</span>
-        <span className="text-6xs">вітальний пакет казіно</span>
+        <span>вітальний пакет казіно</span>
         <span className="text-7xs">{' ✦'}</span>
       </p>
 

@@ -169,6 +169,23 @@ cannot touch a running server's. Plain `npm run build` is for CI.
 into `.next` anyway and leaves `basePath` in its manifest, which makes the dev server answer 500 on
 every route. To produce an export locally, stop `next dev` first, and delete `.next` afterwards.
 
+**A free port is not enough for a parallel run.** Measured on 2026-09-10: a worker started
+`next dev` on its own port while another already had one up, they shared `.next`, and the second
+corrupted it into React-Client-Manifest 500s. It is the directory that collides, never the port.
+Every concurrent agent needs its own `NEXT_DIST_DIR`, not just its own `--port`.
+
+**Every build edits `tsconfig.json`, which is tracked.** Next appends its dist directory to
+`include` on each run, so a five-worker pass left the file carrying `.next-b1`, `.next-b2`,
+`.next-b4` and `.review-tmp/next-dev-b3`. Nobody typed that and no review would have questioned it.
+Check `git diff tsconfig.json` before staging and `git checkout --` it if the only change is
+Next's. `.gitignore` learned `/.next-*/` and `/.review-tmp/` the same day — until then
+`.next-build`, the directory this section tells everyone to use, was **not ignored**, so a
+`git add -A` would have committed 30 MB of build output.
+
+**Serve an export with a threaded server.** `python -m http.server` is single-threaded;
+`review.mjs` drives it with enough parallel requests that it returns `ERR_EMPTY_RESPONSE` and the
+run reads as an app failure. `ThreadingHTTPServer` with the same handler is a one-liner and holds.
+
 ## Before pushing to main
 
 A push to `main` deploys. `.github/workflows/pages.yml` publishes to
@@ -226,7 +243,26 @@ rendered nowhere, so the button did nothing — was found by grepping for who mo
 | `q` | the search query, which selects one of the four search states |
 
 A state nobody can link to is a state nobody can review. Change these names and both capture
-scripts need changing with them.
+scripts need changing with them — `src/lib/__tests__/screens.test.ts` fails if either script starts
+carrying a hard-coded `?auth=` / `?panel=` / `q=` again.
+
+**`src/data/screens.json` is the single list of reviewable states**, one row per 390-wide Figma
+frame: node id, layer name as Figma holds it, the URL that reaches it, and a `note` for anything a
+reviewer needs first. `review.mjs`, `a11y.mjs` and `/dev/screens` all read that one file. Until
+2026-09-10 the list lived in both scripts and the two copies could disagree without anything
+failing.
+
+A row with `path: null` is a frame the build cannot address. There is one: `1:7363`, the
+`Нещодавні запити` search state, which needs `recent.length > 0` — and `recent` lives only in the
+store, so no URL produces it. It has never been captured or scanned.
+
+**A URL that renders the wrong frame is worse than a missing one, because it looks captured.**
+`?panel=search&q=bon` was recorded as the suggestions state for weeks; `bon` matches none of the
+five providers, so it rendered no-results — the same frame as the row below it. Each row now
+carries `expectText` and `review.mjs` asserts it.
+
+`/dev/screens` renders the registry as a page. It is published in the export because a static
+export has no dev-only mode, nothing in the app links to it, and `robots` is `noindex` everywhere.
 
 ## Working with the Figma file
 
@@ -278,6 +314,29 @@ where it had been noticed.
 Two fixes from 2026-09-10 that were deliberately made once rather than per site: the currency
 formatter is the only place in `src` that touches `Intl`, and `prefetch={false}` is hard-coded
 inside the shared link primitive before the prop spread, so a caller can still override it.
+
+### Three classes this project keeps producing, each with the guard that now catches it
+
+**A control that is drawn, labelled and wired to nothing.** `BetSlipFab` was a finished component
+no file rendered, so an odds cell set `aria-pressed="true"` and nothing drew the coupon. The menu
+and search panels shipped the same way in an earlier session. `src/lib/__tests__/mounted.test.ts`
+fails on any exported component no other file under `src` names.
+Its sibling cannot be caught that way and is worth knowing: `activeCategory` was a **store field**
+written by `CategoryBar` and read by nobody, so four chips changed paint and filtered nothing. A
+component-level walk does not see that. Grep the store for a field whose only reader is its writer.
+
+**Decorative artwork that takes pointer events.** The raised Menu button's glow is a `123.891 x
+131.535` span inside a `63.653 x 93` button; it surrendered 748 of 837 sample points to a decoration
+and made the last odds cell on `/sport` open the menu instead. Three sibling cases —
+`HeroCarousel.tsx:53` and both slides in `BonusCarousel.tsx` — already carried `pointer-events-none`;
+only the nav had been missed. `review.mjs` now hit-tests every control's own centre.
+
+**A layout box measured against a font that cannot render its text.** The hero promo badge is 178
+wide and the Cyrillic inside it needs 169.98 in a 168px content box, so it wrapped and dropped its
+trailing `✦` onto the headline. Outfit ships no Cyrillic and the build aliases it to Inter, which is
+wider. Not every such box is wrong: the footer's `Політика конфіденційності` overflows `w-[141px]`
+and the design draws it on two lines (`05-casino-footer.md:242`). The guard reports both; the
+allowlist carries the node id that makes one of them correct.
 
 This paragraph is the house rule and it wins over `superpowers:systematic-debugging` on any
 conflict, the same way `explica` wins over `caveman`.

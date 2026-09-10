@@ -65,10 +65,23 @@ export type ChipIconName = keyof typeof CHIP_ICONS
 /* --- casino section headers ---------------------------------------------- */
 
 /**
- * Nine of the design's section icons. Three more (megaways, wheel-fortune, and the 20px
- * must-play-slots) could not be exported: download_assets caps a subtree at 20 SVG fragments
- * and the icons' mask stacks consume the cap. Sections using those fall back to `popular`,
- * and the gap is recorded in docs/tokens.md.
+ * All eleven of the design's section icons.
+ *
+ * The last three arrived late and by a different route. `download_assets` caps a subtree at 20 SVG
+ * fragments, and the header group's mask stacks consume the cap before every icon is reached, so
+ * the first pass could not attribute a fragment to an icon and those three sections fell back to
+ * `popular`. The fix was one `download_assets` per icon *frame* — that flattens the stack and
+ * returns the whole node as a single export:
+ *
+ *   megaways          `1:4864`, recovered from a URL already recorded in the inventory, no new call
+ *   must-play-slots   `1:4490`, one call
+ *   wheel-fortune     `1:5567`, one call
+ *
+ * `mustPlaySlots` is the 20px `#92BDF3` header version and is NOT the same file as
+ * `CHIP_ICONS.mustPlaySlots`, which is 16px `#71809A`. Both were exported and compared here: the
+ * four path ids are identical (`path2815/2819/2823/2829`), so it is one drawing at two sizes in two
+ * paints. `docs/design-inventory/manifest-casino-icons.md` recorded that as an open question; this
+ * is the answer.
  */
 export const SECTION_ICONS = {
   popular: withBase('/images/icons/section-popular.svg'),
@@ -79,6 +92,9 @@ export const SECTION_ICONS = {
   jackpots: withBase('/images/icons/section-jackpots.svg'),
   lottery: withBase('/images/icons/section-lottery.svg'),
   dropsAndWins: withBase('/images/icons/section-drops-and-wins.svg'),
+  mustPlaySlots: withBase('/images/icons/section-must-play-slots.svg'),
+  megaways: withBase('/images/icons/section-megaways.svg'),
+  wheelFortune: withBase('/images/icons/section-wheel-fortune.svg'),
 } as const
 
 export type SectionIconName = keyof typeof SECTION_ICONS

@@ -23,9 +23,53 @@ import type { AuthMode, PanelId } from '@/lib/types'
  *    written. A component that read it continuously would re-render on its own writes.
  *  - `history.replaceState`, not the router. Pushing would put every panel open/close into the
  *    back stack, so leaving the site would take eleven presses of Back.
+ *
+ * ## Why the write carries `window.history.state` — the bug that made every menu link dead
+ *
+ * Measured on 2026-09-10: all eleven links in the menu panel closed the panel and navigated
+ * nowhere. No `pushState` was ever issued; `history.length` did not grow. The route was fine, the
+ * href was fine, and intercepting the click before React saw it navigated correctly.
+ *
+ * The cause is here. The App Router replaces `window.history.replaceState` with its own function
+ * (`next/dist/client/components/app-router.js`), and that function dispatches `ACTION_RESTORE`
+ * for any call whose state object is not Next's own — restoring the router to the tree currently
+ * in `window.history.state`, i.e. the page you are standing on. Next's queue then does exactly
+ * what it says in its own comment: "Navigations (including back/forward) take priority over any
+ * pending actions. Mark the pending action as discarded (so the state is never applied)".
+ *
+ * So tapping SPORT ran, in one React batch: `closePanel()` → `<Link>` hands `ACTION_NAVIGATE` to
+ * the router and awaits `/sport` → this effect sees `panel: null`, writes `/` → patched
+ * `replaceState` dispatches `ACTION_RESTORE` → the pending navigation is discarded. The panel
+ * closed, `panel=` left the URL, and the page never moved. Every navigation that coincided with
+ * a store change died the same way; that is why it was all eleven rows rather than one.
+ *
+ * Passing the CURRENT state object instead of `null` fixes the class. Next's patch begins
+ * "Avoid a loop when Next.js internals trigger pushState/replaceState" and short-circuits to the
+ * unpatched `replaceState` whenever the state carries `__NA`, which the router's own entries
+ * always do. The URL still changes; the router is simply not told, which is the whole intent of
+ * a mirror. It is also the more honest call: `null` was discarding Next's internal history state
+ * on every panel toggle, and only Next's patch was quietly putting it back.
+ *
+ * Settled by experiment, not by reading: with this effect disabled and `onClick={closePanel}`
+ * left in place — so the `<Link>` still unmounts in the same batch — SPORT navigates and pushes
+ * `/sport`. The unmount was innocent.
  */
 const AUTH_MODES: AuthMode[] = ['prelogin', 'postlogin', 'vip']
 const PANELS: PanelId[] = ['menu', 'search']
+
+/**
+ * The path the last mount read its state from, for the whole document's lifetime.
+ *
+ * `src/app/page.tsx` and `src/app/sport/page.tsx` each mount their own bridge, so a client-side
+ * route change unmounts one and mounts another — and the new one used to read `panel=menu` off a
+ * URL that had not been cleaned yet, which re-opened the menu over the page it had just been
+ * used to reach. Comparing paths tells the two cases apart: same path is a fresh load or React's
+ * StrictMode double-mount and re-reads the URL, a different path is a navigation and the panel
+ * belongs to the page we left.
+ *
+ * Module scope rather than a ref, because the whole point is to outlive the component.
+ */
+let lastReadPath: string | null = null
 
 export function UrlStateBridge() {
   const auth = useAppStore((s) => s.auth)
@@ -35,8 +79,17 @@ export function UrlStateBridge() {
   // Read once. The empty dependency list is deliberate: re-running this would overwrite the
   // user's interaction with whatever the URL said when the page loaded.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
+    const path = window.location.pathname
+    const navigated = lastReadPath !== null && lastReadPath !== path
+    lastReadPath = path
+
     const store = useAppStore.getState()
+    if (navigated) {
+      store.closePanel()
+      return
+    }
+
+    const params = new URLSearchParams(window.location.search)
 
     const urlAuth = params.get('auth')
     if (urlAuth && (AUTH_MODES as string[]).includes(urlAuth)) {
@@ -69,7 +122,9 @@ export function UrlStateBridge() {
     const search = params.toString()
     const next = `${window.location.pathname}${search ? `?${search}` : ''}`
     if (next !== `${window.location.pathname}${window.location.search}`) {
-      window.history.replaceState(null, '', next)
+      // The state object is what keeps this write invisible to the router — see the note at the
+      // top. Passing `null` here is what made every menu link dead.
+      window.history.replaceState(window.history.state, '', next)
     }
   }, [auth, panel, query])
 

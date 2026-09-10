@@ -1,5 +1,5 @@
 import { chromium } from 'playwright'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { assertApp } from './assert-app.mjs'
 
 /**
@@ -29,36 +29,30 @@ if (!OUT) {
 const AXE = 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js'
 
 // Every state the Top-Win design draws, addressed through the query-string contract in
-// src/components/UrlStateBridge.tsx: auth = prelogin | postlogin | vip, panel = menu | search,
-// q = the search query.
+// src/components/UrlStateBridge.tsx. The list itself is not here: src/data/screens.json is the
+// single source, one row per Figma frame, and scripts/review.mjs reads the same file. A row
+// without a path is a frame no URL reaches — it is listed at /dev/screens with the reason, and it
+// cannot be swept here. The reasoning behind each search probe lives in that row's `note`.
 //
+// `readFileSync` with a URL relative to this module, so the script does not depend on the
+// directory it was invoked from, and so it runs on Node 20 without an import-attributes flag.
+const SCREENS = JSON.parse(readFileSync(new URL('../src/data/screens.json', import.meta.url), 'utf8'))
+const STATES = SCREENS.filter((s) => s.path)
+
 // All 390 wide. The Figma file has no desktop frame, no tablet frame and no breakpoint, so a
 // 1440 row here would be testing a layout that does not exist.
-const STATES = [
-  { name: 'casino-home', path: '/', width: 390, height: 844 },
-  { name: 'casino-home-prelogin', path: '/?auth=prelogin', width: 390, height: 844 },
-  { name: 'sport', path: '/sport', width: 390, height: 844 },
-  { name: 'sport-prelogin', path: '/sport?auth=prelogin', width: 390, height: 844 },
-  { name: 'menu-postlogin', path: '/?panel=menu', width: 390, height: 844 },
-  { name: 'menu-prelogin', path: '/?auth=prelogin&panel=menu', width: 390, height: 844 },
-  { name: 'menu-vip', path: '/?auth=vip&panel=menu', width: 390, height: 844 },
-  { name: 'search-resting', path: '/?panel=search', width: 390, height: 844 },
-  // 'bon' matches Sweet Bonanza; the catalogue is Latin, as the design's own tiles are. 'ксзщ'
-  // matches nothing and is the home row on a Ukrainian keyboard, so it also proves the search
-  // survives Cyrillic input — the defect src/lib/search.ts was rewritten to fix.
-  { name: 'search-suggestions', path: '/?panel=search&q=bon', width: 390, height: 844 },
-  { name: 'search-no-results', path: '/?panel=search&q=%D0%BA%D1%81%D0%B7%D1%89', width: 390, height: 844 },
-]
+const WIDTH = 390
+const HEIGHT = 844
 
 mkdirSync(OUT, { recursive: true })
 
 const browser = await chromium.launch({ channel: 'chrome' })
 const results = []
 
-for (const state of STATES) {
-  const url = `${BASE}${state.path}`
+for (const screen of STATES) {
+  const url = `${BASE}${screen.path}`
   const page = await browser.newPage({
-    viewport: { width: state.width, height: state.height },
+    viewport: { width: WIDTH, height: HEIGHT },
     deviceScaleFactor: 1,
     reducedMotion: 'reduce',
   })
@@ -68,9 +62,9 @@ for (const state of STATES) {
     await page.addScriptTag({ url: AXE })
     const run = await page.evaluate(() => window.axe.run())
     results.push({
-      state: state.name,
+      state: screen.id,
       url,
-      viewport: `${state.width}x${state.height}`,
+      viewport: `${WIDTH}x${HEIGHT}`,
       violations: run.violations.map((v) => ({
         id: v.id,
         impact: v.impact,
@@ -81,9 +75,9 @@ for (const state of STATES) {
     })
   } catch (error) {
     results.push({
-      state: state.name,
+      state: screen.id,
       url,
-      viewport: `${state.width}x${state.height}`,
+      viewport: `${WIDTH}x${HEIGHT}`,
       violations: [],
       failure: String(error),
     })

@@ -12,6 +12,24 @@ import type { ComponentProps, ReactNode } from 'react'
  * it had been noticed. Putting it here fixes the class, and a caller that one day links
  * somewhere real can still override it because the spread comes after.
  */
+/**
+ * What a Button wears when the design gives it no flow to run.
+ *
+ * Pair it with `aria-disabled="true"`, never with `disabled`: `disabled` drops the control out of
+ * the tab order, and the six equivalent inert controls elsewhere in this build — SectionHeader's
+ * see-all pill, LeagueStrip's `Всі ліги` and its more-leagues arrow, UpcomingHeader's `Всі події`,
+ * and SportNavRow's ★ and 🎁 — all chose the opposite, so the state stays discoverable.
+ *
+ * Those six write their skins by hand precisely to escape this primitive's baked-in
+ * `active:scale-[0.97]`. A caller that keeps the primitive needs `!` to win instead: a control
+ * that squashes under a finger and then does nothing is a lie told twice.
+ *
+ * Lives here rather than in a panel because the same four buttons appear in two places —
+ * `Увійти` and `Реєстрація` are drawn both in the header (1:3295, 1:3297) and in the menu
+ * (1:6651, 1:6653), and a string copied into both files drifts.
+ */
+export const INERT = 'cursor-default active:!scale-100'
+
 type Variant = 'cta' | 'muted' | 'deposit' | 'ghost'
 
 const VARIANTS: Record<Variant, string> = {

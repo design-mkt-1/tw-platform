@@ -48,13 +48,19 @@ function Section({ spec }: { spec: SectionSpec }) {
     // all. A grid or a provider row without one is a data error, and rendering an untitled row
     // would hide it — a header with an empty title still draws its rule and its see-all pill,
     // so the page would look almost right and the missing string would never be noticed.
+    //
+    // The grid draws its own header: the selected category chip can empty a row, and only
+    // something holding the game count can decide not to draw the heading over nothing.
     case 'game-grid':
       if (!spec.title) throw new Error(`section ${spec.id} is a game-grid with no title`)
       return (
-        <section aria-label={spec.title} className="flex flex-col gap-4 px-gutter">
-          <SectionHeader title={spec.title} icon={spec.icon} seeAllLabel={spec.seeAllLabel} />
-          <GameGrid filter={spec.filter} rows={spec.rows} />
-        </section>
+        <GameGrid
+          title={spec.title}
+          icon={spec.icon}
+          seeAllLabel={spec.seeAllLabel}
+          filter={spec.filter}
+          rows={spec.rows}
+        />
       )
 
     case 'provider-row':

@@ -163,10 +163,18 @@ export function BottomNavBar() {
         className="pointer-events-auto absolute left-[156px] top-[3px] h-[93px] w-[63.653px] transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
       >
         {/* The button artwork and its glow, one asset. Offset by the glow's own bleed:
-            -30.12px each side, -0.83px on top, +71.79px below. */}
+            -30.12px each side, -0.83px on top, +71.79px below.
+
+            `pointer-events-none` because this span is 123.891 x 131.535 inside a button that is
+            63.653 x 93, and a child of a `pointer-events-auto` control inherits its events. Without
+            it the glow presents a hit box nearly four times the control: it reached the top of the
+            111px frame and swallowed the last odds cell on /sport at full scroll, plus four footer
+            links and part of the provider scroller on /. Decorative artwork that overflows its box
+            is a class — HeroCarousel.tsx:53 and BonusCarousel.tsx:50 / :66 are the same shape and
+            all three already carry this. */}
         <span
           aria-hidden
-          className="absolute left-[-30.12px] top-[-0.83px] block h-[131.535px] w-[123.891px]"
+          className="pointer-events-none absolute left-[-30.12px] top-[-0.83px] block h-[131.535px] w-[123.891px]"
           style={{
             backgroundImage: `url(${NAV_CENTER_BUTTON})`,
             backgroundSize: '100% 100%',
