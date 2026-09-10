@@ -29,7 +29,8 @@ import type { AuthMode, CategoryId, PanelId } from '@/lib/types'
  *  - the URL is a mirror, never a source. It is read once, on mount, and after that only
  *    written. A component that read it continuously would re-render on its own writes.
  *  - `history.replaceState`, not the router. Pushing would put every panel open/close into the
- *    back stack, so leaving the site would take eleven presses of Back.
+ *    back stack, so leaving the site would take eleven presses of Back. The ONE entry a panel
+ *    does push, so that Back closes it, is the store's, not this mirror's (useAppStore.ts).
  *
  * ## Why the write carries `window.history.state` — the bug that made every menu link dead
  *
@@ -102,8 +103,10 @@ export function UrlStateBridge() {
     lastReadPath = path
 
     const store = useAppStore.getState()
+    // `leavePanel`, not `closePanel`: this is a navigation arriving, and closing in place would
+    // step back through history in the middle of it (useAppStore.ts, the Back gesture note).
     if (navigated) {
-      store.closePanel()
+      store.leavePanel()
       return
     }
 
@@ -118,7 +121,7 @@ export function UrlStateBridge() {
     if (urlQuery) store.setQuery(urlQuery)
 
     // Before the panel and after the auth mode, because `setCategory` sets `panel: null` as a
-    // side effect (src/store/useAppStore.ts:47) — the chip closes whatever sheet is open, which
+    // side effect (src/store/useAppStore.ts:99) — the chip closes whatever sheet is open, which
     // is what a chip does. Read after `openPanel` it would close the panel the URL asked for.
     const urlCategory = params.get('category')
     if (urlCategory && (CATEGORY_IDS as string[]).includes(urlCategory)) {
@@ -132,31 +135,43 @@ export function UrlStateBridge() {
     }
   }, [])
 
-  // Write on every change.
+  // Write on every change — and after every step through history. A panel that closes in place
+  // steps back over the entry it pushed (useAppStore.ts), landing on an entry written BEFORE the
+  // change: picking a provider on `/` wrote `?category=slots` onto the panel's entry, stepped
+  // back, and left the URL at a bare `/` while the page showed slots (measured on the dev server,
+  // 2026-09-10). Reading the store rather than this render's values keeps the popstate write
+  // current: the store's own popstate listener has already closed the panel by then.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
+    function write() {
+      const { auth, panel, query, activeCategory: category } = useAppStore.getState()
+      const params = new URLSearchParams(window.location.search)
 
-    if (auth === 'postlogin') params.delete('auth')
-    else params.set('auth', auth)
+      if (auth === 'postlogin') params.delete('auth')
+      else params.set('auth', auth)
 
-    if (panel) params.set('panel', panel)
-    else params.delete('panel')
+      if (panel) params.set('panel', panel)
+      else params.delete('panel')
 
-    if (query) params.set('q', query)
-    else params.delete('q')
+      if (query) params.set('q', query)
+      else params.delete('q')
 
-    // `popular` is omitted the way `postlogin` is: it is the page as drawn, and writing it would
-    // put a parameter on every URL that says nothing.
-    if (category === 'popular') params.delete('category')
-    else params.set('category', category)
+      // `popular` is omitted the way `postlogin` is: it is the page as drawn, and writing it
+      // would put a parameter on every URL that says nothing.
+      if (category === 'popular') params.delete('category')
+      else params.set('category', category)
 
-    const search = params.toString()
-    const next = `${window.location.pathname}${search ? `?${search}` : ''}`
-    if (next !== `${window.location.pathname}${window.location.search}`) {
-      // The state object is what keeps this write invisible to the router — see the note at the
-      // top. Passing `null` here is what made every menu link dead.
-      window.history.replaceState(window.history.state, '', next)
+      const search = params.toString()
+      const next = `${window.location.pathname}${search ? `?${search}` : ''}`
+      if (next !== `${window.location.pathname}${window.location.search}`) {
+        // The state object is what keeps this write invisible to the router — see the note at
+        // the top. Passing `null` here is what made every menu link dead.
+        window.history.replaceState(window.history.state, '', next)
+      }
     }
+
+    write()
+    window.addEventListener('popstate', write)
+    return () => window.removeEventListener('popstate', write)
   }, [auth, panel, query, category])
 
   return null

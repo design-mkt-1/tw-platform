@@ -143,6 +143,10 @@
   --nav-bar-h: 68px;               /* 1:6490, the painted plate */
   --nav-frame-h: 111px;            /* 1:6488, plate plus the raised button's overhang */
   --page-gutter: 16px;             /* every section on every screen starts at x 16, width 358 */
+  /* The widest the page grows. Not a design value: the design is 390 and draws no wider frame.
+     480 covers every current phone (the 440 Pro Max, Androids to 480). body, the nav, the sheets
+     and the coupon cap with this one variable, so the desktop project changes one number. */
+  --page-max: 480px;
 }
 
 @layer base {
@@ -159,12 +163,14 @@
   body {
     background-color: var(--bg-page);
     color: var(--text-primary);
-    /* The design is 390 wide with no breakpoint anywhere in the file. Below 390 the page is
-       fluid; above it the 390 column is centred, so a desktop browser or a 430 phone shows the
-       phone layout rather than a stretched one. Until 2026-09-10 this said `max-width: 100%`,
-       which centres nothing — body measured 1897 wide on a 1912 desktop. */
+    /* Fluid on every phone, capped at --page-max (owner's decision, 2026-09-10). The design is
+       390 wide and draws no other frame; until this change the page stopped at 390, which left
+       25px of empty page each side on a 440 phone. Above the cap the column is centred, so a
+       desktop browser still shows the phone layout — a desktop version is a later project, not
+       this rule. (Before 2026-09-10 this said `max-width: 100%`, which centres nothing — body
+       measured 1897 wide on a 1912 desktop.) */
     margin-inline: auto;
-    max-width: 390px;
+    max-width: var(--page-max);
     -webkit-font-smoothing: antialiased;
   }
 
@@ -180,6 +186,13 @@
      the nav it becomes two tones: the white outline reads on the plate, and the blue shadow in the
      2px offset gap reads on the page behind the raised button's upper half, which sits over
      content rather than over the plate. */
+  /* `<main>` takes focus only from script — after a menu row changes route (MenuPanel.tsx,
+     ux-audit B1-18), so the next Tab starts from the page rather than from <body>. It is a
+     landing spot, not a control, and a ring around the whole page would read as a selection. */
+  main:focus-visible {
+    outline: none;
+  }
+
   [data-bottom-nav] :focus-visible {
     outline-color: var(--text-on-dark);
     box-shadow: 0 0 0 2px var(--text-label);

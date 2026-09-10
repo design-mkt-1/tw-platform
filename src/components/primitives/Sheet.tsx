@@ -115,11 +115,12 @@ export function Sheet({ open, onClose, label, children, clearsNavBar, className 
   if (!open) return null
   if (typeof document === 'undefined') return null
 
-  // `mx-auto max-w-[390px]`: the page is a centred 390 column above 390 (globals.css, body), and
-  // a fixed box escapes that column, so the sheet centres itself the same way the nav does.
+  // `mx-auto max-w-[var(--page-max)]`: the page is fluid up to --page-max and a centred column
+  // above it (globals.css, body), and a fixed box escapes that column, so the sheet caps and
+  // centres itself the same way the nav does.
   return createPortal(
     <div
-      className={`fixed inset-x-0 top-0 z-50 mx-auto max-w-[390px] ${clearsNavBar ? 'bottom-[calc(var(--nav-bar-h)+env(safe-area-inset-bottom))]' : 'bottom-0'}`}
+      className={`fixed inset-x-0 top-0 z-50 mx-auto max-w-[var(--page-max)] ${clearsNavBar ? 'bottom-[calc(var(--nav-bar-h)+env(safe-area-inset-bottom))]' : 'bottom-0'}`}
     >
       <div
         ref={surfaceRef}

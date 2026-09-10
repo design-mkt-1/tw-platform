@@ -110,6 +110,7 @@ export function SearchOverlay() {
   const setQuery = useAppStore((s) => s.setQuery)
   const commitQuery = useAppStore((s) => s.commitQuery)
   const closePanel = useAppStore((s) => s.closePanel)
+  const leavePanel = useAppStore((s) => s.leavePanel)
   const setCategory = useAppStore((s) => s.setCategory)
   const pathname = usePathname()
   const router = useRouter()
@@ -190,6 +191,11 @@ export function SearchOverlay() {
    * Q1 and Q4).
    */
   function pickProvider(provider: Provider) {
+    // Off `/` this is a navigation, so the panel leaves rather than closing in place: closing in
+    // place steps back through history, which would cancel the move to `/` below
+    // (useAppStore.ts, the Back gesture note). On `/` setCategory closes it in place.
+    const leaving = pathname !== '/'
+    if (leaving) leavePanel()
     commitQuery(provider.name)
     // The visible change is the page behind: switch the category bar to whatever this provider
     // mostly supplies, so closing the panel does not look like nothing happened.
@@ -202,7 +208,8 @@ export function SearchOverlay() {
     // the pick takes the player to the page it changes. The store survives client navigation, and
     // the bridge `/` mounts treats a path change as a navigation: it closes panels and leaves
     // `activeCategory` alone, then writes it back as `?category=`.
-    if (pathname !== '/') router.push('/')
+    // `replace`: the route takes the place of the history entry the panel pushed.
+    if (leaving) router.replace('/')
   }
 
   return (

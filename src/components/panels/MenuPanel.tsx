@@ -1,12 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Button, INERT } from '@/components/primitives/Button'
 import { Icon } from '@/components/primitives/Icon'
 import { Sheet } from '@/components/primitives/Sheet'
 import { LANGUAGE_FLAGS, LOGO, MENU_ICONS, type MenuIconName } from '@/lib/assets'
 import { USER } from '@/lib/data'
-import { useAppStore } from '@/store/useAppStore'
+import { followLinkOutOfPanel, takeFocusMainOnArrival, useAppStore } from '@/store/useAppStore'
 
 /**
  * The slide-in menu, the panel the raised centre button opens.
@@ -104,10 +106,26 @@ const ROWS: MenuRow[] = [
 /** The only two routes this demo has; every other href in the design is dead by design. */
 const REAL_ROUTES = new Set(['/', '/sport'])
 
+/**
+ * Every link in the panel. `replace` and this handler go together — useAppStore.ts explains the
+ * history entry they hand over: a link to another route replaces the entry the panel pushed, and
+ * a link to the route already showing just closes the panel.
+ */
+type Navigate = (event: MouseEvent, href: string) => void
+
 export function MenuPanel() {
   const panel = useAppStore((s) => s.panel)
   const auth = useAppStore((s) => s.auth)
   const closePanel = useAppStore((s) => s.closePanel)
+  const pathname = usePathname()
+  const navigate: Navigate = (event, href) => followLinkOutOfPanel(event, href === pathname)
+
+  // B1-18: a panel link that changed route lands focus on the new page's <main>. Every page
+  // mounts its own MenuPanel through MobileShell, so this mount is the arrival. Next's own
+  // route focus runs before it and lands on the header, which is not focusable.
+  useEffect(() => {
+    if (takeFocusMainOnArrival()) document.querySelector('main')?.focus({ preventScroll: true })
+  }, [])
 
   return (
     <Sheet open={panel === 'menu'} onClose={closePanel} label="Меню" clearsNavBar className="scrollbar-none">
@@ -133,7 +151,7 @@ export function MenuPanel() {
       <div className="relative flex min-h-full flex-col bg-menu-panel pb-[calc(var(--nav-frame-h)-var(--nav-bar-h))] after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-[var(--border-panel)]">
         <PanelHeader onClose={closePanel} />
         {auth === 'prelogin' ? <AuthBand /> : <IdentityBand vip={auth === 'vip'} />}
-        <MenuBody onNavigate={closePanel} prelogin={auth === 'prelogin'} />
+        <MenuBody onNavigate={navigate} prelogin={auth === 'prelogin'} />
       </div>
     </Sheet>
   )
@@ -285,6 +303,20 @@ function VipBadge() {
  * pixel. Not to the right — a bleed there reads as horizontal overflow in review.mjs Guard 2.
  */
 function IdField() {
+  // Copy-ID confirmation (owner's decision, 2026-09-10): the glyph becomes a check for 1.5s once
+  // the clipboard write has resolved, and no text is added. The ref restarts the 1.5s on a
+  // second press instead of letting the first press's timer cut it short.
+  const [copied, setCopied] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  function copy() {
+    navigator.clipboard?.writeText(USER.id).then(() => {
+      setCopied(true)
+      clearTimeout(timer.current)
+      timer.current = setTimeout(() => setCopied(false), 1500)
+    })
+  }
+
   return (
     <div className="mt-2 flex h-10 items-center justify-between rounded-md bg-tint px-2">
       {/* 1:6840 — gap 6. Both runs are Inter Regular 17/22; only the colour differs. */}
@@ -294,9 +326,9 @@ function IdField() {
       </p>
       {/*
         1:6843 — 34x34, radius 6, fill rgba(216,221,231,0.6), which composites over the field to
-        the #DFE5F0 the pixel pass read. The design draws no "copied" confirmation, so this
-        writes to the clipboard and says nothing — inventing a toast would be inventing a
-        component. Recorded in the return value.
+        the #DFE5F0 the pixel pass read. The design draws no "copied" confirmation; the check the
+        glyph swaps to is ours (MENU_ICONS.check, drawn to copy.svg's box), and no toast or
+        announcement is added — either would need Ukrainian copy the design does not contain.
 
         The glyph 1:6844 is 14.3008 x 16.0013, not square, and declares `fill="#191970"` — the
         file's own named `Navy` style, i.e. `--text-navy` exactly. The box is its drawn size so
@@ -305,12 +337,12 @@ function IdField() {
       <button
         type="button"
         aria-label={`Копіювати ID ${USER.id}`}
-        onClick={() => navigator.clipboard?.writeText(USER.id)}
+        onClick={copy}
         className="relative flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-sm bg-copy-btn after:absolute after:-inset-y-[5px] after:-left-[10px] after:right-0 after:content-[''] transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
       >
         <span
           aria-hidden="true"
-          style={maskStyle(MENU_ICONS.copy)}
+          style={maskStyle(copied ? MENU_ICONS.check : MENU_ICONS.copy)}
           className="h-4 w-[14.3px] shrink-0 bg-navy"
         />
       </button>
@@ -321,10 +353,12 @@ function IdField() {
 /**
  * 1:6847 — a down-chevron and the word More, centred under the ID field, Roboto Bold 12/16.
  *
- * **It is not a control here.** It is the collapsed half of a two-state identity block whose
- * expanded half does not exist at any node in the file — no extra account fields, no second
- * frame, nothing. A button that opens nothing is worse than a label, so it ships as a label
- * until the expanded state is designed.
+ * **An inert control.** It is the collapsed half of a two-state identity block whose expanded
+ * half does not exist at any node in the file — no extra account fields, no second frame,
+ * nothing. It shipped as a plain label until the owner's decision of 2026-09-10 made it a
+ * `<button aria-disabled="true">`, so it wears the same dimmed paint as every other control with
+ * no target (globals.css `[aria-disabled='true']`) and stays reachable by keyboard. `mx-auto`
+ * because a button sizes to its content where the old `<p>` was the full row.
  *
  * The stored string is `Моre`, with CYRILLIC М (U+041C) and о (U+043E) — confirmed in the text
  * CONTENT, not only in the layer name, by a codepoint dump of the node. It renders identically
@@ -340,19 +374,23 @@ function IdField() {
  */
 function MoreToggle() {
   return (
-    <p className="mt-2 flex h-5 items-center justify-center gap-1 font-roboto text-xs font-bold leading-4 text-more">
+    <button
+      type="button"
+      aria-disabled="true"
+      className="mx-auto mt-2 flex h-5 items-center justify-center gap-1 font-roboto text-xs font-bold leading-4 text-more"
+    >
       <span
         aria-hidden="true"
         style={maskStyle(MENU_ICONS.moreArrow)}
         className="h-5 w-5 shrink-0 rotate-180 bg-more"
       />
       More
-    </p>
+    </button>
   )
 }
 
 /** 1:6655 / 1:6854 — the grey body, 390 wide, px 16 / py 10. Its three blocks are contiguous. */
-function MenuBody({ onNavigate, prelogin }: { onNavigate: () => void; prelogin: boolean }) {
+function MenuBody({ onNavigate, prelogin }: { onNavigate: Navigate; prelogin: boolean }) {
   return (
     <div className="flex flex-1 flex-col px-gutter py-[10px]">
       {/*
@@ -403,12 +441,13 @@ function MenuBody({ onNavigate, prelogin }: { onNavigate: () => void; prelogin: 
  * That exact bug shipped in the predecessor project, which is why it is on every row rather
  * than on the two that change route.
  */
-function Row({ row, onNavigate }: { row: MenuRow; onNavigate: () => void }) {
+function Row({ row, onNavigate }: { row: MenuRow; onNavigate: Navigate }) {
   return (
     <Link
       href={row.href}
       prefetch={REAL_ROUTES.has(row.href) ? undefined : false}
-      onClick={onNavigate}
+      replace
+      onClick={(event) => onNavigate(event, row.href)}
       className="flex h-11 items-center gap-[10px] rounded-md bg-tint px-3 transition-transform duration-100 active:scale-[0.99] motion-reduce:active:scale-100"
     >
       <span
@@ -430,13 +469,14 @@ function Row({ row, onNavigate }: { row: MenuRow; onNavigate: () => void }) {
  * rule reproduces both exactly; centring each in its own half lands within 2.5px on both, which
  * is the closest simple reading of a layout the file states only as absolute offsets.
  */
-function TermsAndLanguageRow({ onNavigate }: { onNavigate: () => void }) {
+function TermsAndLanguageRow({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <div className="flex h-[46px] items-center px-3">
       <Link
         href="/terms"
         prefetch={false}
-        onClick={onNavigate}
+        replace
+        onClick={(event) => onNavigate(event, '/terms')}
         className="flex flex-1 items-center justify-center gap-[10px] text-primary transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
       >
         {/*
@@ -464,11 +504,16 @@ function TermsAndLanguageRow({ onNavigate }: { onNavigate: () => void }) {
         of 1:6969, which Figma only emits as a circle plus two masks plus art.
         `ENGLISH` is stored uppercase AND carries the transform; both are reproduced.
 
-        Not a control. The flag plus a language name implies a picker and the file contains no
-        picker frame, the same reason Footer.tsx renders its three flags as a list rather than
-        as buttons. One undesigned affordance, one decision, in both places.
+        An inert control (owner's decision, 2026-09-10). The flag plus a language name implies a
+        picker and the file contains no picker frame, and the site is Ukrainian only — so it is a
+        `<button aria-disabled="true">` and wears the dimmed paint every control with no target
+        wears (globals.css). Footer.tsx still renders its three flags as a list, not as controls.
       */}
-      <div className="flex flex-1 items-center justify-center gap-[10px] text-primary">
+      <button
+        type="button"
+        aria-disabled="true"
+        className="flex flex-1 items-center justify-center gap-[10px] text-primary"
+      >
         <span className="relative flex h-6 w-6 shrink-0 overflow-hidden rounded-full bg-flag-scrim">
           <Icon
             src={LANGUAGE_FLAGS['union-jack']}
@@ -479,7 +524,7 @@ function TermsAndLanguageRow({ onNavigate }: { onNavigate: () => void }) {
           />
         </span>
         <span className="font-roboto text-menu-row font-medium uppercase">ENGLISH</span>
-      </div>
+      </button>
     </div>
   )
 }
@@ -498,23 +543,28 @@ function TermsAndLanguageRow({ onNavigate }: { onNavigate: () => void }) {
  * logged-out frame too; offering a VIP manager to a visitor with no account is the kind of
  * obvious slip the owner has said to fix.
  *
- * Both buttons carry the drawn 168 rather than `flex-1`, and the reason is measured. Until
- * 2026-09-12 Support came out 168.5 wide and Vip Manager 166.5 — two buttons the design draws
- * identical, sitting 2px apart. It was not the usual `min-width: auto` trap: adding `min-w-0`
- * changed nothing. `flex-1` is `flex: 1 1 0%`, and a `flex-basis` of 0 sizes the CONTENT box, so
- * Support's 1px outline was added on top of an equal share while the filled button had none.
- * Free space 333 split 166.5 each, plus 2px of border on one of them, is exactly the pair that
- * was measured. Two fixed widths cannot drift apart that way, and 168 + 8 + 168 = 344 is the
- * full content row once the panel stopped losing a pixel to its own right border.
+ * The pair shares the row with `flex-1` so it grows with a wider phone (owner's decision,
+ * 2026-09-10: fluid on every phone), and at 390 each button is still the drawn 168: 358 - 2 x 7
+ * inset - 8 gap = 336, halved.
+ *
+ * Vip Manager's `border border-transparent` is what makes that true, and it is measured. Until
+ * 2026-09-12 the pair was `flex-1` without it and came out 168.5 / 166.5. It was not the usual
+ * `min-width: auto` trap: adding `min-w-0` changed nothing. `flex-1` is `flex: 1 1 0%`, and a
+ * `flex-basis` of 0 sizes the CONTENT box, so Support's 1px outline was added on top of an equal
+ * share while the filled button had none — free space 333 split 166.5 each, plus 2px of border
+ * on one of them. A transparent border of the same width gives both boxes the same outside, and
+ * it paints nothing: the fill runs under a border by default (`background-clip: border-box`).
+ * Pre-login keeps Support alone at the drawn 168.
  */
-function ContactRow({ onNavigate, prelogin }: { onNavigate: () => void; prelogin: boolean }) {
+function ContactRow({ onNavigate, prelogin }: { onNavigate: Navigate; prelogin: boolean }) {
   return (
     <div className={`flex gap-2 px-[7px] py-4 ${prelogin ? 'justify-center' : ''}`}>
       <Link
         href="/support"
         prefetch={false}
-        onClick={onNavigate}
-        className="flex h-[38px] w-[168px] items-center justify-center gap-1.5 rounded-sm border border-contact px-5 font-roboto text-sm leading-[18px] text-contact transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
+        replace
+        onClick={(event) => onNavigate(event, '/support')}
+        className={`flex h-[38px] ${prelogin ? 'w-[168px]' : 'flex-1'} items-center justify-center gap-1.5 rounded-sm border border-contact px-5 font-roboto text-sm leading-[18px] text-contact transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100`}
       >
         {/* I1:6984;2642:42639 — 16x16, declares `fill="#10B981"`, i.e. `--contact-accent`, the
             same token as the label and the border. */}
@@ -530,8 +580,9 @@ function ContactRow({ onNavigate, prelogin }: { onNavigate: () => void; prelogin
         <Link
           href="/vip-manager"
           prefetch={false}
-          onClick={onNavigate}
-          className="flex h-[38px] w-[168px] items-center justify-center gap-1.5 rounded-sm bg-contact px-5 font-roboto text-sm leading-[18px] text-on-dark transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
+          replace
+          onClick={(event) => onNavigate(event, '/vip-manager')}
+          className="flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-sm border border-transparent bg-contact px-5 font-roboto text-sm leading-[18px] text-on-dark transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100"
         >
           {/* 1:6988 — 16x16, declares `fill="white"`, i.e. `--text-on-dark`, the same token as
               the label. It is a WhatsApp mark, not the generic chat bubble the placeholder drew. */}

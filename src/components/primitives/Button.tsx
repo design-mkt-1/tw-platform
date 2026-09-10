@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { ComponentProps, ReactNode } from 'react'
 
 /**
- * Every pressable rectangle in the design, in four skins measured off real nodes.
+ * Every pressable rectangle in the design, in three skins measured off real nodes.
  *
  * `prefetch={false}` is hard-coded in the link branch, before the spread. This demo has three
  * routes — `/`, `/sport` and not-found — and the design carries 20 other distinct hrefs, all
@@ -33,7 +33,7 @@ import type { ComponentProps, ReactNode } from 'react'
  */
 export const INERT = 'cursor-default active:!scale-100'
 
-type Variant = 'cta' | 'muted' | 'deposit' | 'ghost'
+type Variant = 'cta' | 'muted' | 'deposit'
 
 const VARIANTS: Record<Variant, string> = {
   // 1:3297 register, 1:3308 hero CTA, 1:5235 join, 1:6653 menu register — one recipe, seven nodes.
@@ -42,8 +42,6 @@ const VARIANTS: Record<Variant, string> = {
   muted: 'bg-muted text-primary rounded-md font-outfit font-semibold tracking-outfit',
   // 1:6836 — a green button carrying a gold glow. Measured, not a mistake in transcription.
   deposit: 'bg-deposit text-on-dark shadow-deposit rounded-sm font-sans font-extrabold',
-  // 1:6085 "Всі ліги", 1:5052 see-all.
-  ghost: 'bg-chip-link text-link border border-chip rounded-chip',
 }
 
 interface BaseProps {
@@ -62,7 +60,7 @@ function classesFor(variant: Variant, className?: string) {
   return [
     'inline-flex items-center justify-center whitespace-nowrap',
     // Nothing in the design draws a pressed state. This is the invented one — recorded in
-    // docs/tokens.md §8. Scale rather than colour, so it survives on every one of the four skins.
+    // docs/tokens.md §8. Scale rather than colour, so it survives on every one of the skins.
     'transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100',
     VARIANTS[variant],
     className,

@@ -21,6 +21,8 @@ export default function NotFound() {
       <Header />
       <MobileShell>
         <main
+          // A focus target for script only (MenuPanel.tsx, B1-18), not a Tab stop.
+          tabIndex={-1}
           className="flex flex-col items-center justify-center gap-4 px-gutter text-center"
           // The screen minus the 60px header and the painted nav, so the message sits centred in
           // what is visible and the page does not scroll. `dvh` rather than `vh`: on a phone `vh`

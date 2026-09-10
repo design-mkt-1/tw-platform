@@ -66,10 +66,11 @@ export function SearchField({ value, onChange, onSubmit, placeholder, onClose }:
         event.preventDefault()
         onSubmit(value)
       }}
-      // No focus border: Sheet focuses this input on open, so a focus colour would repaint the
-      // field in every search frame, and the design's focused field (it draws the caret) keeps
-      // #BFDBFE. The caret is the focus cue. Recorded as an owner question, ux-audit B4-11.
-      className="flex h-12 items-center gap-3 rounded-xl border-2 border-chip bg-surface px-3 shadow-field"
+      // Blue border while the field has focus — owner's decision of 2026-09-10, answering
+      // ux-audit B4-11. Sheet focuses this input on open, so it shows in every search frame,
+      // where the design keeps #BFDBFE; the owner accepted that. `--text-label` is the caret's
+      // #3B82F6, so the border and the caret are one colour.
+      className="flex h-12 items-center gap-3 rounded-xl border-2 border-chip bg-surface px-3 shadow-field focus-within:border-label"
     >
       <SearchGlyph className="size-5 shrink-0 text-label" />
 

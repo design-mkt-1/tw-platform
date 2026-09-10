@@ -162,6 +162,12 @@ export const MENU_ICONS = {
   chevronDown: withBase('/images/menu/chevron-down.svg'),
   avatar: withBase('/images/menu/avatar.svg'),
   copy: withBase('/images/menu/copy.svg'),
+  /**
+   * NOT from Figma — the design has no check glyph anywhere. Drawn by hand on 2026-09-10 for the
+   * Copy-ID confirmation (owner's decision): copy.svg's 14.3008 x 16.0013 box so the mask needs no
+   * new size, and its 0.97 line weight and #191970 (`--text-navy`), so the two read as one set.
+   */
+  check: withBase('/images/menu/check.svg'),
   close: withBase('/images/menu/close.svg'),
   moreArrow: withBase('/images/menu/more-arrow.svg'),
   supportHeadset: withBase('/images/menu/support-headset.svg'),

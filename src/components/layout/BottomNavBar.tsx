@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Icon } from '@/components/primitives/Icon'
 import { NAV_BURGER, NAV_CENTER_BUTTON, NAV_PLATE, NAV_TABS } from '@/lib/assets'
-import { useAppStore } from '@/store/useAppStore'
+import { followLinkOutOfPanel, useAppStore } from '@/store/useAppStore'
 
 /**
  * The bottom navigation, node 1:6489. Read docs/tokens.md §5.2 before changing any number here.
@@ -29,14 +29,21 @@ import { useAppStore } from '@/store/useAppStore'
  *    amount makes the ring lopsided by 7px on a 6px gap: the button would touch the notch on
  *    one side and show a 13px hole on the other.
  *
- * Below 390 the nav is fluid (owner's decision, 2026-09-10); at 390 and above it is the drawn
- * 390 column, centred. Measured before this: the frame was a fixed 390 at every width, so at 375
- * `Промо` ended at 383 and at 360 the whole right group sat 23px off screen. Now the plate
+ * The nav is fluid on every phone, capped at --page-max like the page (owner's decision,
+ * 2026-09-10). Measured before the first fluid pass: the frame was a fixed 390 at every width, so
+ * at 375 `Промо` ended at 383 and at 360 the whole right group sat 23px off screen. The plate
  * stretches to the frame (its SVG is `preserveAspectRatio="none"`), the two tab groups keep their
  * 7px insets and the 96px well between them, and the centre cluster rides the notch: its left
  * edge is `calc(48.169% - 31.859px)`, which is 156 at 390 and tracks the stretched notch centre
  * (image x 188.34 of 391) at every other width. Centring it on the frame instead would reopen
  * point 3 above — the notch is where the plate says, not at 50%.
+ *
+ * Open question for the owner, not a decision: stretching also WIDENS the notch while the button
+ * stays 63.65. Measured on the dev server, notch width at its top edge / gap to the button each
+ * side: 390 — 78.07 / 7.69 + 6.74; 440 — 88.05 / 12.74 + 11.67; 480 — 96.04 / 16.78 + 15.62. The
+ * button stays centred on the notch at all three (187.82 vs 187.84, 211.90 vs 211.92, 231.16 vs
+ * 231.19), but the ring visibly loosens above 390. Left as a plain stretch until the owner picks
+ * a treatment.
  *
  * Every glyph in the design is a single flat fill — the Sport export just has #FFB095 baked in
  * where the other three have white — so the tabs draw their glyph as a CSS mask painted with
@@ -82,18 +89,20 @@ function TabGlyph({ src, width }: { src: string; width: number }) {
 }
 
 /**
- * `onNavigate` closes whatever sheet is open, the same fix MenuPanel's rows carry
- * (MenuPanel.tsx, `Row`). The nav now sits above the menu sheet, so its tabs are pressable while
- * the menu is open — and without this, measured on 2026-09-10, `Спорт` landed on
- * `/sport?panel=menu` with the menu still covering the page, and `Казіно` on `/` did nothing.
+ * The click closes whatever sheet is open, the same fix MenuPanel's rows carry (MenuPanel.tsx,
+ * `Row`). The nav sits above the menu sheet, so its tabs are pressable while the menu is open —
+ * and without this, measured on 2026-09-10, `Спорт` landed on `/sport?panel=menu` with the menu
+ * still covering the page, and `Казіно` on `/` did nothing. With a panel open the link also
+ * `replace`s, taking the place of the history entry the panel pushed (useAppStore.ts).
  */
-function TabItem({ tab, active, onNavigate }: { tab: Tab; active: boolean; onNavigate: () => void }) {
+function TabItem({ tab, active, panelOpen }: { tab: Tab; active: boolean; panelOpen: boolean }) {
   return (
     <Link
       href={tab.href}
       prefetch={REAL_ROUTES.has(tab.href) ? undefined : false}
       aria-current={active ? 'page' : undefined}
-      onClick={onNavigate}
+      replace={panelOpen}
+      onClick={(event) => followLinkOutOfPanel(event, active)}
       // Half its group: exactly 70 at 390, and it shrinks with the frame below it.
       className={`relative flex h-[41px] w-1/2 flex-col items-center justify-start gap-[2px] transition-transform duration-100 active:scale-[0.97] motion-reduce:active:scale-100 ${
         active ? 'text-nav-active' : 'text-on-dark'
@@ -148,7 +157,7 @@ export function BottomNavBar() {
     // open state.
     <nav
       data-bottom-nav
-      className={`pointer-events-none fixed inset-x-0 mx-auto h-nav-frame w-full max-w-[390px] ${
+      className={`pointer-events-none fixed inset-x-0 mx-auto h-nav-frame w-full max-w-[var(--page-max)] ${
         menuOpen ? 'z-[60]' : 'z-40'
       }`}
       style={{ bottom: 'env(safe-area-inset-bottom)' }}
@@ -189,12 +198,12 @@ export function BottomNavBar() {
       <div className="pointer-events-auto absolute inset-x-[7px] top-[55px] flex h-[41px] justify-between">
         <div className="flex w-[calc((100%-96px)/2)]">
           {TABS.slice(0, 2).map((tab) => (
-            <TabItem key={tab.href} tab={tab} active={pathname === tab.href} onNavigate={closePanel} />
+            <TabItem key={tab.href} tab={tab} active={pathname === tab.href} panelOpen={panel !== null} />
           ))}
         </div>
         <div className="flex w-[calc((100%-96px)/2)] justify-end">
           {TABS.slice(2).map((tab) => (
-            <TabItem key={tab.href} tab={tab} active={pathname === tab.href} onNavigate={closePanel} />
+            <TabItem key={tab.href} tab={tab} active={pathname === tab.href} panelOpen={panel !== null} />
           ))}
         </div>
       </div>
