@@ -3,6 +3,10 @@
 Rewritten 2026-09-10, at the end of the session that swept the build in a browser and fixed what it
 found. The previous version of this file was written earlier the same day, before any of that.
 
+> **Next up: [`plan-fluid-phones.md`](plan-fluid-phones.md).** Approved by the owner on 2026-09-10,
+> not started: fluid layout on every phone width (the 390 cap leaves 25px empty each side on a
+> 440 iPhone), plus eleven owner decisions from the audit. It is self-contained.
+>
 > **Also read [`ux-audit-2026-09-10.md`](ux-audit-2026-09-10.md).** A full UI/UX audit ran later on
 > 2026-09-10, from the code and in Chrome at 360, 375, 390, 430 and desktop. It made the layout
 > fluid below 390 and a centred 390 column above, put the nav on top of the open menu, gave the
