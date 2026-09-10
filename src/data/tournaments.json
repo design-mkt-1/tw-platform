@@ -1,0 +1,26 @@
+[
+  {
+    "id": "spin-challenge",
+    "title": "СПІН-ЧЕЛЕНДЖ\n2000",
+    "subtitle": "Найкращі слоти, великі виграші!",
+    "prizeMinor": 200000,
+    "art": "zeus",
+    "endsAt": "2026-08-30T21:00:00.000Z"
+  },
+  {
+    "id": "lottery",
+    "title": "Лотерея",
+    "subtitle": "Найкращі слоти, великі виграші!",
+    "prizeMinor": 100000,
+    "art": "bigBass",
+    "endsAt": "2026-08-28T18:30:00.000Z"
+  },
+  {
+    "id": "wheel",
+    "title": "Колесо",
+    "subtitle": "Найкращі слоти, великі виграші!",
+    "prizeMinor": 50000,
+    "art": "spinWheel",
+    "endsAt": "2026-08-25T12:15:00.000Z"
+  }
+]

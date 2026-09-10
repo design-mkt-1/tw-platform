@@ -1,5 +1,6 @@
 import { chromium } from 'playwright'
 import { mkdirSync } from 'node:fs'
+import { assertApp } from './assert-app.mjs'
 
 /**
  * Drives the interactive states the design defines and captures each one.
@@ -59,6 +60,7 @@ async function shot(name, { width, height, url = BASE, steps, full = false }) {
     const entry = { name, motion: reducedMotion, url, viewport: `${width}x${height}`, errors }
     try {
       await page.goto(url, { waitUntil: 'networkidle', timeout: 60_000 })
+      await assertApp(page, url)
       if (steps) await steps(page)
       await page.waitForTimeout(500)
       // `fullPage` resizes the viewport once and captures, so Next's default `loading="lazy"` never

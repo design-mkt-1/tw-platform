@@ -8,27 +8,42 @@
  * recorded in docs/tokens.md.
  */
 
-const UAH = new Intl.NumberFormat('uk-UA', {
-  style: 'currency',
-  currency: 'UAH',
+/**
+ * The symbol is appended by hand rather than left to `style: 'currency'`, and that is not a
+ * preference — it is a bug fix.
+ *
+ * Measured on 2026-09-10: with `style: 'currency', currency: 'UAH'`, Node rendered
+ * `140,00 грн` and Chrome rendered `140,00 ₴` for the same input. The two runtimes ship
+ * different ICU data and disagree about how the hryvnia is abbreviated. In a Next app the
+ * server produces the HTML and the browser re-renders it, so React compared the two strings and
+ * threw a hydration mismatch on the header balance — invisible on screen, but it makes React
+ * discard the tree and rebuild it in the browser.
+ *
+ * `style: 'decimal'` is stable across both: only the grouping and the decimal separator come
+ * from the locale, and those agree.
+ */
+const UAH_SYMBOL = '₴'
+
+const DECIMAL = new Intl.NumberFormat('uk-UA', {
+  style: 'decimal',
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })
 
-const UAH_WHOLE = new Intl.NumberFormat('uk-UA', {
-  style: 'currency',
-  currency: 'UAH',
+const DECIMAL_WHOLE = new Intl.NumberFormat('uk-UA', {
+  style: 'decimal',
   maximumFractionDigits: 0,
 })
 
 /** Amounts are carried in kopiyky so no total is ever the sum of two floats. */
 export function formatUah(minor: number): string {
-  return UAH.format(minor / 100)
+  // U+00A0, a non-breaking space: the amount and its symbol must not wrap apart.
+  return `${DECIMAL.format(minor / 100)} ${UAH_SYMBOL}`
 }
 
 /** Prize pots and bonus figures, which the design always writes without decimals. */
 export function formatUahWhole(minor: number): string {
-  return UAH_WHOLE.format(minor / 100)
+  return `${DECIMAL_WHOLE.format(minor / 100)} ${UAH_SYMBOL}`
 }
 
 /**

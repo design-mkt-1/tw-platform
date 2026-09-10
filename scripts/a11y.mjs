@@ -1,5 +1,6 @@
 import { chromium } from 'playwright'
 import { mkdirSync, writeFileSync } from 'node:fs'
+import { assertApp } from './assert-app.mjs'
 
 /**
  * First accessibility pass over the states the design defines.
@@ -63,6 +64,7 @@ for (const state of STATES) {
   })
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 60_000 })
+    await assertApp(page, url)
     await page.addScriptTag({ url: AXE })
     const run = await page.evaluate(() => window.axe.run())
     results.push({

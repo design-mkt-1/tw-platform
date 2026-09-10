@@ -1,0 +1,59 @@
+{
+  "columns": [
+    {
+      "heading": "НАВІГАЦІЯ",
+      "links": [
+        { "label": "Платежі", "href": "/payments" },
+        { "label": "Провайдери", "href": "/providers" },
+        { "label": "Support@jack-pot.com", "href": "mailto:Support@jack-pot.com" },
+        { "label": "Відповідальна гра", "href": "/responsible-gaming" },
+        { "label": "Запросити друга", "href": "/refer-a-friend" },
+        { "label": "Спортивні ставки", "href": "/sport" }
+      ]
+    },
+    {
+      "heading": "ПОЛІТИКИ Й ПРАВО",
+      "links": [
+        { "label": "Умови використання", "href": "/terms" },
+        { "label": "Політика конфіденційності", "href": "/privacy" },
+        { "label": "Бонусна політика", "href": "/bonus-policy" },
+        { "label": "Політика AML", "href": "/aml" },
+        { "label": "Політика KYC", "href": "/kyc" },
+        { "label": "Платіжна політика", "href": "/payment-policy" }
+      ]
+    }
+  ],
+  "policies": [
+    { "label": "Умови використання", "href": "/terms" },
+    { "label": "Політика конфіденційності", "href": "/privacy" },
+    { "label": "Бонусна політика", "href": "/bonus-policy" },
+    { "label": "Політика AML", "href": "/aml" },
+    { "label": "Політика KYC", "href": "/kyc" },
+    { "label": "Платіжна політика", "href": "/payment-policy" }
+  ],
+  "payments": [
+    "visa",
+    "mastercard",
+    "cryptocurrencies",
+    "bitcoin-cash",
+    "bitcoin",
+    "ethereum",
+    "tether",
+    "visa-mastercard"
+  ],
+  "partners": [
+    "casinostest",
+    "gamblersbet",
+    "casino-bonuses-now",
+    "no-deposit",
+    "casino-bonus-club",
+    "zamsino",
+    "deutschland-casinos"
+  ],
+  "flags": [
+    { "id": "ukraine", "active": true },
+    { "id": "union-jack", "active": false },
+    { "id": "tricolour-white-blue-red", "active": false }
+  ],
+  "supportEmail": "Support@jack-pot.com"
+}

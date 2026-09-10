@@ -1,0 +1,26 @@
+[
+  {
+    "id": "win-1",
+    "amountMinor": 4104,
+    "player": "leo18bet",
+    "gameTitle": "Big Bass Amazon Xtreme",
+    "art": "big-bass-amazon-extreme",
+    "tone": "up"
+  },
+  {
+    "id": "win-2",
+    "amountMinor": 3750,
+    "player": "lena_bet",
+    "gameTitle": "Yeti Quest",
+    "art": "yeti-quest",
+    "tone": "alt"
+  },
+  {
+    "id": "win-3",
+    "amountMinor": 8215,
+    "player": "lemonbet",
+    "gameTitle": "Gates of Olympus 1000",
+    "art": "gates-of-olympus-1000",
+    "tone": "alt"
+  }
+]

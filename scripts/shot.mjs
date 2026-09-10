@@ -1,6 +1,7 @@
 import { chromium } from 'playwright'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { assertApp } from './assert-app.mjs'
 
 /**
  * Screenshot helper for the design-review loop.
@@ -20,8 +21,11 @@ if (!url || !out) {
   process.exit(1)
 }
 
-const width = Number(wRaw ?? 1440)
-const height = Number(hRaw ?? 1000)
+// The Figma file has no desktop frame, no tablet frame and no breakpoint: every one of its
+// eleven screens is 390 wide. An argument-less call must not silently shoot a viewport the
+// design does not have.
+const width = Number(wRaw ?? 390)
+const height = Number(hRaw ?? 844)
 
 mkdirSync(dirname(out), { recursive: true })
 
@@ -53,6 +57,7 @@ async function settleLazyImages(target) {
 }
 
 await page.goto(url, { waitUntil: 'networkidle', timeout: 60_000 })
+await assertApp(page, url)
 
 /*
  * A section can be reached either by pixel offset or by CSS selector. The selector form is what

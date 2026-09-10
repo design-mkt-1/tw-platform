@@ -1,0 +1,22 @@
+[
+  {
+    "id": "popular",
+    "label": "Популярне",
+    "icon": "popular"
+  },
+  {
+    "id": "slots",
+    "label": "Слоти",
+    "icon": "slots"
+  },
+  {
+    "id": "live-casino",
+    "label": "лайв Казіно",
+    "icon": "liveCasino"
+  },
+  {
+    "id": "crash",
+    "label": "Краш Ігри",
+    "icon": "liveCasino"
+  }
+]
