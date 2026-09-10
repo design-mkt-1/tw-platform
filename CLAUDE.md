@@ -326,6 +326,7 @@ Recorded so nobody re-opens them without a reason.
 | Game cards without artwork keep the generated gradient. Only four distinct tiles exist in the whole Figma file | 2026-09-10 |
 | Ukrainian only. No language switcher, even though the nav component carries ua/ru/en variants | 2026-09-10 |
 | Every finished piece is pushed to `main` as it lands, rather than held for a complete build | 2026-09-10 |
+| **This is a demo of how the Figma design looks on a live site, not a working product.** Effort goes on the front end and on appearance. Not everything has to function. Build what the Figma file draws; anything it does not draw is built only when the owner asks, or after asking and being answered | 2026-09-12 |
 
 ## Bug fixes
 

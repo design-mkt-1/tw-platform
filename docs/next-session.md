@@ -79,15 +79,23 @@ Two new things to know before you run anything:
 
 ## What is open
 
+**Read the scope decision of 2026-09-12 in `CLAUDE.md` before taking anything from this list.** It
+is a demo of how the design looks on a live site: the front end and appearance come first, the
+Figma file is the boundary, and most of what follows sits outside it. Item 2 is closed by owner's
+decision — `1:7363` stays unreachable. Items 5 and 6 are accessibility work nobody has asked for.
+Items 3 and 4 are questions for the owner, not work.
+
 In the order I would take it.
 
 1. **Three of the four category states have no address.** Tapping `Слоти` changes the page and
    nothing can link to the result, so `review.mjs` and `a11y.mjs` never see it. This is the same rule
    that gave the search states their `?q=`. It needs a fourth param in `UrlStateBridge` and three
    rows in `screens.json`.
-2. **`1:7363`, the `Нещодавні запити` search state, still has no address** and has never been
-   captured or scanned. It needs `recent.length > 0`, and `recent` lives only in the store. Same fix
-   shape as item 1.
+2. **`1:7363`, the `Нещодавні запити` search state, has no address — and stays that way.** Owner's
+   decision of 2026-09-12. It needs `recent.length > 0`, and `recent` is written only by
+   `commitQuery`, which only an interaction calls, so no URL produces it. It remains the one frame
+   of eleven never captured and never axe-swept, with the reason in its own row. Not to be reopened
+   without a reason.
 3. **The tournament prize shows `2 000 ₴`; the design draws a bare `2000`.** `formatUahWhole` is the
    single place in `src` that touches `Intl` and that is deliberate, so this is a copy decision, not
    a bug. Note the design is already inconsistent about currency across adjacent screens —
