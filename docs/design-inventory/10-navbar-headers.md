@@ -153,7 +153,7 @@ Structure:
 - `Center` `1:6596`: x 10 (abs 26), y **12**, **77.14286041259766 x 36**, `overflow: clip`.
 - `Link` `1:6597` → `logo` `1:6598` (77.143 x 36, `flex-col items-center justify-center`, `overflow: clip`) → `logo.svg` `1:6599`: **72.88524627685547 x 36** at x offset 2.128723621368408, y -0.000164031982421875.
 - Vertical: 12 top + 36 + 12 bottom = 60. Centred.
-- The artwork reads **`JACKPOT`** in gold with a crown above it — not "Top-Win". Flagged, see UNKNOWN Q4.
+- The artwork reads another brand's name in gold with a crown above it — not "Top-Win". Flagged, see UNKNOWN Q4.
 
 ### 2.2 Right cluster
 
@@ -338,8 +338,8 @@ The component set contains only one active state (Sport active) across all three
 **Q3. Is the ~7px leftward offset of the centre cluster intentional?**
 Measured: the raised button's centre is x 187.83 and the Menu label's centre is x 188, while the frame centre is 195 and the four flanking tabs are symmetric about 195. That is a consistent 7px offset across all three variants, so it is not a stray nudge on one layer — but it also has no obvious reason. Should the implementation centre the button at 195, or reproduce 187.8?
 
-**Q4. The logo artwork says `JACKPOT`, not `Top-Win`.**
-Both headers render a gold crown-over-`JACKPOT` mark (`1:6599`, `1:6622`). The brief calls the product Top-Win. Is the Figma logo a placeholder to be replaced, or is `JACKPOT` the actual brand for this demo?
+**Q4. The logo artwork is not `Top-Win`.**
+Both headers render a gold crown-over-wordmark mark (`1:6599`, `1:6622`). The brief calls the product Top-Win. Is the Figma logo a placeholder to be replaced, or is that the actual brand for this demo? (Answered: the frames are ruled out, see README.)
 
 **Q5. Where exactly does the navbar sit inside the 1021-tall screen frames?**
 The brief states the bar sits at the bottom of 1021-tall frames. I measured the component in isolation (111 tall, at (3072,313) inside its own 415x413 holder frame) and **did not measure a single instance placed on a screen**, so I cannot confirm the y offset, whether the instance is clipped, or whether a safe-area gap sits below it. If the component's top is at y 910 the bar plate's top lands at y 953 — that is arithmetic from §1.1, not an observation. Which node is a representative screen frame containing a navbar instance?

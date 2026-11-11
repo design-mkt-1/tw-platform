@@ -13,7 +13,7 @@
  * Add nothing to this file without adding it to docs/tokens.md first, with its node id.
  * An eslint rule rejects raw hex under src/components/ so the mapping cannot be forked.
  *
- * Two nodes are deliberately absent: 1:6594 and 1:6617 are leftover JACKPOT headers pasted
+ * Two nodes are deliberately absent: 1:6594 and 1:6617 are leftover foreign-brand headers pasted
  * onto the Top-Win canvas and are not children of any screen. Their dark #080814 and gold
  * gradient are not Top-Win values.
  */

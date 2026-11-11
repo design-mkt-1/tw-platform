@@ -13,8 +13,8 @@ Fixed-size artwork (hero and bonus slides, tournament card) scales by container 
 `calc(100cqw * <px> / <design width>)` resolves to the design px at 390. A desktop version is a
 later project; when it comes, `--page-max` is the one value it starts from.
 
-Jackpot is a **different project** and lives in its own repo. Nothing from it belongs here. This
-checkout carried a copy of it until 2026-09-10 because commit `5e61622` ported it in; all 211 of
+Another project's code does not belong here. This
+checkout carried a copy of one until 2026-09-10 because commit `5e61622` ported it in; all 211 of
 its files are gone.
 
 ---
@@ -44,7 +44,7 @@ Rules learned here, each from something that went wrong:
   the useful output of a build agent is not the code — it is what it had to decide.
 - **Never take an agent's summary as measured.** On the first inventory pass an agent reported
   `#080814` as "the app header background". It had measured nodes `1:6594` and `1:6617`, which are
-  dead leftover JACKPOT headers pasted on the canvas. Building from that would have produced a
+  dead leftover foreign-brand headers pasted on the canvas. Building from that would have produced a
   black header on a white site. Check which node a claim came from.
 - **Brief every number with the node id or file line it came from.** Measured on 2026-09-10 across
   eleven workers: every brief that named a source survived contact, and five that did not were
@@ -168,7 +168,7 @@ trusting a check in a fresh checkout, run `npx tsc --version` and confirm it say
 
 **The port trap, measured on 2026-09-10.** A dev server for a different project already held port
 3000, so `npm run dev` here bound 3001 and said so in a line nobody read. All three capture scripts
-default to 3000. The first screenshot of the "Top-Win casino home" was a screenshot of the Jackpot
+default to 3000. The first screenshot of the "Top-Win casino home" was a screenshot of another project's
 demo — dark, English, GBP — captured with zero errors and saved under a Top-Win filename. Nothing
 in a filename, an exit code or a log distinguishes those two runs.
 
@@ -299,7 +299,7 @@ export has no dev-only mode, nothing in the app links to it, and `robots` is `no
 - **`download_assets` caps a subtree at 20 SVG fragments.** Icons with mask stacks consume the cap
   and the returned URLs carry no node id, so the fragments cannot be attributed. Three section
   icons could not be exported for that reason.
-- **Nodes `1:6594` and `1:6617` are dead.** Leftover JACKPOT headers on the canvas, not children of
+- **Nodes `1:6594` and `1:6617` are dead.** Leftover foreign-brand headers on the canvas, not children of
   any screen. Do not implement them and do not take token values from them.
 - **Three of the design's six font families cannot render its own copy.** Outfit and Archivo Narrow
   ship no Cyrillic subset and Big Shoulders Display is not in Next's catalogue at all, yet every

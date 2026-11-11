@@ -36,14 +36,13 @@ They were also living in a session temp directory, which does not survive.
 | `08-menus.md` | The three menu panels |
 | `09-search-states.md` | The four search frames and the state machine they describe |
 | `10-navbar-headers.md` | The bottom navigation and the headers |
-| `11-repo-inventory.md` | **The repo as it was before the rewrite**, when it still held the Jackpot demo. Historical: it lists files that no longer exist. Kept because it records what was hard-coded inside each capture script, which is why those scripts survived the rewrite |
 | `20` – `25-gap-*.md` | The second pass: the colours, type and effects the quota cut short |
 | `manifest-*.md` | One row per downloaded asset — file path, node id, Figma layer name, format, size, and whether it came from a recorded URL or a fresh call |
 
 ## Three corrections to carry, because a file here is wrong
 
 **`00-tokens.md` records `#080814` as "the app header background". It is not.** That value was
-measured on nodes `1:6594` and `1:6617`, which are leftover JACKPOT headers pasted onto the
+measured on nodes `1:6594` and `1:6617`, which are leftover foreign-brand headers pasted onto the
 Top-Win canvas — dark, English, gold, standalone frames at canvas (2184, 633) that no screen
 instantiates. The real headers are `1:3290`, `1:582` and `1:5995`, and all three are `#E8F1FC`.
 Building from the first reading would have produced a black header on a white site.

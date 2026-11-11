@@ -242,8 +242,8 @@ Findings about the Figma file, not defects in the build. They belong in front of
 design, and every one of them is in the contrast report linked above.
 
 - **No legal block in the footer** — no licence number, no regulator logo, no 18+ mark, no
-  responsible-gambling line. The support address is `Support@jack-pot.com`, the previous project's
-  domain.
+  responsible-gambling line. The Figma support address is on another brand's domain; the build ships
+  `support@top-win.com` (owner rule, 2026-11-11).
 - **The menu is in English** on a site that is otherwise entirely Ukrainian.
 - **`Реєстарція`** — `а` and `р` transposed — on the register button, in three places.
 - **Three font families cannot render the strings assigned to them.** Outfit and Archivo Narrow ship
@@ -258,7 +258,7 @@ design, and every one of them is in the contrast report linked above.
 - **No interaction states anywhere.** No hover, pressed, focus or disabled variant on any control.
   The build invents one pressed state and one focus ring and nothing else.
 - **Three menu rows draw a chevron with no expanded state behind it.**
-- **Two dead frames on the canvas**, `1:6594` and `1:6617`, drawing a JACKPOT wordmark in English on
+- **Two dead frames on the canvas**, `1:6594` and `1:6617`, drawing another brand's wordmark in English on
   a dark header. Not children of any screen. Not implemented.
 
 ## Where the numbers came from

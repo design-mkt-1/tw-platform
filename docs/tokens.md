@@ -21,9 +21,9 @@ from what is inference.
 ### Two dead nodes are excluded from this sheet
 
 **`1:6594` ("Header Pre-login") and `1:6617` ("Header POST-login") are not part of Top-Win.**
-They are leftover JACKPOT headers pasted onto the canvas: background `#080814`, English `Log In` /
+They are leftover foreign-brand headers pasted onto the canvas: background `#080814`, English `Log In` /
 `Sign In`, a gold `#F0C775 → #C6903D` gradient button, an emerald `$ 140.00` balance pill, and a
-crown-over-`JACKPOT` wordmark. They are standalone frames at canvas (2184, 633) and are **not
+crown-over-wordmark mark. They are standalone frames at canvas (2184, 633) and are **not
 children of any screen** — no screen frame in the file instantiates them.
 
 `00-tokens.md` measured them and recorded `#080814` as "app header background". **That is wrong for
@@ -420,7 +420,7 @@ nodes. Odd values are reproduced literally — see the note under the table.
   drifts the bar.
 - **`−1.2293px`, `0.5529px`, `0.2765px`, `553.879px`, `61.464px`, `7.741px`** — all Figma float
   artefacts of scaled artwork, all real in the render. Reproduce as written.
-- **`−0.14px` does not appear here.** It belonged only to the dead JACKPOT header buttons.
+- **`−0.14px` does not appear here.** It belonged only to the dead foreign header buttons.
   **`−0.2px`** (the Outfit button tracking, exactly `−0.0154em` at 13px) is the live one.
 - **`py: 6.606px`** on `1:3295` / `1:6651` is a Figma centring artefact, not a design value. Use
   `align-items: center` and drop it. Same for the `14px` declared header padding: metadata puts the
@@ -757,9 +757,8 @@ six blocks: payment logos, partners, divider, two link columns, divider, languag
 The only responsible-gambling reference in the entire design is the **link text**
 `Відповідальна гра` (`1:5947`). It is a label in a list, not a policy statement.
 
-**The support address is `Support@jack-pot.com`** (`1:5945`) — capital `S`, and the domain is
-`jack-pot.com`, the **previous project's** domain, not a Top-Win one. Recorded character for
-character.
+**The support address drawn at `1:5945`** has a capital `S` and a domain that is not a Top-Win one.
+The owner ruled on 2026-11-11 that the build uses `support@top-win.com`.
 
 On a gambling site the licence, regulator and age mark are normally mandatory. Nothing here may be
 invented by the build: if they are required, the exact licence text, licensing body and age mark

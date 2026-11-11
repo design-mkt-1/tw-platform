@@ -105,7 +105,7 @@ export const SECTION_DIVIDER = withBase('/images/icons/section-divider.svg')
 /* --- menu panel ----------------------------------------------------------- */
 
 /**
- * Every glyph the jackpot menu draws: eight row icons, the Terms document, the row chevron, and
+ * Every glyph the menu draws: eight row icons, the Terms document, the row chevron, and
  * the six panel-chrome glyphs (avatar, copy, close, More arrow, Support headset, WhatsApp).
  *
  * ## The eight row icons + Terms + chevron — one `download_assets` call each

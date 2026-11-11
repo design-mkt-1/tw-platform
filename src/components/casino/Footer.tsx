@@ -19,8 +19,8 @@ import { FooterLinkColumn } from './FooterLinkColumn'
  * **What is deliberately absent.** No licence number, no regulator logo, no 18+ mark, no
  * responsible-gambling line, no copyright and no company name. That was measured across the whole
  * 1:5607 subtree — including hidden nodes — not inferred from a screenshot, and the owner has
- * decided it ships as drawn. `Support@jack-pot.com` (1:5945) likewise ships with its capital S and
- * the previous project's domain. See docs/tokens.md §9 and the note on `FooterData` in types.ts.
+ * decided it ships as drawn. The support e-mail (1:5945) ships as `support@top-win.com`, the owner's rule
+ * of 2026-11-11, not the foreign address the Figma frame draws. See docs/tokens.md §9 and the note on `FooterData` in types.ts.
  * Do not "complete" any of this here; it has to come from the owner.
  */
 

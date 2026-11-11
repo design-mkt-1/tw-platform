@@ -2,10 +2,10 @@
  * Confirms the page a capture script just opened really is this app.
  *
  * This exists because of a measured incident on 2026-09-10. A dev server for a different
- * project — D:\jp-platform, running since before the session — already held port 3000, so
+ * project — another checkout, running since before the session — already held port 3000, so
  * `npm run dev` here bound 3001 instead and said so in a line nobody read. All three capture
  * scripts default to http://localhost:3000, so the first screenshot of the "Top-Win casino
- * home" was a screenshot of the Jackpot demo: a dark English page with a GBP balance, captured
+ * home" was a screenshot of another project's demo: a dark English page with a GBP balance, captured
  * without a single error, saved under a Top-Win filename.
  *
  * Nothing about that failure is visible in a filename, an exit code or an error log. The only

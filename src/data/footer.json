@@ -5,7 +5,7 @@
       "links": [
         { "label": "Платежі", "href": "/payments" },
         { "label": "Провайдери", "href": "/providers" },
-        { "label": "Support@jack-pot.com", "href": "mailto:Support@jack-pot.com" },
+        { "label": "support@top-win.com", "href": "mailto:support@top-win.com" },
         { "label": "Відповідальна гра", "href": "/responsible-gaming" },
         { "label": "Запросити друга", "href": "/refer-a-friend" },
         { "label": "Спортивні ставки", "href": "/sport" }
@@ -55,5 +55,5 @@
     { "id": "union-jack", "active": false },
     { "id": "tricolour-white-blue-red", "active": false }
   ],
-  "supportEmail": "Support@jack-pot.com"
+  "supportEmail": "support@top-win.com"
 }

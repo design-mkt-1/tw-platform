@@ -1,4 +1,4 @@
-# Top-Win — Menus (three jackpot-menu panels)
+# Top-Win — Menus (three menu panels)
 
 File key: `s2CqwGqe0O0FcALhBNlTRe`
 Nodes: `1:6641`, `1:6816`, `1:7015`
@@ -25,8 +25,8 @@ UNKNOWN with the exact question. Colours are still exact — a flat fill in a 1:
 
 ## 1. What actually distinguishes the three variants
 
-The names are useless (`jackpot-menu postlog`, `jackpot-menu postlog VIP`,
-`jackpot-menu postlog ` with a trailing space). The difference is structural and measured:
+The Figma layer names are useless (three variants of one menu name, one of them with a
+trailing space). The difference is structural and measured:
 
 | | `1:6641` | `1:6816` "VIP" | `1:7015` (trailing space) |
 | --- | --- | --- | --- |

@@ -218,12 +218,12 @@ Items (`1:5939`), each Roboto **Medium 500, 14 / 16, `#AFC1E8`** — style token
 | --- | --- | --- | --- | --- |
 | 1 | `1:5941` | 0 | 55 | `Платежі` |
 | 2 | `1:5943` | 44 | 82 | `Провайдери` |
-| 3 | `1:5945` | 88 | 145 | `Support@jack-pot.com` |
+| 3 | `1:5945` | 88 | 145 | e-mail address (foreign domain as drawn) |
 | 4 | `1:5947` | 132 | 121 | `Відповідальна гра` |
 | 5 | `1:5949` | 176 | 111 | `Запросити друга` |
 | 6 | `1:5951` | 220 | 116 | `Спортивні ставки` |
 
-Item 3 is an e-mail address, capital `S`, domain `jack-pot.com` — note it does **not** say top-win.
+Item 3 is an e-mail address, capital `S`, on another brand's domain — note it does **not** say top-win. The build ships `support@top-win.com` instead (owner rule, 2026-11-11).
 
 ### 5.2 Right column (`1:5952`) — heading `1:5953`
 
@@ -458,7 +458,7 @@ Reference render saved to
 | 1 | Language flag pills `1:5970` / `1:5977` / `1:5986` | pill 1 alone has the blue gradient ring + `#1E2A44` border and a 27px (not 27.99px) flag leaf | **selected / unselected variant**, exactly one selected |
 | 2 | 12 footer links (`1:5940`–`1:5950`, `1:5955`–`1:5965`) | each row is `height 44` + `border-radius 6` with **no** fill | radius-on-nothing is a resting state; a hover/pressed fill exists in intent but is not drawn in this file |
 | 3 | 7 partner logos | frames named `Link - …` | anchors, external; no visited/hover style drawn |
-| 4 | `Support@jack-pot.com` | it is a mail address in a link row | `mailto:` |
+| 4 | support e-mail (`1:5945`) | it is a mail address in a link row | `mailto:` |
 | 5 | Payment grid `1:5611`, partners grid `1:5699` | both are `flex-wrap`, not fixed grids or scroll rows | reflow on width change; **no horizontal scroll anywhere in this footer** |
 | 6 | Payment tile 7 / partner logo 7 | odd counts in 2-up and 3-up wraps | last item centres on its own row — a real layout state to preserve |
 
@@ -479,8 +479,8 @@ language selector.
    screenshot but have no locale metadata. Are they `uk` / `en` / `ru`, and what are the URL locales?
 4. **`Умови використання` renders as `Умови Використання`** because only that one policy link carries
    `text-transform: capitalize`. The other five do not. Is the capitalisation wanted, or is it a leftover?
-5. **`Support@jack-pot.com`** — capital `S`, and the domain is `jack-pot.com`, not a Top-Win domain.
-   Is this the real support address for this build?
+5. **The support e-mail (`1:5945`)** — capital `S`, and the domain is not a Top-Win one.
+   Answered by the owner on 2026-11-11: the build uses `support@top-win.com`.
 6. **Where do the 12 links point?** No URLs, no route names, no annotations in the file.
 7. **Hover / focus / pressed styling** for the link rows, partner logos and flag pills is not drawn.
    The 6px row radius says a fill is expected — which colour?

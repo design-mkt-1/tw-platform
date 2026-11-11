@@ -42,7 +42,7 @@ All eleven files verified: each starts with `<svg`, none is 0 bytes, none is an 
 ## Notes that affect how these are used
 
 - **Logo provenance.** `topwin-logo.svg` is `1:3292` from the real casino header `1:3290`,
-  111 × 20, wordmark drawn in `#FF4500`. It is **not** the gold crown-over-`JACKPOT` mark that
+  111 × 20, wordmark drawn in `#FF4500`. It is **not** the gold crown-over-wordmark mark that
   `1:6599` / `1:6622` carry — those two frames (`1:6594`, `1:6617`) were ruled out by the owner
   and nothing here was taken from them.
 - **One logo asset, not two.** `1:584` (post-login, URL `ad05fcb3-…`) and `1:3292` (pre-login)
@@ -70,7 +70,7 @@ Not downloaded **by design**, recorded here so the decision is visible:
 
 | Node id | Layer | Why not |
 | --- | --- | --- |
-| `1:6599`, `1:6622` | `logo.svg` (JACKPOT wordmark, dark headers `1:6594` / `1:6617`) | Owner ruled these frames out |
+| `1:6599`, `1:6622` | `logo.svg` (another brand's wordmark, dark headers `1:6594` / `1:6617`) | Owner ruled these frames out |
 | `1:584` | `Logo TopWin`, post-login instance | Same artwork as `1:3292`, already downloaded |
 | `1:594` | `search_header.svg`, post-login instance | Same artwork as `1:3300`, already downloaded |
 | `1:6525`, `1:6534`, `1:6539`, `1:6544`, `1:6548`, `1:6552`, `1:6554`, `1:6558` (ru) and `1:6560`, `1:6569`, `1:6574`, `1:6579`, `1:6583`, `1:6587`, `1:6589`, `1:6593` (en) | ru / en navbar variant exports | Same eight glyphs re-exported per language variant; the ua set was shipped |

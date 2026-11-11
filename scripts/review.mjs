@@ -6,7 +6,7 @@ import { assertApp } from './assert-app.mjs'
  * Drives the interactive states the design defines and captures each one.
  *
  * These are the states no static screenshot can reach: the search states, the two header panels
- * and the three jackpot menus. Anything that renders wrong here would otherwise only be found by
+ * and the three menu panels. Anything that renders wrong here would otherwise only be found by
  * a person clicking through the demo.
  *
  * Which states those are is not decided here. src/data/screens.json is the single source — one
